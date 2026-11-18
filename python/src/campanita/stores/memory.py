@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+from collections.abc import Sequence
 from dataclasses import replace
 from datetime import datetime
 
@@ -18,6 +19,7 @@ from .._inbox import (
     from_ms,
     to_ms,
 )
+from .._types import Change, Overrides
 
 
 class MemoryStore:
@@ -108,3 +110,24 @@ class MemoryStore:
 def _position(item: Notification) -> tuple[int, str]:
     # `str` se compara por punto de código, que es el desempate que pide el spec.
     return (to_ms(item.created_at), item.id)
+
+
+class MemoryPreferenceStore:
+    """Las preferencias guardadas, en el proceso."""
+
+    def __init__(self) -> None:
+        self._cells: dict[tuple[str, str | None], dict[str, dict[str, bool]]] = {}
+
+    async def get_overrides(self, recipient_id: str, *, scope: str | None = None) -> Overrides:
+        mine = self._cells.get((recipient_id, scope), {})
+        # Una copia: tocar lo devuelto no cambia lo guardado.
+        return {category: dict(channels) for category, channels in mine.items()}
+
+    async def save_changes(
+        self, recipient_id: str, changes: Sequence[Change], *, scope: str | None = None
+    ) -> None:
+        if not changes:
+            return
+        mine = self._cells.setdefault((recipient_id, scope), {})
+        for change in changes:
+            mine.setdefault(change.category, {})[change.channel] = change.enabled

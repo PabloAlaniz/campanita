@@ -41,8 +41,8 @@ export type {
   Notification,
   StoreReason,
 } from './core/inbox.js';
-export { notificationToWire, runStoreVector } from './conformance.js';
-export { MemoryStore } from './stores/memory.js';
+export { notificationToWire, runPreferenceVector, runStoreVector } from './conformance.js';
+export { MemoryPreferenceStore, MemoryStore } from './stores/memory.js';
 export type {
   DeliveryChannel,
   DeliveryOutcome,

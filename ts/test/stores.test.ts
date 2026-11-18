@@ -3,7 +3,19 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { MemoryStore, runStoreVector, StoreError, type Draft, type NotificationStore } from '../src/index.js';
+import {
+  MemoryPreferenceStore,
+  MemoryStore,
+  parsePolicy,
+  resolveChannels,
+  runPreferenceVector,
+  runStoreVector,
+  StoreError,
+  validatePatch,
+  type Draft,
+  type NotificationStore,
+  type PreferenceStore,
+} from '../src/index.js';
 
 const DIR = fileURLToPath(new URL('../../spec/vectors/bandeja', import.meta.url));
 const files = readdirSync(DIR)
@@ -84,6 +96,54 @@ for (const [name, makeStore] of Object.entries(stores)) {
       const first = await store.add(draft({ recipientId: 'a', dedupeKey: 'b c' }), { id: 'n1', createdAt: T0 });
       const second = await store.add(draft({ recipientId: 'a b', dedupeKey: 'c' }), { id: 'n2', createdAt: T0 });
       expect([first.created, second.created]).toEqual([true, true]);
+    });
+  });
+}
+
+// --- preferencias guardadas --------------------------------------------------
+
+const PREFERENCES_DIR = fileURLToPath(new URL('../../spec/vectors/preferencias-guardadas', import.meta.url));
+const preferenceFiles = readdirSync(PREFERENCES_DIR)
+  .filter((file) => file.endsWith('.json'))
+  .sort();
+const preferenceStores: Record<string, () => PreferenceStore> = { memory: () => new MemoryPreferenceStore() };
+
+it('hay secuencias de preferencias', () => {
+  expect(preferenceFiles.length).toBeGreaterThanOrEqual(2);
+});
+
+for (const [name, makeStore] of Object.entries(preferenceStores)) {
+  describe(`preferencias: ${name}`, () => {
+    for (const file of preferenceFiles) {
+      it(file.replace('.json', ''), async () => {
+        await runPreferenceVector(JSON.parse(readFileSync(join(PREFERENCES_DIR, file), 'utf8')), makeStore);
+      });
+    }
+
+    it('tocar lo devuelto no cambia lo guardado', async () => {
+      const store = makeStore();
+      await store.saveChanges('ana', [{ category: 'activity', channel: 'email', enabled: true }]);
+      const found = (await store.getOverrides('ana')) as Record<string, Record<string, boolean>>;
+      found['activity']!['email'] = false;
+      expect(await store.getOverrides('ana')).toEqual({ activity: { email: true } });
+    });
+
+    it('guardar una categoría `__proto__` no contamina otros objetos', async () => {
+      const store = makeStore();
+      await store.saveChanges('ana', [{ category: '__proto__', channel: 'polluted', enabled: true }]);
+      expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+      expect(Object.keys(await store.getOverrides('ana'))).toEqual(['__proto__']);
+    });
+
+    it('lo guardado sirve para resolver canales', async () => {
+      const policy = parsePolicy({
+        security: { inapp: { default: true, locked: true }, email: { default: true, locked: true } },
+        activity: { inapp: { default: true, locked: true }, email: { default: false } },
+      });
+      const store = makeStore();
+      await store.saveChanges('ana', validatePatch(policy, { activity: { email: true } }, ['email']));
+      expect(resolveChannels(policy, 'activity', await store.getOverrides('ana'), ['email'])).toEqual(['email']);
+      expect(resolveChannels(policy, 'activity', await store.getOverrides('beto'), ['email'])).toEqual([]);
     });
   });
 }

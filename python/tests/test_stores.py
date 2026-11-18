@@ -12,10 +12,10 @@ from typing import Any
 
 import pytest
 
-from campanita import Draft, FeedQuery, StoreError
-from campanita.conformance import run_store_vector
-from campanita.ports import NotificationStore
-from campanita.stores import MemoryStore, SqliteStore
+from campanita import Change, Draft, FeedQuery, StoreError
+from campanita.conformance import run_preference_vector, run_store_vector
+from campanita.ports import NotificationStore, PreferenceStore
+from campanita.stores import MemoryPreferenceStore, MemoryStore, SqlitePreferenceStore, SqliteStore
 
 VECTORS = sorted((Path(__file__).resolve().parents[2] / "spec" / "vectors" / "bandeja").glob("*.json"))
 
@@ -136,3 +136,78 @@ def test_sqlite_dos_conexiones_con_la_misma_clave_dejan_un_solo_aviso(tmp_path: 
 def test_sqlite_el_nombre_de_la_tabla_se_valida() -> None:
     with pytest.raises(ValueError, match="identificador"):
         SqliteStore(sqlite3.connect(":memory:"), table="x; DROP TABLE y")
+
+
+# --- preferencias guardadas -------------------------------------------------
+
+PREFERENCE_VECTORS = sorted(
+    (Path(__file__).resolve().parents[2] / "spec" / "vectors" / "preferencias-guardadas").glob("*.json")
+)
+
+
+def sqlite_preferences() -> SqlitePreferenceStore:
+    store = SqlitePreferenceStore(sqlite3.connect(":memory:", isolation_level=None))
+    store.create_schema()
+    return store
+
+
+PREFERENCE_STORES: dict[str, Callable[[], PreferenceStore]] = {
+    "memory": MemoryPreferenceStore,
+    "sqlite": sqlite_preferences,
+}
+
+
+def test_hay_secuencias_de_preferencias() -> None:
+    assert len(PREFERENCE_VECTORS) >= 2
+
+
+@pytest.mark.parametrize("make_store", PREFERENCE_STORES.values(), ids=PREFERENCE_STORES.keys())
+@pytest.mark.parametrize("path", PREFERENCE_VECTORS, ids=lambda p: p.stem)
+def test_secuencia_de_preferencias(path: Path, make_store: Callable[[], PreferenceStore]) -> None:
+    asyncio.run(run_preference_vector(json.loads(path.read_text(encoding="utf-8")), make_store))
+
+
+@pytest.mark.parametrize("make_store", PREFERENCE_STORES.values(), ids=PREFERENCE_STORES.keys())
+def test_tocar_lo_devuelto_no_cambia_las_preferencias(make_store: Callable[[], PreferenceStore]) -> None:
+    async def run() -> None:
+        store = make_store()
+        await store.save_changes("ana", [Change("activity", "email", True)])
+        found = await store.get_overrides("ana")
+        found["activity"]["email"] = False  # type: ignore[index]
+        assert await store.get_overrides("ana") == {"activity": {"email": True}}
+
+    asyncio.run(run())
+
+
+def test_sqlite_guarda_todos_los_cambios_o_ninguno() -> None:
+    async def run() -> None:
+        store = sqlite_preferences()
+        await store.save_changes("ana", [Change("activity", "email", True)])
+        roto = [Change("digest", "email", False), Change("digest", None, True)]  # type: ignore[arg-type]
+        with pytest.raises(sqlite3.IntegrityError):
+            await store.save_changes("ana", roto)
+        assert await store.get_overrides("ana") == {"activity": {"email": True}}
+
+    asyncio.run(run())
+
+
+def test_las_preferencias_guardadas_sirven_para_resolver_canales() -> None:
+    from campanita import parse_policy, resolve_channels, validate_patch
+
+    async def run() -> None:
+        policy = parse_policy(
+            {
+                "security": {
+                    "inapp": {"default": True, "locked": True},
+                    "email": {"default": True, "locked": True},
+                },
+                "activity": {"inapp": {"default": True, "locked": True}, "email": {"default": False}},
+            }
+        )
+        store = MemoryPreferenceStore()
+        await store.save_changes("ana", validate_patch(policy, {"activity": {"email": True}}, ["email"]))
+        overrides = await store.get_overrides("ana")
+        assert resolve_channels(policy, "activity", overrides, ["email"]) == {"email"}
+        assert resolve_channels(policy, "activity", await store.get_overrides("beto"), ["email"]) == set()
+
+    asyncio.run(run())

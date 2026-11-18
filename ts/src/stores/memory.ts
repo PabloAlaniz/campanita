@@ -10,8 +10,8 @@ import {
   type FeedQuery,
   type Notification,
 } from '../core/inbox.js';
-import type { Draft } from '../core/types.js';
-import type { NotificationStore } from '../ports.js';
+import type { Change, Draft, Overrides } from '../core/types.js';
+import type { NotificationStore, PreferenceStore } from '../ports.js';
 
 /** Todo vive en el proceso y se pierde al terminar. */
 export class MemoryStore implements NotificationStore {
@@ -118,4 +118,48 @@ function copy(item: Notification): Notification {
     createdAt: new Date(item.createdAt),
     readAt: item.readAt === null ? null : new Date(item.readAt),
   };
+}
+
+/** Las preferencias guardadas, en el proceso. */
+export class MemoryPreferenceStore implements PreferenceStore {
+  /**
+   * Persona → ámbito → categoría → canal. Son `Map` y no objetos: una persona o
+   * una categoría llamada `__proto__` es un dato como cualquier otro, y ningún
+   * separador puede hacer chocar dos claves.
+   */
+  readonly #cells = new Map<string, Map<string | null, Map<string, Map<string, boolean>>>>();
+
+  async getOverrides(recipientId: string, options: { scope?: string | null } = {}): Promise<Overrides> {
+    const mine = this.#cells.get(recipientId)?.get(options.scope ?? null);
+    // Sin prototipo, para que una categoría `__proto__` sea una clave más.
+    const out: Record<string, Record<string, boolean>> = Object.create(null);
+    for (const [category, channels] of mine ?? []) {
+      const row: Record<string, boolean> = Object.create(null);
+      for (const [channel, enabled] of channels) row[channel] = enabled;
+      out[category] = row;
+    }
+    return out;
+  }
+
+  async saveChanges(
+    recipientId: string,
+    changes: readonly Change[],
+    options: { scope?: string | null } = {},
+  ): Promise<void> {
+    if (changes.length === 0) return;
+    const scopes = getOrCreate(this.#cells, recipientId);
+    const categories = getOrCreate(scopes, options.scope ?? null);
+    for (const change of changes) {
+      getOrCreate(categories, change.category).set(change.channel, change.enabled);
+    }
+  }
+}
+
+function getOrCreate<K, IK, IV>(map: Map<K, Map<IK, IV>>, key: K): Map<IK, IV> {
+  let inner = map.get(key);
+  if (inner === undefined) {
+    inner = new Map();
+    map.set(key, inner);
+  }
+  return inner;
 }

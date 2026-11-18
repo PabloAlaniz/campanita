@@ -97,8 +97,25 @@ await store.markAllRead('user-7', { before: page.items[0]!.createdAt, readAt: ne
 Para una base de verdad, escribí un adaptador que cumpla `NotificationStore` y probalo con
 `runStoreVector`: ver [`docs/puertos.md`](../docs/puertos.md).
 
-Los puertos de preferencias y de canales de entrega (`PreferenceStore`, `DeliveryChannel`) son un
-borrador: el spec todavía no los cubre.
+## Las preferencias guardadas
+
+Lo que cambió cada persona va a un almacén de preferencias. El recorrido completo de una pantalla
+de preferencias es validar, guardar y volver a leer:
+
+```ts
+import { MemoryPreferenceStore, effectiveMatrix, validatePatch } from 'campanita';
+
+const preferences = new MemoryPreferenceStore();
+
+const changes = validatePatch(policy, { activity: { email: true } }, disponibles); // rechaza lo bloqueado
+await preferences.saveChanges('user-7', changes);
+
+const saved = await preferences.getOverrides('user-7');
+effectiveMatrix(policy, saved, disponibles); // lo que muestra la pantalla
+resolveChannels(policy, 'activity', saved, disponibles); // por dónde sale el próximo aviso
+```
+
+El puerto de canales de entrega (`DeliveryChannel`) es un borrador: el spec todavía no lo cubre.
 
 ## Desarrollo
 

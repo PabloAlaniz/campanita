@@ -1,0 +1,294 @@
+{
+ "spec": "0",
+ "id": "preferencias-guardadas/aislamiento",
+ "kind": "preferencias-guardadas",
+ "steps": [
+  {
+   "note": "ana, sin ámbito",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "email",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "beto, sin ámbito",
+   "op": "save",
+   "recipient_id": "beto",
+   "scope": null,
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "email",
+     "enabled": false
+    },
+    {
+     "category": "digest",
+     "channel": "email",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "ana ve lo suyo",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": null,
+   "expect": {
+    "activity": {
+     "email": true
+    }
+   }
+  },
+  {
+   "note": "beto ve lo suyo",
+   "op": "get",
+   "recipient_id": "beto",
+   "scope": null,
+   "expect": {
+    "activity": {
+     "email": false
+    },
+    "digest": {
+     "email": false
+    }
+   }
+  },
+  {
+   "note": "otra persona no tiene nada",
+   "op": "get",
+   "recipient_id": "carla",
+   "scope": null,
+   "expect": {}
+  },
+  {
+   "note": "el destinatario se compara como texto exacto",
+   "op": "get",
+   "recipient_id": "Ana",
+   "scope": null,
+   "expect": {}
+  },
+  {
+   "note": "ana en el ámbito x",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": "x",
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "email",
+     "enabled": false
+    },
+    {
+     "category": "activity",
+     "channel": "push",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "cada ámbito es independiente: x",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": "x",
+   "expect": {
+    "activity": {
+     "email": false,
+     "push": true
+    }
+   }
+  },
+  {
+   "note": "sin ámbito sigue como estaba",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": null,
+   "expect": {
+    "activity": {
+     "email": true
+    }
+   }
+  },
+  {
+   "note": "un ámbito sin cambios está vacío: no hereda",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": "y",
+   "expect": {}
+  },
+  {
+   "note": "el ámbito de una persona no es el de otra",
+   "op": "get",
+   "recipient_id": "beto",
+   "scope": "x",
+   "expect": {}
+  },
+  {
+   "note": "un ámbito de texto vacío no es lo mismo que sin ámbito",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": "",
+   "changes": [
+    {
+     "category": "digest",
+     "channel": "push",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "sin ámbito no lo ve",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": null,
+   "expect": {
+    "activity": {
+     "email": true
+    }
+   }
+  },
+  {
+   "note": "el ámbito vacío sí",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": "",
+   "expect": {
+    "digest": {
+     "push": true
+    }
+   }
+  },
+  {
+   "note": "persona, ámbito, categoría y canal llamados como propiedades heredadas",
+   "op": "save",
+   "recipient_id": "__proto__",
+   "scope": "constructor",
+   "changes": [
+    {
+     "category": "constructor",
+     "channel": "toString",
+     "enabled": true
+    },
+    {
+     "category": "__proto__",
+     "channel": "__proto__",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "se leen igual que cualquier otro",
+   "op": "get",
+   "recipient_id": "__proto__",
+   "scope": "constructor",
+   "expect": {
+    "constructor": {
+     "toString": true
+    },
+    "__proto__": {
+     "__proto__": false
+    }
+   }
+  },
+  {
+   "note": "y no aparecen donde no se guardaron",
+   "op": "get",
+   "recipient_id": "constructor",
+   "scope": null,
+   "expect": {}
+  },
+  {
+   "note": "persona `a b` sin ámbito",
+   "op": "save",
+   "recipient_id": "a b",
+   "scope": null,
+   "changes": [
+    {
+     "category": "c",
+     "channel": "d",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "persona `a` con ámbito `b`",
+   "op": "save",
+   "recipient_id": "a",
+   "scope": "b",
+   "changes": [
+    {
+     "category": "c",
+     "channel": "d",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "no se mezclan (1)",
+   "op": "get",
+   "recipient_id": "a b",
+   "scope": null,
+   "expect": {
+    "c": {
+     "d": true
+    }
+   }
+  },
+  {
+   "note": "no se mezclan (2)",
+   "op": "get",
+   "recipient_id": "a",
+   "scope": "b",
+   "expect": {
+    "c": {
+     "d": false
+    }
+   }
+  },
+  {
+   "note": "categoría `x y` con canal `z`",
+   "op": "save",
+   "recipient_id": "dani",
+   "scope": null,
+   "changes": [
+    {
+     "category": "x y",
+     "channel": "z",
+     "enabled": true
+    },
+    {
+     "category": "x",
+     "channel": "y z",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "tampoco las celdas",
+   "op": "get",
+   "recipient_id": "dani",
+   "scope": null,
+   "expect": {
+    "x y": {
+     "z": true
+    },
+    "x": {
+     "y z": false
+    }
+   }
+  }
+ ]
+}

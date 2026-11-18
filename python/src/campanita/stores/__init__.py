@@ -1,6 +1,6 @@
-"""Adaptadores de almacén incluidos. Los dos pasan las mismas secuencias del spec."""
+"""Adaptadores de almacén incluidos. Todos pasan las secuencias del spec."""
 
-from .memory import MemoryStore
-from .sqlite import SqliteStore
+from .memory import MemoryPreferenceStore, MemoryStore
+from .sqlite import SqlitePreferenceStore, SqliteStore
 
-__all__ = ["MemoryStore", "SqliteStore"]
+__all__ = ["MemoryPreferenceStore", "MemoryStore", "SqlitePreferenceStore", "SqliteStore"]

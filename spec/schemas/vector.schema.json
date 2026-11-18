@@ -26,7 +26,8 @@
         "plantilla",
         "catalogo",
         "aviso",
-        "bandeja"
+        "bandeja",
+        "preferencias-guardadas"
       ]
     },
     "policy": {
@@ -873,6 +874,144 @@
                       "expect": {
                         "type": "integer",
                         "minimum": 0
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "preferencias-guardadas"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "steps"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "cases"
+              ]
+            },
+            {
+              "required": [
+                "policy"
+              ]
+            },
+            {
+              "required": [
+                "catalog"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "steps": {
+            "items": {
+              "type": "object",
+              "required": [
+                "note",
+                "op",
+                "recipient_id",
+                "scope",
+                "expect"
+              ],
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "op": {
+                  "enum": [
+                    "save",
+                    "get"
+                  ]
+                },
+                "recipient_id": {
+                  "type": "string"
+                },
+                "scope": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "save"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "changes"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "note": {},
+                      "op": {},
+                      "recipient_id": {},
+                      "scope": {},
+                      "expect": {
+                        "type": "null"
+                      },
+                      "changes": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "category",
+                            "channel",
+                            "enabled"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "category": {
+                              "type": "string"
+                            },
+                            "channel": {
+                              "type": "string"
+                            },
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "get"
+                      }
+                    }
+                  },
+                  "then": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "note": {},
+                      "op": {},
+                      "recipient_id": {},
+                      "scope": {},
+                      "expect": {
+                        "$ref": "#/definitions/overrides"
                       }
                     }
                   }

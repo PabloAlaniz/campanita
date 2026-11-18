@@ -2,11 +2,11 @@
 
 El núcleo no conoce la base, el canal ni la superficie que muestra la bandeja.
 
-- `NotificationStore` está especificado: su comportamiento es el de las
-  secuencias de `spec/vectors/bandeja/`, y `campanita.conformance` las corre
+- `NotificationStore` y `PreferenceStore` están especificados: su
+  comportamiento es el de las secuencias de `spec/vectors/bandeja/` y
+  `spec/vectors/preferencias-guardadas/`, y `campanita.conformance` las corre
   contra cualquier adaptador.
-- `PreferenceStore` y `DeliveryChannel` son un BORRADOR: el spec todavía no los
-  cubre y pueden cambiar.
+- `DeliveryChannel` es un BORRADOR: el spec todavía no lo cubre y puede cambiar.
 """
 
 from __future__ import annotations
@@ -62,13 +62,22 @@ class NotificationStore(Protocol):
 
 
 class PreferenceStore(Protocol):
-    """BORRADOR. Guarda SÓLO los cambios del usuario. Sin filas = valores por defecto."""
+    """Lo que cambió cada persona. Guarda SÓLO los cambios: sin nada guardado,
+    valen los valores de la política.
 
-    async def get_overrides(self, recipient_id: str, scope: str | None = None) -> Overrides: ...
+    El almacén no conoce la política. Qué se puede cambiar lo decide
+    `validate_patch` antes de guardar.
+    """
+
+    async def get_overrides(self, recipient_id: str, *, scope: str | None = None) -> Overrides:
+        """Lo guardado para esa persona en ese ámbito. Los ámbitos no se heredan."""
+        ...
 
     async def save_changes(
-        self, recipient_id: str, changes: Sequence[Change], scope: str | None = None
-    ) -> None: ...
+        self, recipient_id: str, changes: Sequence[Change], *, scope: str | None = None
+    ) -> None:
+        """Guarda los cambios, todos o ninguno. Si una celda se repite, vale la última."""
+        ...
 
 
 #: `expired` = el destino ya no existe (una suscripción vencida) y hay que olvidarlo.

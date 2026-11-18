@@ -5,7 +5,7 @@ Todo port de campanita tiene que comportarse como se describe acá. Los archivos
 `tools/gen_vectors.py`, una implementación independiente, para que ningún port se valide a sí
 mismo.
 
-La versión 0 es un borrador y puede cambiar sin aviso. Cubre tres cosas:
+La versión 0 es un borrador y puede cambiar sin aviso. Cubre cuatro cosas:
 
 - **Por qué canales sale un aviso y qué puede cambiar el usuario**: la política, la resolución de
   canales, la matriz efectiva y el cambio de preferencias.
@@ -13,6 +13,7 @@ La versión 0 es un borrador y puede cambiar sin aviso. Cubre tres cosas:
   aviso listo para guardar.
 - **La bandeja**: guardar un aviso sin duplicarlo, listarlo por páginas, contar los no leídos y
   marcarlos como leídos, sobre cualquier base.
+- **Las preferencias guardadas**: dónde queda lo que cambió cada persona, sobre cualquier base.
 
 Las entregas por canales fuera de la bandeja todavía no están especificadas (ver
 `docs/hoja-de-ruta.md`).
@@ -366,6 +367,36 @@ leídos, con `created_at` **estrictamente anterior** a `before`, y devuelve cuá
   llegó en el mismo instante y que la persona no llegó a ver.
 - Los que ya estaban leídos conservan su hora.
 
+## Las preferencias guardadas
+
+Lo que cambió cada persona se guarda en un **almacén de preferencias**. Igual que con la bandeja,
+el spec no dice sobre qué base está hecho: un almacén cumple cuando reproduce las secuencias de
+`vectors/preferencias-guardadas/`.
+
+Lo guardado tiene la forma de los overrides: categoría → canal → booleano.
+
+- `get_overrides(recipient_id, scope)` devuelve lo guardado para esa persona en ese ámbito. Quien
+  nunca cambió nada no tiene nada guardado, y la respuesta es vacía.
+- `save_changes(recipient_id, cambios, scope)` guarda una lista de cambios, cada uno con
+  `category`, `channel` y `enabled`.
+
+Reglas:
+
+- **Sólo se guardan los cambios.** Sin nada guardado valen los valores de la política, así que
+  agregarle una categoría o un canal no requiere migrar datos.
+- **El almacén no conoce la política.** Guarda la celda que le pasen. Qué se puede cambiar lo
+  decide `validate_patch`, antes de guardar.
+- **Guardar una celda que ya estaba la reemplaza.** Si un mismo pedido repite una celda, vale la
+  última.
+- **Un pedido se guarda entero o no se guarda.** Un pedido sin cambios no hace nada.
+- **Cada ámbito es independiente.** Lo guardado sin ámbito no aparece al pedir un ámbito, ni al
+  revés: acá no hay herencia. "Sin ámbito" y un ámbito de texto vacío son cosas distintas.
+- **La persona, el ámbito, la categoría y el canal son texto exacto.** Ninguna combinación de
+  valores se puede confundir con otra.
+
+Para resolver los canales de un aviso, se le pasa a `resolve_channels` lo que devuelve
+`get_overrides` para el destinatario y el ámbito del aviso.
+
 ## Vectores
 
 Cada archivo de `vectors/` cumple `schemas/vector.schema.json` y tiene `spec`, `id`, `kind` y sus
@@ -381,14 +412,17 @@ casos.
 | `catalogo` | validación del catálogo | `catalog`, `valid` |
 | `aviso` | armado del aviso | `event`, `expect` |
 | `bandeja` | la bandeja sobre un almacén | secuencia de pasos (ver abajo) |
+| `preferencias-guardadas` | las preferencias sobre un almacén | secuencia de pasos (ver abajo) |
 
 Los vectores de `canales`, `matriz`, `preferencias` y `catalogo` llevan la `policy` una vez por
 archivo; los de `aviso` llevan además el `catalog`.
 
-Los vectores de `bandeja` no tienen `cases` sino `steps`: una secuencia que se corre en orden
-sobre un almacén vacío. Cada paso tiene `op` (`add`, `list`, `count_unread`, `mark_read` o
-`mark_all_read`), sus argumentos y `expect`, que es lo que la operación devuelve o
-`{"error": motivo}` cuando la rechaza.
+Los vectores de `bandeja` y `preferencias-guardadas` no tienen `cases` sino `steps`: una secuencia
+que se corre en orden sobre un almacén vacío. Cada paso tiene `op`, sus argumentos y `expect`,
+que es lo que la operación devuelve, o `{"error": motivo}` cuando la rechaza.
+
+- En `bandeja`, `op` es `add`, `list`, `count_unread`, `mark_read` o `mark_all_read`.
+- En `preferencias-guardadas`, `op` es `save` (devuelve nulo) o `get`.
 
 `python3 tools/gen_vectors.py` los regenera; con `--check` falla si los archivos del repo no
 coinciden con lo generado.

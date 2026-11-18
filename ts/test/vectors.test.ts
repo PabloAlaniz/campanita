@@ -31,7 +31,16 @@ const VECTORS = join(SPEC, 'vectors');
 interface Vector {
   spec: string;
   id: string;
-  kind: 'politica' | 'canales' | 'matriz' | 'preferencias' | 'plantilla' | 'catalogo' | 'aviso' | 'bandeja';
+  kind:
+    | 'politica'
+    | 'canales'
+    | 'matriz'
+    | 'preferencias'
+    | 'plantilla'
+    | 'catalogo'
+    | 'aviso'
+    | 'bandeja'
+    | 'preferencias-guardadas';
   policy?: unknown;
   catalog?: unknown;
   /** Los de tipo `bandeja` tienen `steps` y los corre test/stores.test.ts. */
@@ -75,11 +84,12 @@ it('todos los tipos de vector tienen quien los corra', () => {
     'plantilla',
     'politica',
     'preferencias',
+    'preferencias-guardadas',
   ]);
 });
 
 for (const vector of vectors) {
-  if (vector.kind === 'bandeja') continue;
+  if (vector.kind === 'bandeja' || vector.kind === 'preferencias-guardadas') continue;
   describe(vector.id, () => {
     (vector.cases ?? []).forEach((test, index) => {
       it(label(index, test), () => {
@@ -206,7 +216,8 @@ for (const vector of vectors) {
           }
 
           case 'bandeja':
-            throw new Error('los vectores de bandeja no tienen casos');
+          case 'preferencias-guardadas':
+            throw new Error('los vectores de secuencias no tienen casos');
         }
       });
     });

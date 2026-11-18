@@ -144,6 +144,17 @@ def test_aviso(vector: dict[str, Any], case: dict[str, Any]) -> None:
 
 
 def test_todos_los_tipos_de_vector_tienen_quien_los_corra() -> None:
-    # Los de tipo `bandeja` los corre tests/test_stores.py contra cada almacén.
-    corridos = {"politica", "canales", "matriz", "preferencias", "plantilla", "catalogo", "aviso", "bandeja"}
+    # Los de `bandeja` y `preferencias-guardadas` los corre tests/test_stores.py
+    # contra cada almacén.
+    corridos = {
+        "politica",
+        "canales",
+        "matriz",
+        "preferencias",
+        "plantilla",
+        "catalogo",
+        "aviso",
+        "bandeja",
+        "preferencias-guardadas",
+    }
     assert {load(path)["kind"] for path in VECTORS} == corridos
