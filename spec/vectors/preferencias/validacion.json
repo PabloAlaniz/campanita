@@ -1,0 +1,594 @@
+{
+ "spec": "0",
+ "id": "preferencias/validacion",
+ "kind": "preferencias",
+ "policy": {
+  "security": {
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "push": {
+    "default": true,
+    "locked": true
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "invitations": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "digest": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "cases": [
+  {
+   "note": "pedido vacío",
+   "patch": {},
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": true,
+    "changes": []
+   }
+  },
+  {
+   "note": "una categoría sin celdas",
+   "patch": {
+    "activity": {}
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": true,
+    "changes": []
+   }
+  },
+  {
+   "note": "un cambio",
+   "patch": {
+    "activity": {
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": true,
+    "changes": [
+     {
+      "category": "activity",
+      "channel": "email",
+      "enabled": true
+     }
+    ]
+   }
+  },
+  {
+   "note": "apagar un canal encendido por defecto",
+   "patch": {
+    "invitations": {
+     "email": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": true,
+    "changes": [
+     {
+      "category": "invitations",
+      "channel": "email",
+      "enabled": false
+     }
+    ]
+   }
+  },
+  {
+   "note": "un cambio igual al valor por defecto se guarda igual",
+   "patch": {
+    "digest": {
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": true,
+    "changes": [
+     {
+      "category": "digest",
+      "channel": "email",
+      "enabled": true
+     }
+    ]
+   }
+  },
+  {
+   "note": "varios cambios: salen ordenados por categoría y canal",
+   "patch": {
+    "invitations": {
+     "push": true,
+     "email": false
+    },
+    "activity": {
+     "push": true,
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": true,
+    "changes": [
+     {
+      "category": "activity",
+      "channel": "email",
+      "enabled": true
+     },
+     {
+      "category": "activity",
+      "channel": "push",
+      "enabled": true
+     },
+     {
+      "category": "invitations",
+      "channel": "email",
+      "enabled": false
+     },
+     {
+      "category": "invitations",
+      "channel": "push",
+      "enabled": true
+     }
+    ]
+   }
+  },
+  {
+   "note": "categoría bloqueada",
+   "patch": {
+    "security": {
+     "email": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "security",
+     "channel": "email",
+     "reason": "locked"
+    }
+   }
+  },
+  {
+   "note": "categoría bloqueada, aunque el valor sea el que ya tiene",
+   "patch": {
+    "security": {
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "security",
+     "channel": "push",
+     "reason": "locked"
+    }
+   }
+  },
+  {
+   "note": "`inapp` no se puede cambiar",
+   "patch": {
+    "activity": {
+     "inapp": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "inapp",
+     "reason": "locked"
+    }
+   }
+  },
+  {
+   "note": "canal que no está disponible",
+   "patch": {
+    "activity": {
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "push",
+     "reason": "unavailable"
+    }
+   }
+  },
+  {
+   "note": "nada disponible",
+   "patch": {
+    "activity": {
+     "email": true
+    }
+   },
+   "available": [],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "email",
+     "reason": "unavailable"
+    }
+   }
+  },
+  {
+   "note": "categoría que no está en la política",
+   "patch": {
+    "marketing": {
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "marketing",
+     "channel": null,
+     "reason": "unknown_category"
+    }
+   }
+  },
+  {
+   "note": "categoría desconocida sin celdas",
+   "patch": {
+    "marketing": {}
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "marketing",
+     "channel": null,
+     "reason": "unknown_category"
+    }
+   }
+  },
+  {
+   "note": "canal que la categoría no tiene",
+   "patch": {
+    "activity": {
+     "sms": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "sms",
+     "reason": "unknown_channel"
+    }
+   }
+  },
+  {
+   "note": "canal desconocido, aunque esté disponible",
+   "patch": {
+    "activity": {
+     "sms": true
+    }
+   },
+   "available": [
+    "email",
+    "push",
+    "sms"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "sms",
+     "reason": "unknown_channel"
+    }
+   }
+  },
+  {
+   "note": "el valor no es un booleano: texto",
+   "patch": {
+    "activity": {
+     "email": "true"
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "email",
+     "reason": "invalid_value"
+    }
+   }
+  },
+  {
+   "note": "el valor no es un booleano: número",
+   "patch": {
+    "activity": {
+     "email": 1
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "email",
+     "reason": "invalid_value"
+    }
+   }
+  },
+  {
+   "note": "el valor no es un booleano: nulo",
+   "patch": {
+    "activity": {
+     "email": null
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "email",
+     "reason": "invalid_value"
+    }
+   }
+  },
+  {
+   "note": "valor inválido sobre celda bloqueada: gana `invalid_value`",
+   "patch": {
+    "security": {
+     "email": "no"
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "security",
+     "channel": "email",
+     "reason": "invalid_value"
+    }
+   }
+  },
+  {
+   "note": "valor inválido sobre canal desconocido: gana `unknown_channel`",
+   "patch": {
+    "activity": {
+     "sms": "no"
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "sms",
+     "reason": "unknown_channel"
+    }
+   }
+  },
+  {
+   "note": "bloqueada y no disponible: gana `locked`",
+   "patch": {
+    "security": {
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "security",
+     "channel": "push",
+     "reason": "locked"
+    }
+   }
+  },
+  {
+   "note": "dos errores: se informa el de la primera categoría en orden",
+   "patch": {
+    "security": {
+     "email": false
+    },
+    "activity": {
+     "sms": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "sms",
+     "reason": "unknown_channel"
+    }
+   }
+  },
+  {
+   "note": "dos errores en una categoría: se informa el del primer canal en orden",
+   "patch": {
+    "activity": {
+     "sms": true,
+     "inapp": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "inapp",
+     "reason": "locked"
+    }
+   }
+  },
+  {
+   "note": "un cambio válido antes del error no salva el pedido",
+   "patch": {
+    "activity": {
+     "email": true
+    },
+    "security": {
+     "email": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "security",
+     "channel": "email",
+     "reason": "locked"
+    }
+   }
+  },
+  {
+   "note": "una categoría desconocida más adelante en el orden también corta",
+   "patch": {
+    "activity": {
+     "email": true
+    },
+    "zzz": {}
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "zzz",
+     "channel": null,
+     "reason": "unknown_category"
+    }
+   }
+  },
+  {
+   "note": "el orden es por punto de código, no por unidades UTF-16",
+   "patch": {
+    "😀": {},
+    "～": {}
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "～",
+     "channel": null,
+     "reason": "unknown_category"
+    }
+   }
+  }
+ ]
+}

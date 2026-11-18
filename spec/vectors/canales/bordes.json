@@ -1,0 +1,318 @@
+{
+ "spec": "0",
+ "id": "canales/bordes",
+ "kind": "canales",
+ "policy": {
+  "alertas-2": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "sms": {
+    "default": true,
+    "locked": true
+   },
+   "whatsapp": {
+    "default": true,
+    "locked": false
+   },
+   "email": {
+    "default": false
+   }
+  },
+  "marketing_semanal": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   },
+   "sms": {
+    "default": false,
+    "locked": true
+   }
+  },
+  "sistema": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "cases": [
+  {
+   "note": "categoría que no está en la política",
+   "category": "desconocida",
+   "overrides": {},
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": []
+  },
+  {
+   "note": "categoría que no está en la política, con overrides",
+   "category": "desconocida",
+   "overrides": {
+    "desconocida": {
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": []
+  },
+  {
+   "note": "categoría que sólo tiene bandeja",
+   "category": "sistema",
+   "overrides": {},
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": []
+  },
+  {
+   "note": "sin overrides, todo disponible",
+   "category": "alertas-2",
+   "overrides": {},
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": [
+    "sms",
+    "whatsapp"
+   ]
+  },
+  {
+   "note": "sin overrides, nada disponible",
+   "category": "alertas-2",
+   "overrides": {},
+   "available": [],
+   "expect": []
+  },
+  {
+   "note": "un canal bloqueado no disponible no sale",
+   "category": "alertas-2",
+   "overrides": {},
+   "available": [
+    "whatsapp"
+   ],
+   "expect": [
+    "whatsapp"
+   ]
+  },
+  {
+   "note": "override en contra de un canal bloqueado: se ignora",
+   "category": "alertas-2",
+   "overrides": {
+    "alertas-2": {
+     "sms": false
+    }
+   },
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": [
+    "sms",
+    "whatsapp"
+   ]
+  },
+  {
+   "note": "`locked: false` explícito respeta el override",
+   "category": "alertas-2",
+   "overrides": {
+    "alertas-2": {
+     "whatsapp": false
+    }
+   },
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": [
+    "sms"
+   ]
+  },
+  {
+   "note": "override que enciende un canal apagado por defecto",
+   "category": "alertas-2",
+   "overrides": {
+    "alertas-2": {
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": [
+    "email",
+    "sms",
+    "whatsapp"
+   ]
+  },
+  {
+   "note": "el override enciende pero el canal no está disponible",
+   "category": "alertas-2",
+   "overrides": {
+    "alertas-2": {
+     "email": true
+    }
+   },
+   "available": [
+    "sms"
+   ],
+   "expect": [
+    "sms"
+   ]
+  },
+  {
+   "note": "celda bloqueada en `false`: el override no la enciende",
+   "category": "marketing_semanal",
+   "overrides": {
+    "marketing_semanal": {
+     "sms": true
+    }
+   },
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "note": "override de `inapp` en `false`: se ignora y `inapp` no sale",
+   "category": "alertas-2",
+   "overrides": {
+    "alertas-2": {
+     "inapp": false
+    }
+   },
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": [
+    "sms",
+    "whatsapp"
+   ]
+  },
+  {
+   "note": "`inapp` entre los disponibles: no sale igual",
+   "category": "alertas-2",
+   "overrides": {},
+   "available": [
+    "email",
+    "sms",
+    "whatsapp",
+    "inapp"
+   ],
+   "expect": [
+    "sms",
+    "whatsapp"
+   ]
+  },
+  {
+   "note": "overrides de otra categoría no afectan",
+   "category": "alertas-2",
+   "overrides": {
+    "marketing_semanal": {
+     "email": false
+    }
+   },
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": [
+    "sms",
+    "whatsapp"
+   ]
+  },
+  {
+   "note": "override sobre un canal que la categoría no tiene",
+   "category": "sistema",
+   "overrides": {
+    "sistema": {
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": []
+  },
+  {
+   "note": "override sobre una categoría que ya no existe",
+   "category": "alertas-2",
+   "overrides": {
+    "vieja": {
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": [
+    "sms",
+    "whatsapp"
+   ]
+  },
+  {
+   "note": "disponible un canal que la política no menciona",
+   "category": "alertas-2",
+   "overrides": {},
+   "available": [
+    "email",
+    "sms",
+    "whatsapp",
+    "telegram"
+   ],
+   "expect": [
+    "sms",
+    "whatsapp"
+   ]
+  },
+  {
+   "note": "el resultado sale ordenado aunque los disponibles no",
+   "category": "alertas-2",
+   "overrides": {
+    "alertas-2": {
+     "email": true
+    }
+   },
+   "available": [
+    "whatsapp",
+    "sms",
+    "email"
+   ],
+   "expect": [
+    "email",
+    "sms",
+    "whatsapp"
+   ]
+  }
+ ]
+}

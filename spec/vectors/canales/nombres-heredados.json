@@ -1,0 +1,147 @@
+{
+ "spec": "0",
+ "id": "canales/nombres-heredados",
+ "kind": "canales",
+ "policy": {
+  "constructor": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "constructor": {
+    "default": true
+   },
+   "email": {
+    "default": false
+   }
+  },
+  "activity": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   }
+  }
+ },
+ "cases": [
+  {
+   "note": "categoría `constructor`, que sí está en la política",
+   "category": "constructor",
+   "overrides": {},
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": [
+    "constructor"
+   ]
+  },
+  {
+   "note": "su canal `constructor` apagado por override",
+   "category": "constructor",
+   "overrides": {
+    "constructor": {
+     "constructor": false
+    }
+   },
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "note": "su canal `constructor` no disponible",
+   "category": "constructor",
+   "overrides": {},
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "note": "override sobre el email de `constructor`",
+   "category": "constructor",
+   "overrides": {
+    "constructor": {
+     "email": true
+    }
+   },
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": [
+    "constructor",
+    "email"
+   ]
+  },
+  {
+   "note": "otra categoría sin overrides: no hereda nada",
+   "category": "activity",
+   "overrides": {},
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "note": "`valueOf` no es una categoría",
+   "category": "valueOf",
+   "overrides": {},
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "note": "`toString` no es una categoría",
+   "category": "toString",
+   "overrides": {},
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "note": "`__proto__` no es una categoría",
+   "category": "__proto__",
+   "overrides": {},
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "note": "`hasOwnProperty` no es una categoría",
+   "category": "hasOwnProperty",
+   "overrides": {},
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "note": "disponibles con nombres heredados que la política no tiene",
+   "category": "activity",
+   "overrides": {},
+   "available": [
+    "email",
+    "toString",
+    "__proto__"
+   ],
+   "expect": [
+    "email"
+   ]
+  }
+ ]
+}

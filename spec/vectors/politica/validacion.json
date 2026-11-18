@@ -1,0 +1,648 @@
+{
+ "spec": "0",
+ "id": "politica/validacion",
+ "kind": "politica",
+ "cases": [
+  {
+   "note": "la política de referencia",
+   "policy": {
+    "security": {
+     "email": {
+      "default": true,
+      "locked": true
+     },
+     "push": {
+      "default": true,
+      "locked": true
+     },
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "default": true
+     },
+     "push": {
+      "default": false
+     },
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "default": false
+     },
+     "push": {
+      "default": false
+     },
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "default": true
+     },
+     "push": {
+      "default": false
+     },
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "la política de bordes",
+   "policy": {
+    "alertas-2": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "sms": {
+      "default": true,
+      "locked": true
+     },
+     "whatsapp": {
+      "default": true,
+      "locked": false
+     },
+     "email": {
+      "default": false
+     }
+    },
+    "marketing_semanal": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": {
+      "default": true
+     },
+     "sms": {
+      "default": false,
+      "locked": true
+     }
+    },
+    "sistema": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "una sola categoría que sólo tiene bandeja",
+   "policy": {
+    "sistema": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "identificador de 64 caracteres",
+   "policy": {
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+      "default": false
+     }
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "categoría y canal llamados `constructor`",
+   "policy": {
+    "constructor": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "constructor": {
+      "default": true
+     },
+     "email": {
+      "default": false
+     }
+    },
+    "activity": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": {
+      "default": true
+     }
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "`locked: false` explícito",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": {
+      "default": true,
+      "locked": false
+     }
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "celda bloqueada en `false`",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "sms": {
+      "default": false,
+      "locked": true
+     }
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "sin categorías",
+   "policy": {},
+   "valid": false
+  },
+  {
+   "note": "no es un objeto: lista",
+   "policy": [],
+   "valid": false
+  },
+  {
+   "note": "no es un objeto: nulo",
+   "policy": null,
+   "valid": false
+  },
+  {
+   "note": "no es un objeto: texto",
+   "policy": "security",
+   "valid": false
+  },
+  {
+   "note": "no es un objeto: número",
+   "policy": 3,
+   "valid": false
+  },
+  {
+   "note": "la categoría no es un objeto: lista",
+   "policy": {
+    "a": []
+   },
+   "valid": false
+  },
+  {
+   "note": "la categoría no es un objeto: nulo",
+   "policy": {
+    "a": null
+   },
+   "valid": false
+  },
+  {
+   "note": "la categoría no es un objeto: booleano",
+   "policy": {
+    "a": true
+   },
+   "valid": false
+  },
+  {
+   "note": "categoría sin celdas",
+   "policy": {
+    "a": {}
+   },
+   "valid": false
+  },
+  {
+   "note": "falta `inapp`",
+   "policy": {
+    "a": {
+     "email": {
+      "default": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "`inapp` sin bloquear",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "`inapp` con `locked: false`",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": false
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "`inapp` apagado",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": false,
+      "locked": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "una categoría buena y otra sin `inapp`",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    },
+    "b": {
+     "email": {
+      "default": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "la celda no es un objeto: booleano",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": true
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "la celda no es un objeto: lista",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": []
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "la celda no es un objeto: nulo",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": null
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "celda sin `default`",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": {
+      "locked": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "celda vacía",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": {}
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "`default` no es booleano: número",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": {
+      "default": 1
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "`default` no es booleano: texto",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": {
+      "default": "true"
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "`default` no es booleano: nulo",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": {
+      "default": null
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "`locked` no es booleano: número",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": {
+      "default": true,
+      "locked": 0
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "`locked` no es booleano: nulo",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": {
+      "default": true,
+      "locked": null
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "clave de más en la celda",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email": {
+      "default": true,
+      "enabled": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "clave de más en `inapp`",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true,
+      "x": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "categoría con mayúscula",
+   "policy": {
+    "Security": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "categoría que empieza con dígito",
+   "policy": {
+    "2fa": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "categoría que empieza con guion",
+   "policy": {
+    "-a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "categoría con espacio",
+   "policy": {
+    "mi categoria": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "categoría con punto",
+   "policy": {
+    "pagos.recibido": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "categoría con letra no ASCII",
+   "policy": {
+    "señales": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "categoría vacía",
+   "policy": {
+    "": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "categoría de 65 caracteres",
+   "policy": {
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "categoría con salto de línea al final",
+   "policy": {
+    "a\n": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "canal con mayúscula",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "Email": {
+      "default": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "canal con salto de línea al final",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "email\n": {
+      "default": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "canal vacío",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "": {
+      "default": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "canal de 65 caracteres",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+      "default": true
+     }
+    }
+   },
+   "valid": false
+  }
+ ]
+}

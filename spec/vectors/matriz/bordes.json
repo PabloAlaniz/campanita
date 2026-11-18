@@ -1,0 +1,337 @@
+{
+ "spec": "0",
+ "id": "matriz/bordes",
+ "kind": "matriz",
+ "policy": {
+  "alertas-2": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "sms": {
+    "default": true,
+    "locked": true
+   },
+   "whatsapp": {
+    "default": true,
+    "locked": false
+   },
+   "email": {
+    "default": false
+   }
+  },
+  "marketing_semanal": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   },
+   "sms": {
+    "default": false,
+    "locked": true
+   }
+  },
+  "sistema": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "cases": [
+  {
+   "note": "todo disponible",
+   "overrides": {},
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": {
+    "alertas-2": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "sms": {
+      "enabled": true,
+      "locked": true
+     },
+     "whatsapp": {
+      "enabled": true,
+      "locked": false
+     },
+     "email": {
+      "enabled": false,
+      "locked": false
+     }
+    },
+    "marketing_semanal": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "sms": {
+      "enabled": false,
+      "locked": true
+     }
+    },
+    "sistema": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "nada disponible: todo lo que no es bandeja queda bloqueado",
+   "overrides": {},
+   "available": [],
+   "expect": {
+    "alertas-2": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "sms": {
+      "enabled": true,
+      "locked": true
+     },
+     "whatsapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": false,
+      "locked": true
+     }
+    },
+    "marketing_semanal": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "sms": {
+      "enabled": false,
+      "locked": true
+     }
+    },
+    "sistema": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "`inapp` no depende de los disponibles",
+   "overrides": {},
+   "available": [
+    "inapp"
+   ],
+   "expect": {
+    "alertas-2": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "sms": {
+      "enabled": true,
+      "locked": true
+     },
+     "whatsapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": false,
+      "locked": true
+     }
+    },
+    "marketing_semanal": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "sms": {
+      "enabled": false,
+      "locked": true
+     }
+    },
+    "sistema": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "un canal no disponible conserva su `enabled`",
+   "overrides": {
+    "alertas-2": {
+     "email": true
+    }
+   },
+   "available": [
+    "sms"
+   ],
+   "expect": {
+    "alertas-2": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "sms": {
+      "enabled": true,
+      "locked": true
+     },
+     "whatsapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "marketing_semanal": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "sms": {
+      "enabled": false,
+      "locked": true
+     }
+    },
+    "sistema": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "celda bloqueada en `false` con override en contra",
+   "overrides": {
+    "marketing_semanal": {
+     "sms": true
+    }
+   },
+   "available": [
+    "email",
+    "sms",
+    "whatsapp"
+   ],
+   "expect": {
+    "alertas-2": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "sms": {
+      "enabled": true,
+      "locked": true
+     },
+     "whatsapp": {
+      "enabled": true,
+      "locked": false
+     },
+     "email": {
+      "enabled": false,
+      "locked": false
+     }
+    },
+    "marketing_semanal": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "sms": {
+      "enabled": false,
+      "locked": true
+     }
+    },
+    "sistema": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "disponible un canal que la política no menciona",
+   "overrides": {},
+   "available": [
+    "telegram"
+   ],
+   "expect": {
+    "alertas-2": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "sms": {
+      "enabled": true,
+      "locked": true
+     },
+     "whatsapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": false,
+      "locked": true
+     }
+    },
+    "marketing_semanal": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "sms": {
+      "enabled": false,
+      "locked": true
+     }
+    },
+    "sistema": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  }
+ ]
+}

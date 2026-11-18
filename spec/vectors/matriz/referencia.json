@@ -1,0 +1,2299 @@
+{
+ "spec": "0",
+ "id": "matriz/referencia",
+ "kind": "matriz",
+ "policy": {
+  "security": {
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "push": {
+    "default": true,
+    "locked": true
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "invitations": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "digest": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "cases": [
+  {
+   "note": "sin overrides; disponibles: ninguno",
+   "overrides": {},
+   "available": [],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "sin overrides; disponibles: email",
+   "overrides": {},
+   "available": [
+    "email"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "sin overrides; disponibles: push",
+   "overrides": {},
+   "available": [
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "sin overrides; disponibles: email, push",
+   "overrides": {},
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "la persona pide email para la actividad; disponibles: ninguno",
+   "overrides": {
+    "activity": {
+     "email": true
+    }
+   },
+   "available": [],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "la persona pide email para la actividad; disponibles: email",
+   "overrides": {
+    "activity": {
+     "email": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "la persona pide email para la actividad; disponibles: push",
+   "overrides": {
+    "activity": {
+     "email": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "la persona pide email para la actividad; disponibles: email, push",
+   "overrides": {
+    "activity": {
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "la persona apaga el email de las invitaciones; disponibles: ninguno",
+   "overrides": {
+    "invitations": {
+     "email": false
+    }
+   },
+   "available": [],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "la persona apaga el email de las invitaciones; disponibles: email",
+   "overrides": {
+    "invitations": {
+     "email": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "la persona apaga el email de las invitaciones; disponibles: push",
+   "overrides": {
+    "invitations": {
+     "email": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "la persona apaga el email de las invitaciones; disponibles: email, push",
+   "overrides": {
+    "invitations": {
+     "email": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "override en contra de seguridad: se ignora; disponibles: ninguno",
+   "overrides": {
+    "security": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "override en contra de seguridad: se ignora; disponibles: email",
+   "overrides": {
+    "security": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "override en contra de seguridad: se ignora; disponibles: push",
+   "overrides": {
+    "security": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "override en contra de seguridad: se ignora; disponibles: email, push",
+   "overrides": {
+    "security": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "override de `inapp`: se ignora; disponibles: ninguno",
+   "overrides": {
+    "activity": {
+     "inapp": false
+    }
+   },
+   "available": [],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "override de `inapp`: se ignora; disponibles: email",
+   "overrides": {
+    "activity": {
+     "inapp": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "override de `inapp`: se ignora; disponibles: push",
+   "overrides": {
+    "activity": {
+     "inapp": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "override de `inapp`: se ignora; disponibles: email, push",
+   "overrides": {
+    "activity": {
+     "inapp": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "override igual al valor por defecto; disponibles: ninguno",
+   "overrides": {
+    "digest": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "override igual al valor por defecto; disponibles: email",
+   "overrides": {
+    "digest": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "override igual al valor por defecto; disponibles: push",
+   "overrides": {
+    "digest": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "override igual al valor por defecto; disponibles: email, push",
+   "overrides": {
+    "digest": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "todo lo editable invertido; disponibles: ninguno",
+   "overrides": {
+    "invitations": {
+     "email": false,
+     "push": true
+    },
+    "activity": {
+     "email": true,
+     "push": true
+    },
+    "digest": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "todo lo editable invertido; disponibles: email",
+   "overrides": {
+    "invitations": {
+     "email": false,
+     "push": true
+    },
+    "activity": {
+     "email": true,
+     "push": true
+    },
+    "digest": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "todo lo editable invertido; disponibles: push",
+   "overrides": {
+    "invitations": {
+     "email": false,
+     "push": true
+    },
+    "activity": {
+     "email": true,
+     "push": true
+    },
+    "digest": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "todo lo editable invertido; disponibles: email, push",
+   "overrides": {
+    "invitations": {
+     "email": false,
+     "push": true
+    },
+    "activity": {
+     "email": true,
+     "push": true
+    },
+    "digest": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": true,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": true,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": true,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "overrides sobre categoría y canal que no existen; disponibles: ninguno",
+   "overrides": {
+    "vieja": {
+     "email": true
+    },
+    "activity": {
+     "sms": true
+    }
+   },
+   "available": [],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "overrides sobre categoría y canal que no existen; disponibles: email",
+   "overrides": {
+    "vieja": {
+     "email": true
+    },
+    "activity": {
+     "sms": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "overrides sobre categoría y canal que no existen; disponibles: push",
+   "overrides": {
+    "vieja": {
+     "email": true
+    },
+    "activity": {
+     "sms": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  },
+  {
+   "note": "overrides sobre categoría y canal que no existen; disponibles: email, push",
+   "overrides": {
+    "vieja": {
+     "email": true
+    },
+    "activity": {
+     "sms": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": {
+    "security": {
+     "email": {
+      "enabled": true,
+      "locked": true
+     },
+     "push": {
+      "enabled": true,
+      "locked": true
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "invitations": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "activity": {
+     "email": {
+      "enabled": false,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    },
+    "digest": {
+     "email": {
+      "enabled": true,
+      "locked": false
+     },
+     "push": {
+      "enabled": false,
+      "locked": false
+     },
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     }
+    }
+   }
+  }
+ ]
+}

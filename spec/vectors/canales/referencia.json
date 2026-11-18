@@ -1,0 +1,1905 @@
+{
+ "spec": "0",
+ "id": "canales/referencia",
+ "kind": "canales",
+ "policy": {
+  "security": {
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "push": {
+    "default": true,
+    "locked": true
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "invitations": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "digest": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "cases": [
+  {
+   "category": "security",
+   "overrides": {},
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "security",
+   "overrides": {},
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {},
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {},
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "security",
+   "overrides": {
+    "security": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {},
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {},
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {},
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {},
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "invitations",
+   "overrides": {
+    "invitations": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {},
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {},
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {},
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {},
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "activity",
+   "overrides": {
+    "activity": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {},
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {},
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {},
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {},
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": true,
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email",
+    "push"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": true,
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "email"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": false,
+     "push": true
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": [
+    "push"
+   ]
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "push"
+   ],
+   "expect": []
+  },
+  {
+   "category": "digest",
+   "overrides": {
+    "digest": {
+     "email": false,
+     "push": false
+    }
+   },
+   "available": [
+    "email",
+    "push"
+   ],
+   "expect": []
+  }
+ ]
+}

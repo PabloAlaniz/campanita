@@ -1,0 +1,135 @@
+{
+ "spec": "0",
+ "id": "matriz/nombres-heredados",
+ "kind": "matriz",
+ "policy": {
+  "constructor": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "constructor": {
+    "default": true
+   },
+   "email": {
+    "default": false
+   }
+  },
+  "activity": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   }
+  }
+ },
+ "cases": [
+  {
+   "note": "sin overrides",
+   "overrides": {},
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": {
+    "constructor": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "constructor": {
+      "enabled": true,
+      "locked": false
+     },
+     "email": {
+      "enabled": false,
+      "locked": false
+     }
+    },
+    "activity": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": true,
+      "locked": false
+     }
+    }
+   }
+  },
+  {
+   "note": "`constructor` apagado por override",
+   "overrides": {
+    "constructor": {
+     "constructor": false
+    }
+   },
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": {
+    "constructor": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "constructor": {
+      "enabled": false,
+      "locked": false
+     },
+     "email": {
+      "enabled": false,
+      "locked": false
+     }
+    },
+    "activity": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": true,
+      "locked": false
+     }
+    }
+   }
+  },
+  {
+   "note": "`constructor` no disponible",
+   "overrides": {},
+   "available": [
+    "email"
+   ],
+   "expect": {
+    "constructor": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "constructor": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": false,
+      "locked": false
+     }
+    },
+    "activity": {
+     "inapp": {
+      "enabled": true,
+      "locked": true
+     },
+     "email": {
+      "enabled": true,
+      "locked": false
+     }
+    }
+   }
+  }
+ ]
+}

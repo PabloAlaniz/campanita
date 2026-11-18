@@ -1,0 +1,12 @@
+{
+  "name": "campanita-monorepo",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "build": "pnpm --filter campanita build",
+    "typecheck": "pnpm --filter campanita typecheck",
+    "test": "pnpm --filter campanita test",
+    "check:package": "pnpm --filter campanita check:package",
+    "check:spec": "python3 tools/gen_vectors.py --check"
+  }
+}

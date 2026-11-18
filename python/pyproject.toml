@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "campanita"
+version = "0.0.1"
+description = "Notificaciones con las mismas reglas en cualquier stack: una política, cualquier base, cualquier canal, cualquier bandeja."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{ name = "Pablo Alaniz" }]
+keywords = ["notifications", "notificaciones", "inbox", "preferences", "push", "email"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: Spanish",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/PabloAlaniz/campanita"
+Repository = "https://github.com/PabloAlaniz/campanita"
+Specification = "https://github.com/PabloAlaniz/campanita/blob/main/spec/SPEC.md"
+
+[dependency-groups]
+dev = [
+    "jsonschema>=4.23",
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/campanita"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+strict = true
+files = ["src"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+# El texto es español: las tildes y la ñ en docstrings y mensajes son a propósito.
+ignore = ["RUF001", "RUF002", "RUF003"]

@@ -1,0 +1,187 @@
+{
+ "spec": "0",
+ "id": "preferencias/nombres-heredados",
+ "kind": "preferencias",
+ "policy": {
+  "constructor": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "constructor": {
+    "default": true
+   },
+   "email": {
+    "default": false
+   }
+  },
+  "activity": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   }
+  }
+ },
+ "cases": [
+  {
+   "note": "cambiar el canal `constructor` de la categoría `constructor`",
+   "patch": {
+    "constructor": {
+     "constructor": false
+    }
+   },
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": {
+    "ok": true,
+    "changes": [
+     {
+      "category": "constructor",
+      "channel": "constructor",
+      "enabled": false
+     }
+    ]
+   }
+  },
+  {
+   "note": "`toString` no es una categoría",
+   "patch": {
+    "toString": {}
+   },
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "toString",
+     "channel": null,
+     "reason": "unknown_category"
+    }
+   }
+  },
+  {
+   "note": "`valueOf` no es una categoría",
+   "patch": {
+    "valueOf": {
+     "email": true
+    }
+   },
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "valueOf",
+     "channel": null,
+     "reason": "unknown_category"
+    }
+   }
+  },
+  {
+   "note": "`__proto__` no es una categoría",
+   "patch": {
+    "__proto__": {}
+   },
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "__proto__",
+     "channel": null,
+     "reason": "unknown_category"
+    }
+   }
+  },
+  {
+   "note": "`toString` no es un canal",
+   "patch": {
+    "activity": {
+     "toString": true
+    }
+   },
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "toString",
+     "reason": "unknown_channel"
+    }
+   }
+  },
+  {
+   "note": "`constructor` no es un canal de `activity`",
+   "patch": {
+    "activity": {
+     "constructor": true
+    }
+   },
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "constructor",
+     "reason": "unknown_channel"
+    }
+   }
+  },
+  {
+   "note": "`__proto__` no es un canal",
+   "patch": {
+    "activity": {
+     "__proto__": true
+    }
+   },
+   "available": [
+    "constructor",
+    "email"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "activity",
+     "channel": "__proto__",
+     "reason": "unknown_channel"
+    }
+   }
+  },
+  {
+   "note": "`constructor` no disponible",
+   "patch": {
+    "constructor": {
+     "constructor": true
+    }
+   },
+   "available": [
+    "email"
+   ],
+   "expect": {
+    "ok": false,
+    "error": {
+     "category": "constructor",
+     "channel": "constructor",
+     "reason": "unavailable"
+    }
+   }
+  }
+ ]
+}
