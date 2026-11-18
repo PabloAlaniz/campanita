@@ -1,0 +1,435 @@
+{
+ "spec": "0",
+ "id": "bandeja/basico",
+ "kind": "bandeja",
+ "steps": [
+  {
+   "note": "una bandeja vacía",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "sin avisos no hay nada sin leer",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": null,
+   "expect": 0
+  },
+  {
+   "note": "el primer aviso",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Uno",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Uno",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "el segundo",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Dos",
+    "body": "Con cuerpo",
+    "action_url": "/dos",
+    "payload": {
+     "k": [
+      1,
+      {
+       "a": null
+      }
+     ]
+    },
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n2",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Dos",
+     "body": "Con cuerpo",
+     "action_url": "/dos",
+     "payload": {
+      "k": [
+       1,
+       {
+        "a": null
+       }
+      ]
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 2000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "el tercero",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "security",
+    "title": "Tres",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "security",
+     "title": "Tres",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "la bandeja sale del más nuevo al más viejo",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n3",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "security",
+      "title": "Tres",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n2",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Dos",
+      "body": "Con cuerpo",
+      "action_url": "/dos",
+      "payload": {
+       "k": [
+        1,
+        {
+         "a": null
+        }
+       ]
+      },
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 2000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Uno",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "tres sin leer",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": null,
+   "expect": 3
+  },
+  {
+   "note": "marcar uno como leído",
+   "op": "mark_read",
+   "id": "n2",
+   "recipient_id": "ana",
+   "at_ms": 5000,
+   "expect": true
+  },
+  {
+   "note": "marcarlo de nuevo no cambia nada",
+   "op": "mark_read",
+   "id": "n2",
+   "recipient_id": "ana",
+   "at_ms": 9000,
+   "expect": false
+  },
+  {
+   "note": "la hora de lectura es la primera",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n3",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "security",
+      "title": "Tres",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n2",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Dos",
+      "body": "Con cuerpo",
+      "action_url": "/dos",
+      "payload": {
+       "k": [
+        1,
+        {
+         "a": null
+        }
+       ]
+      },
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 2000,
+      "read_at_ms": 5000
+     },
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Uno",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "quedan dos sin leer",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": null,
+   "expect": 2
+  },
+  {
+   "note": "sólo los no leídos",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "unread_only": true,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n3",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "security",
+      "title": "Tres",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Uno",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "por categoría",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "category": "security",
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n3",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "security",
+      "title": "Tres",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "una categoría sin avisos",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "category": "digest",
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "categoría y no leídos a la vez",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "category": "activity",
+    "unread_only": true,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Uno",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "un aviso que no existe",
+   "op": "mark_read",
+   "id": "nope",
+   "recipient_id": "ana",
+   "at_ms": 6000,
+   "expect": false
+  },
+  {
+   "note": "el aviso de otra persona",
+   "op": "mark_read",
+   "id": "n1",
+   "recipient_id": "beto",
+   "at_ms": 6000,
+   "expect": false
+  },
+  {
+   "note": "el intento ajeno no cambió nada",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": null,
+   "expect": 2
+  }
+ ]
+}

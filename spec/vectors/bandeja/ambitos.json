@@ -1,0 +1,548 @@
+{
+ "spec": "0",
+ "id": "bandeja/ambitos",
+ "kind": "bandeja",
+ "steps": [
+  {
+   "note": "un aviso de cuenta, sin ámbito",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Cuenta",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Cuenta",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "uno del ámbito x",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": "x",
+    "dedupe_key": null
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n2",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": "x",
+     "dedupe_key": null,
+     "created_at_ms": 2000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "otro del ámbito x",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "security",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": "x",
+    "dedupe_key": null
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "security",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": "x",
+     "dedupe_key": null,
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "uno del ámbito y",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": "y",
+    "dedupe_key": null
+   },
+   "id": "n4",
+   "at_ms": 4000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": "y",
+     "dedupe_key": null,
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "uno de otra persona en x",
+   "op": "add",
+   "draft": {
+    "recipient_id": "beto",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": "x",
+    "dedupe_key": null
+   },
+   "id": "n5",
+   "at_ms": 5000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n5",
+     "recipient_id": "beto",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": "x",
+     "dedupe_key": null,
+     "created_at_ms": 5000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "sin filtro de ámbito se ve todo lo propio",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n4",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "y",
+      "dedupe_key": null,
+      "created_at_ms": 4000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n3",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "security",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "x",
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n2",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "x",
+      "dedupe_key": null,
+      "created_at_ms": 2000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Cuenta",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "con ámbito x: lo de x y lo que no tiene ámbito",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "scope": "x",
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n3",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "security",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "x",
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n2",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "x",
+      "dedupe_key": null,
+      "created_at_ms": 2000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Cuenta",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "con ámbito y",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "scope": "y",
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n4",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "y",
+      "dedupe_key": null,
+      "created_at_ms": 4000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Cuenta",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "un ámbito sin avisos igual muestra los de cuenta",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "scope": "z",
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Cuenta",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "sin leer en total",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": null,
+   "expect": 4
+  },
+  {
+   "note": "sin leer en x",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": "x",
+   "cap": null,
+   "expect": 3
+  },
+  {
+   "note": "sin leer en z",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": "z",
+   "cap": null,
+   "expect": 1
+  },
+  {
+   "note": "ámbito y categoría",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "scope": "x",
+    "category": "security",
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n3",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "security",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "x",
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "ámbito y paginado",
+   "op": "list",
+   "query": {
+    "limit": 2,
+    "scope": "x",
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n3",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "security",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "x",
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n2",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "x",
+      "dedupe_key": null,
+      "created_at_ms": 2000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": {
+     "created_at_ms": 2000,
+     "id": "n2"
+    }
+   }
+  },
+  {
+   "note": "el cursor respeta el ámbito",
+   "op": "list",
+   "query": {
+    "limit": 2,
+    "scope": "x",
+    "cursor": {
+     "created_at_ms": 2000,
+     "id": "n2"
+    },
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Cuenta",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "marcar todo en x marca también los de cuenta",
+   "op": "mark_all_read",
+   "recipient_id": "ana",
+   "before_ms": 99000,
+   "at_ms": 10000,
+   "scope": "x",
+   "category": null,
+   "expect": 3
+  },
+  {
+   "note": "lo de y sigue sin leer",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "unread_only": true,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n4",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "y",
+      "dedupe_key": null,
+      "created_at_ms": 4000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "lo de la otra persona no se tocó",
+   "op": "count_unread",
+   "recipient_id": "beto",
+   "scope": "x",
+   "cap": null,
+   "expect": 1
+  }
+ ]
+}

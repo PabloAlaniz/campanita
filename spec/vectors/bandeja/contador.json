@@ -1,0 +1,261 @@
+{
+ "spec": "0",
+ "id": "bandeja/contador",
+ "kind": "bandeja",
+ "steps": [
+  {
+   "note": "aviso 1",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 2",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n2",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 2000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 3",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 4",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n4",
+   "at_ms": 4000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 5",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n5",
+   "at_ms": 5000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n5",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 5000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "sin tope",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": null,
+   "expect": 5
+  },
+  {
+   "note": "tope mayor que el total",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": 99,
+   "expect": 5
+  },
+  {
+   "note": "tope igual al total",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": 5,
+   "expect": 5
+  },
+  {
+   "note": "tope menor que el total",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": 3,
+   "expect": 3
+  },
+  {
+   "note": "tope de uno: alcanza para saber si hay algo",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": 1,
+   "expect": 1
+  },
+  {
+   "note": "leer uno",
+   "op": "mark_read",
+   "id": "n3",
+   "recipient_id": "ana",
+   "at_ms": 9000,
+   "expect": true
+  },
+  {
+   "note": "los leídos no cuentan",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": 99,
+   "expect": 4
+  },
+  {
+   "note": "otra persona",
+   "op": "count_unread",
+   "recipient_id": "beto",
+   "scope": null,
+   "cap": 3,
+   "expect": 0
+  },
+  {
+   "note": "tope cero",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": 0,
+   "expect": {
+    "error": "invalid_cap"
+   }
+  },
+  {
+   "note": "tope negativo",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": -2,
+   "expect": {
+    "error": "invalid_cap"
+   }
+  }
+ ]
+}

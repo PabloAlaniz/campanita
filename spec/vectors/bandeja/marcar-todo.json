@@ -1,0 +1,330 @@
+{
+ "spec": "0",
+ "id": "bandeja/marcar-todo",
+ "kind": "bandeja",
+ "steps": [
+  {
+   "note": "aviso 1",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 2",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "security",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n2",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "security",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 2000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 3",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 4",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n4",
+   "at_ms": 4000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "de otra persona",
+   "op": "add",
+   "draft": {
+    "recipient_id": "beto",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n5",
+   "at_ms": 2500,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n5",
+     "recipient_id": "beto",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 2500,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "uno ya leído de antes",
+   "op": "mark_read",
+   "id": "n1",
+   "recipient_id": "ana",
+   "at_ms": 1500,
+   "expect": true
+  },
+  {
+   "note": "el corte es estricto: lo creado justo en ese instante no se marca",
+   "op": "mark_all_read",
+   "recipient_id": "ana",
+   "before_ms": 3000,
+   "at_ms": 9000,
+   "scope": null,
+   "category": null,
+   "expect": 1
+  },
+  {
+   "note": "se marcó sólo lo anterior al corte, y lo ya leído conserva su hora",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n4",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 4000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n3",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n2",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "security",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 2000,
+      "read_at_ms": 9000
+     },
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": 1500
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "repetirlo no marca nada",
+   "op": "mark_all_read",
+   "recipient_id": "ana",
+   "before_ms": 3000,
+   "at_ms": 9500,
+   "scope": null,
+   "category": null,
+   "expect": 0
+  },
+  {
+   "note": "por categoría, sin avisos que coincidan",
+   "op": "mark_all_read",
+   "recipient_id": "ana",
+   "before_ms": 99000,
+   "at_ms": 9600,
+   "scope": null,
+   "category": "security",
+   "expect": 0
+  },
+  {
+   "note": "por categoría",
+   "op": "mark_all_read",
+   "recipient_id": "ana",
+   "before_ms": 99000,
+   "at_ms": 9700,
+   "scope": null,
+   "category": "activity",
+   "expect": 2
+  },
+  {
+   "note": "no queda nada sin leer",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": null,
+   "expect": 0
+  },
+  {
+   "note": "lo de la otra persona sigue sin leer",
+   "op": "count_unread",
+   "recipient_id": "beto",
+   "scope": null,
+   "cap": null,
+   "expect": 1
+  },
+  {
+   "note": "una persona sin avisos",
+   "op": "mark_all_read",
+   "recipient_id": "carla",
+   "before_ms": 99000,
+   "at_ms": 9800,
+   "scope": null,
+   "category": null,
+   "expect": 0
+  },
+  {
+   "note": "un corte anterior a todo",
+   "op": "mark_all_read",
+   "recipient_id": "beto",
+   "before_ms": 1,
+   "at_ms": 9900,
+   "scope": null,
+   "category": null,
+   "expect": 0
+  }
+ ]
+}

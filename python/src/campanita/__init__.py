@@ -7,6 +7,7 @@ puertos (`campanita.ports`).
 
 from ._catalog import Catalog, Draft, TypeSpec, build_notification, parse_catalog
 from ._channels import effective_matrix, resolve_channels, validate_patch
+from ._inbox import AddResult, Cursor, FeedPage, FeedQuery, Notification, StoreError, StoreReason
 from ._policy import Policy, parse_policy
 from ._templates import render_template
 from ._types import (
@@ -32,20 +33,27 @@ SPEC_VERSION = "0"
 __all__ = [
     "INBOX",
     "SPEC_VERSION",
+    "AddResult",
     "Catalog",
     "Cell",
     "Change",
+    "Cursor",
     "Draft",
     "EventReason",
     "EventRejected",
+    "FeedPage",
+    "FeedQuery",
     "InvalidCatalog",
     "InvalidPolicy",
     "InvalidTemplate",
     "MatrixCell",
+    "Notification",
     "Overrides",
     "PatchRejected",
     "Policy",
     "RejectionReason",
+    "StoreError",
+    "StoreReason",
     "TemplateError",
     "TemplateReason",
     "TypeSpec",

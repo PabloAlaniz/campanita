@@ -73,9 +73,32 @@ servicio; el aviso armado usa los de TypeScript (`recipientId`, `dedupeKey`).
 Las plantillas sólo reemplazan `{variables}` por texto o enteros. No hay formatos ni expresiones:
 lo que hacen es igual en todos los lenguajes.
 
-Los puertos (`NotificationStore`, `PreferenceStore`, `DeliveryChannel`) son un borrador: fijan la
-forma que van a tener la base, los canales de entrega y las preferencias, pero el spec todavía
-no los cubre.
+## La bandeja
+
+Un almacén guarda los avisos y contesta la bandeja. El paquete trae uno en memoria:
+
+```ts
+import { MemoryStore } from 'campanita';
+
+const store = new MemoryStore();
+const added = await store.add(draft, { id: crypto.randomUUID(), createdAt: new Date() });
+added.created; // false si esa persona ya tenía un aviso con la misma dedupeKey
+
+const page = await store.listFeed({ recipientId: 'user-7', limit: 20 });
+if (page.nextCursor) {
+  await store.listFeed({ recipientId: 'user-7', limit: 20, cursor: page.nextCursor });
+}
+
+await store.countUnread('user-7', { cap: 100 });
+await store.markRead(page.items[0]!.id, 'user-7', new Date());
+await store.markAllRead('user-7', { before: page.items[0]!.createdAt, readAt: new Date() });
+```
+
+Para una base de verdad, escribí un adaptador que cumpla `NotificationStore` y probalo con
+`runStoreVector`: ver [`docs/puertos.md`](../docs/puertos.md).
+
+Los puertos de preferencias y de canales de entrega (`PreferenceStore`, `DeliveryChannel`) son un
+borrador: el spec todavía no los cubre.
 
 ## Desarrollo
 

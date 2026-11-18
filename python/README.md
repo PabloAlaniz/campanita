@@ -74,8 +74,41 @@ build_notification(catalog, {"type": "comments.new", "recipient_id": "user-7", "
 Las plantillas sólo reemplazan `{variables}` por texto o enteros. No hay formatos ni expresiones:
 lo que hacen es igual en todos los lenguajes.
 
-Los puertos (`campanita.ports`) son un borrador: fijan la forma que van a tener la base, los
-canales de entrega y las preferencias, pero el spec todavía no los cubre.
+## La bandeja
+
+Un almacén guarda los avisos y contesta la bandeja. Hay dos incluidos, y los dos pasan las mismas
+secuencias del spec:
+
+```python
+import sqlite3
+from datetime import UTC, datetime
+from uuid import uuid4
+from campanita import FeedQuery
+from campanita.stores import MemoryStore, SqliteStore
+
+store = SqliteStore(sqlite3.connect("avisos.db", isolation_level=None))
+store.create_schema()  # o MemoryStore(), sin base
+
+added = await store.add(draft, id=str(uuid4()), created_at=datetime.now(UTC))
+added.created  # False si esa persona ya tenía un aviso con la misma dedupe_key
+
+page = await store.list_feed(FeedQuery("user-7", limit=20))
+if page.next_cursor:
+    older = await store.list_feed(FeedQuery("user-7", limit=20, cursor=page.next_cursor))
+
+await store.count_unread("user-7", cap=100)
+await store.mark_read(page.items[0].id, "user-7", datetime.now(UTC))
+await store.mark_all_read("user-7", before=page.items[0].created_at, read_at=datetime.now(UTC))
+```
+
+`SqliteStore` usa `sqlite3` de la biblioteca estándar y bloquea mientras corre cada consulta:
+alcanza para aplicaciones chicas, herramientas y tests.
+
+Para otra base, escribí un adaptador que cumpla `campanita.ports.NotificationStore` y probalo con
+`campanita.conformance.run_store_vector`: ver [`docs/puertos.md`](../docs/puertos.md).
+
+Los puertos de preferencias y de canales de entrega (`campanita.ports`) son un borrador: el spec
+todavía no los cubre.
 
 ## Desarrollo
 

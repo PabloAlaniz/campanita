@@ -31,10 +31,11 @@ const VECTORS = join(SPEC, 'vectors');
 interface Vector {
   spec: string;
   id: string;
-  kind: 'politica' | 'canales' | 'matriz' | 'preferencias' | 'plantilla' | 'catalogo' | 'aviso';
+  kind: 'politica' | 'canales' | 'matriz' | 'preferencias' | 'plantilla' | 'catalogo' | 'aviso' | 'bandeja';
   policy?: unknown;
   catalog?: unknown;
-  cases: Array<Record<string, unknown>>;
+  /** Los de tipo `bandeja` tienen `steps` y los corre test/stores.test.ts. */
+  cases?: Array<Record<string, unknown>>;
 }
 
 function load(): Vector[] {
@@ -67,6 +68,7 @@ it('todos los tipos de vector tienen quien los corra', () => {
   const kinds = new Set(vectors.map((vector) => vector.kind));
   expect([...kinds].sort()).toEqual([
     'aviso',
+    'bandeja',
     'canales',
     'catalogo',
     'matriz',
@@ -77,8 +79,9 @@ it('todos los tipos de vector tienen quien los corra', () => {
 });
 
 for (const vector of vectors) {
+  if (vector.kind === 'bandeja') continue;
   describe(vector.id, () => {
-    vector.cases.forEach((test, index) => {
+    (vector.cases ?? []).forEach((test, index) => {
       it(label(index, test), () => {
         switch (vector.kind) {
           case 'politica':
@@ -201,6 +204,9 @@ for (const vector of vectors) {
             expect({ reason: rejected.reason, detail: rejected.detail }).toEqual(expected.error);
             return;
           }
+
+          case 'bandeja':
+            throw new Error('los vectores de bandeja no tienen casos');
         }
       });
     });

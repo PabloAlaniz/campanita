@@ -6,8 +6,7 @@
   "required": [
     "spec",
     "id",
-    "kind",
-    "cases"
+    "kind"
   ],
   "additionalProperties": false,
   "properties": {
@@ -26,7 +25,8 @@
         "preferencias",
         "plantilla",
         "catalogo",
-        "aviso"
+        "aviso",
+        "bandeja"
       ]
     },
     "policy": {
@@ -39,6 +39,10 @@
     "catalog": {
       "type": "object",
       "description": "El catálogo de tipos de los vectores de `aviso`."
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1
     }
   },
   "allOf": [
@@ -80,7 +84,10 @@
               }
             }
           }
-        }
+        },
+        "required": [
+          "cases"
+        ]
       }
     },
     {
@@ -93,7 +100,8 @@
       },
       "then": {
         "required": [
-          "policy"
+          "policy",
+          "cases"
         ],
         "properties": {
           "cases": {
@@ -144,7 +152,8 @@
       },
       "then": {
         "required": [
-          "policy"
+          "policy",
+          "cases"
         ],
         "properties": {
           "cases": {
@@ -210,7 +219,8 @@
       },
       "then": {
         "required": [
-          "policy"
+          "policy",
+          "cases"
         ],
         "properties": {
           "cases": {
@@ -434,7 +444,10 @@
               }
             }
           }
-        }
+        },
+        "required": [
+          "cases"
+        ]
       }
     },
     {
@@ -447,7 +460,8 @@
       },
       "then": {
         "required": [
-          "policy"
+          "policy",
+          "cases"
         ],
         "not": {
           "required": [
@@ -492,7 +506,8 @@
       "then": {
         "required": [
           "policy",
-          "catalog"
+          "catalog",
+          "cases"
         ],
         "properties": {
           "cases": {
@@ -628,6 +643,245 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "bandeja"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "steps"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "cases"
+              ]
+            },
+            {
+              "required": [
+                "policy"
+              ]
+            },
+            {
+              "required": [
+                "catalog"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "steps": {
+            "items": {
+              "type": "object",
+              "required": [
+                "note",
+                "op",
+                "expect"
+              ],
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "op": {
+                  "enum": [
+                    "add",
+                    "list",
+                    "count_unread",
+                    "mark_read",
+                    "mark_all_read"
+                  ]
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "add"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "draft",
+                      "id",
+                      "at_ms"
+                    ],
+                    "properties": {
+                      "expect": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "created",
+                              "notification"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "created": {
+                                "type": "boolean"
+                              },
+                              "notification": {
+                                "$ref": "#/definitions/notification"
+                              }
+                            }
+                          },
+                          {
+                            "$ref": "#/definitions/store_error"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "list"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "query"
+                    ],
+                    "properties": {
+                      "expect": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "items",
+                              "next_cursor"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "$ref": "#/definitions/notification"
+                                }
+                              },
+                              "next_cursor": {
+                                "oneOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "created_at_ms",
+                                      "id"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "created_at_ms": {
+                                        "type": "integer"
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "$ref": "#/definitions/store_error"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "count_unread"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "recipient_id",
+                      "scope",
+                      "cap"
+                    ],
+                    "properties": {
+                      "expect": {
+                        "oneOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          {
+                            "$ref": "#/definitions/store_error"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "mark_read"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "id",
+                      "recipient_id",
+                      "at_ms"
+                    ],
+                    "properties": {
+                      "expect": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "mark_all_read"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "recipient_id",
+                      "before_ms",
+                      "at_ms",
+                      "scope",
+                      "category"
+                    ],
+                    "properties": {
+                      "expect": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
     }
   ],
   "definitions": {
@@ -679,6 +933,93 @@
               "type": "boolean"
             }
           }
+        }
+      }
+    },
+    "notification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "recipient_id",
+        "type",
+        "category",
+        "title",
+        "body",
+        "action_url",
+        "payload",
+        "scope",
+        "dedupe_key",
+        "created_at_ms",
+        "read_at_ms"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "recipient_id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "body": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "action_url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "payload": {
+          "type": "object"
+        },
+        "scope": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dedupe_key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at_ms": {
+          "type": "integer"
+        },
+        "read_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
+    },
+    "store_error": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "enum": [
+            "duplicate_id",
+            "invalid_limit",
+            "invalid_cap"
+          ]
         }
       }
     }

@@ -5,14 +5,16 @@ Todo port de campanita tiene que comportarse como se describe acá. Los archivos
 `tools/gen_vectors.py`, una implementación independiente, para que ningún port se valide a sí
 mismo.
 
-La versión 0 es un borrador y puede cambiar sin aviso. Cubre dos cosas:
+La versión 0 es un borrador y puede cambiar sin aviso. Cubre tres cosas:
 
 - **Por qué canales sale un aviso y qué puede cambiar el usuario**: la política, la resolución de
   canales, la matriz efectiva y el cambio de preferencias.
 - **Cómo se arma un aviso**: las plantillas, el catálogo de tipos y el paso de un evento a un
   aviso listo para guardar.
+- **La bandeja**: guardar un aviso sin duplicarlo, listarlo por páginas, contar los no leídos y
+  marcarlos como leídos, sobre cualquier base.
 
-Guardar el aviso, la bandeja y las entregas todavía no están especificados (ver
+Las entregas por canales fuera de la bandeja todavía no están especificadas (ver
 `docs/hoja-de-ruta.md`).
 
 El spec no nombra categorías, canales ni tipos propios. Los que aparecen en los ejemplos y en los
@@ -272,10 +274,102 @@ opcionales ausentes en nulo.
 - **`action_url` no se interpreta.** Quien la muestre como enlace tiene que revisar su esquema:
   el spec no impide un `javascript:`.
 
+## La bandeja
+
+La bandeja es lo que se guarda y se lee de un **almacén**. El spec no dice sobre qué base está
+hecho; dice qué tiene que contestar. Un almacén cumple cuando reproduce, paso por paso, las
+secuencias de `vectors/bandeja/`.
+
+Un **aviso guardado** es un aviso armado más tres campos:
+
+- `id`: texto. Lo provee quien llama y el almacén no lo interpreta.
+- `created_at`: la fecha en que se guardó. La provee quien llama al guardar, nunca quien emite
+  el evento.
+- `read_at`: nulo mientras no se leyó. Es lo único que cambia después de creado.
+
+Las fechas tienen resolución de milisegundos. Los vectores las escriben como milisegundos desde
+1970 (`created_at_ms`, `read_at_ms`).
+
+Dos reglas valen para todas las operaciones:
+
+- **Todo pide el destinatario.** Un aviso sólo lo ve y lo cambia su `recipient_id`, comparado
+  como texto exacto. Con el destinatario equivocado, un aviso se comporta como si no existiera.
+- **El ámbito es un filtro, no un permiso.** Con un ámbito, entran los avisos de ese ámbito y los
+  que no tienen ámbito (los avisos de cuenta se ven siempre). Sin ámbito, entran todos.
+
+### Guardar
+
+`add(aviso, id, created_at)` devuelve el aviso guardado y si se creó.
+
+```text
+si el aviso tiene dedupe_key y ya hay uno con el mismo recipient_id y dedupe_key:
+    devolver ese aviso, creado = falso       no se escribe nada
+si ya hay un aviso con ese id:
+    rechazar con duplicate_id
+guardar con read_at nulo y devolverlo, creado = verdadero
+```
+
+- **La clave es por persona.** La misma clave para otra persona crea otro aviso; la misma clave
+  en otro ámbito, no.
+- **El repetido no pisa nada.** Vuelve el aviso original tal como está, también si ya fue leído.
+  El `id` y el contenido del repetido se descartan.
+- **Sin clave, nada es un repetido.** Dos avisos idénticos sin clave son dos avisos.
+- **Revisar la clave y guardar es una sola operación.** Dos pedidos simultáneos con la misma
+  clave dejan un solo aviso. Los vectores no pueden probar la simultaneidad: es responsabilidad
+  de cada adaptador.
+
+### Listar
+
+`list(consulta)` devuelve una página y el cursor de la siguiente.
+
+| Campo de la consulta | Efecto |
+|---|---|
+| `recipient_id` | obligatorio |
+| `limit` | obligatorio; cuántos avisos como máximo |
+| `cursor` | desde dónde seguir; ausente o nulo, desde el principio |
+| `unread_only` | sólo los que tienen `read_at` nulo |
+| `category` | sólo los de esa categoría |
+| `scope` | el filtro de ámbito |
+
+- **El orden es del más nuevo al más viejo**: por `created_at` descendente y, a igual fecha, por
+  `id` descendente comparado por punto de código Unicode. En UTF-8 eso es el orden de los bytes.
+- **El cursor es la posición del último aviso de la página**: su `created_at` y su `id`. La
+  página siguiente trae lo que está estrictamente después de esa posición en el orden. El cursor
+  no necesita corresponder a un aviso que exista.
+- **Los filtros se aplican antes de cortar la página.**
+- **`next_cursor` es nulo cuando no queda nada más**, también si la página salió completa.
+- Un aviso que llega entre una página y la siguiente no hace repetir ni saltear ninguno de los
+  anteriores.
+- `limit` tiene que ser un entero mayor que cero; si no, se rechaza con `invalid_limit`. El spec
+  no fija un máximo.
+
+### Contar los no leídos
+
+`count_unread(recipient_id, scope, cap)` devuelve cuántos avisos visibles tienen `read_at` nulo.
+
+- Con `cap`, el resultado es el menor entre la cuenta y `cap`. Sirve a una interfaz que muestra
+  "99+": no necesita el total exacto, y el almacén puede dejar de contar ahí.
+- `cap` es nulo o un entero mayor que cero; si no, se rechaza con `invalid_cap`.
+
+### Marcar como leído
+
+`mark_read(id, recipient_id, read_at)` devuelve verdadero sólo si el aviso pasó de no leído a
+leído.
+
+- Si el aviso no existe, es de otra persona o ya estaba leído, devuelve falso y no cambia nada.
+- **La hora de lectura es la primera.** Marcar de nuevo no la mueve.
+
+`mark_all_read(recipient_id, before, read_at, scope, category)` marca los avisos visibles, no
+leídos, con `created_at` **estrictamente anterior** a `before`, y devuelve cuántos cambió.
+
+- `before` es hasta dónde vio la persona. El corte estricto evita marcar como leído un aviso que
+  llegó en el mismo instante y que la persona no llegó a ver.
+- Los que ya estaban leídos conservan su hora.
+
 ## Vectores
 
-Cada archivo de `vectors/` cumple `schemas/vector.schema.json` y tiene `spec`, `id`, `kind` y
-`cases`.
+Cada archivo de `vectors/` cumple `schemas/vector.schema.json` y tiene `spec`, `id`, `kind` y sus
+casos.
 
 | `kind` | Qué prueba | Cada caso |
 |---|---|---|
@@ -286,9 +380,15 @@ Cada archivo de `vectors/` cumple `schemas/vector.schema.json` y tiene `spec`, `
 | `plantilla` | plantillas | `template`, `payload`, `expect` |
 | `catalogo` | validación del catálogo | `catalog`, `valid` |
 | `aviso` | armado del aviso | `event`, `expect` |
+| `bandeja` | la bandeja sobre un almacén | secuencia de pasos (ver abajo) |
 
 Los vectores de `canales`, `matriz`, `preferencias` y `catalogo` llevan la `policy` una vez por
 archivo; los de `aviso` llevan además el `catalog`.
+
+Los vectores de `bandeja` no tienen `cases` sino `steps`: una secuencia que se corre en orden
+sobre un almacén vacío. Cada paso tiene `op` (`add`, `list`, `count_unread`, `mark_read` o
+`mark_all_read`), sus argumentos y `expect`, que es lo que la operación devuelve o
+`{"error": motivo}` cuando la rechaza.
 
 `python3 tools/gen_vectors.py` los regenera; con `--check` falla si los archivos del repo no
 coinciden con lo generado.

@@ -32,14 +32,21 @@ export type {
   TemplateReason,
   TypeSpec,
 } from './core/types.js';
+export { StoreError } from './core/inbox.js';
 export type {
-  DeliveryChannel,
-  DeliveryOutcome,
-  DeliveryResult,
+  AddResult,
   FeedCursor,
   FeedPage,
   FeedQuery,
   Notification,
+  StoreReason,
+} from './core/inbox.js';
+export { notificationToWire, runStoreVector } from './conformance.js';
+export { MemoryStore } from './stores/memory.js';
+export type {
+  DeliveryChannel,
+  DeliveryOutcome,
+  DeliveryResult,
   NotificationStore,
   PreferenceStore,
 } from './ports.js';

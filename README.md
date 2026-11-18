@@ -3,8 +3,9 @@
 Notificaciones con las mismas reglas en cualquier stack.
 
 > **Borrador.** Hoy existe el núcleo en Python y TypeScript: decide por qué canales sale un
-> aviso, qué puede cambiar la persona y cómo se arma un aviso a partir de un evento. Todavía no
-> hay adaptadores de base ni de canal. La [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene.
+> aviso, qué puede cambiar la persona, cómo se arma un aviso a partir de un evento y cómo se
+> guarda y se lee la bandeja. Todavía no hay adaptadores de canal. La
+> [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene.
 
 Casi todo producto termina con una campanita: una bandeja de avisos, una pantalla de preferencias
 y uno o dos canales para avisar afuera. Y casi siempre se escribe de nuevo, atado a una base y a
@@ -84,6 +85,22 @@ build_notification(catalog, {
 })
 # Draft(recipient_id='user-7', type='comments.new', category='activity',
 #       title='Ana comentó en Presupuesto', body=None, ...)
+```
+
+El aviso se guarda en un almacén, que puede ser cualquier base. La bandeja se lee de ahí:
+
+```python
+from datetime import UTC, datetime
+from uuid import uuid4
+from campanita import FeedQuery
+from campanita.stores import MemoryStore
+
+store = MemoryStore()
+await store.add(draft, id=str(uuid4()), created_at=datetime.now(UTC))
+
+page = await store.list_feed(FeedQuery("user-7", limit=20))
+await store.count_unread("user-7", cap=100)
+await store.mark_read(page.items[0].id, "user-7", datetime.now(UTC))
 ```
 
 Más detalle en [`python/README.md`](python/README.md) y [`ts/README.md`](ts/README.md).

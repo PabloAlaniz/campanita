@@ -1,0 +1,827 @@
+{
+ "spec": "0",
+ "id": "bandeja/paginado",
+ "kind": "bandeja",
+ "steps": [
+  {
+   "note": "aviso 1",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 2",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n2",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 2000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 3",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 4",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n4",
+   "at_ms": 4000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 5",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n5",
+   "at_ms": 5000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n5",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 5000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 6",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n6",
+   "at_ms": 6000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n6",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 6000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 7",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n7",
+   "at_ms": 7000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n7",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 7000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "primera página",
+   "op": "list",
+   "query": {
+    "limit": 3,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n7",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 7000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n6",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 6000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n5",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 5000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": {
+     "created_at_ms": 5000,
+     "id": "n5"
+    }
+   }
+  },
+  {
+   "note": "llega un aviso entre una página y la siguiente",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n8",
+   "at_ms": 8000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n8",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 8000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "la segunda página no repite ni saltea",
+   "op": "list",
+   "query": {
+    "limit": 3,
+    "cursor": {
+     "created_at_ms": 5000,
+     "id": "n5"
+    },
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n4",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 4000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n3",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n2",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 2000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": {
+     "created_at_ms": 2000,
+     "id": "n2"
+    }
+   }
+  },
+  {
+   "note": "la última página, incompleta, no tiene cursor",
+   "op": "list",
+   "query": {
+    "limit": 3,
+    "cursor": {
+     "created_at_ms": 2000,
+     "id": "n2"
+    },
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "una página que termina justo en el último tampoco tiene cursor",
+   "op": "list",
+   "query": {
+    "limit": 4,
+    "cursor": {
+     "created_at_ms": 5000,
+     "id": "n5"
+    },
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n4",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 4000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n3",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n2",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 2000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "pedir de nuevo desde el principio trae lo nuevo",
+   "op": "list",
+   "query": {
+    "limit": 3,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n8",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 8000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n7",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 7000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n6",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 6000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": {
+     "created_at_ms": 6000,
+     "id": "n6"
+    }
+   }
+  },
+  {
+   "note": "límite de uno",
+   "op": "list",
+   "query": {
+    "limit": 1,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n8",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 8000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": {
+     "created_at_ms": 8000,
+     "id": "n8"
+    }
+   }
+  },
+  {
+   "note": "un cursor más viejo que todo",
+   "op": "list",
+   "query": {
+    "limit": 3,
+    "cursor": {
+     "created_at_ms": 1,
+     "id": "a"
+    },
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "un cursor que no corresponde a ningún aviso",
+   "op": "list",
+   "query": {
+    "limit": 2,
+    "cursor": {
+     "created_at_ms": 4500,
+     "id": "zzz"
+    },
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n4",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 4000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n3",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": {
+     "created_at_ms": 3000,
+     "id": "n3"
+    }
+   }
+  },
+  {
+   "note": "un cursor más nuevo que todo trae desde el principio",
+   "op": "list",
+   "query": {
+    "limit": 2,
+    "cursor": {
+     "created_at_ms": 99000,
+     "id": "a"
+    },
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n8",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 8000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n7",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 7000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": {
+     "created_at_ms": 7000,
+     "id": "n7"
+    }
+   }
+  },
+  {
+   "note": "leer uno del medio",
+   "op": "mark_read",
+   "id": "n6",
+   "recipient_id": "ana",
+   "at_ms": 20000,
+   "expect": true
+  },
+  {
+   "note": "los filtros se aplican antes de paginar",
+   "op": "list",
+   "query": {
+    "limit": 2,
+    "unread_only": true,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n8",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 8000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n7",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 7000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": {
+     "created_at_ms": 7000,
+     "id": "n7"
+    }
+   }
+  },
+  {
+   "note": "y el cursor sigue dentro del filtro",
+   "op": "list",
+   "query": {
+    "limit": 2,
+    "unread_only": true,
+    "cursor": {
+     "created_at_ms": 7000,
+     "id": "n7"
+    },
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n5",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 5000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n4",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 4000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": {
+     "created_at_ms": 4000,
+     "id": "n4"
+    }
+   }
+  },
+  {
+   "note": "límite cero",
+   "op": "list",
+   "query": {
+    "limit": 0,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "error": "invalid_limit"
+   }
+  },
+  {
+   "note": "límite negativo",
+   "op": "list",
+   "query": {
+    "limit": -1,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "error": "invalid_limit"
+   }
+  }
+ ]
+}

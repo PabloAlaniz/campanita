@@ -1,0 +1,138 @@
+"""Las secuencias de `spec/vectors/bandeja/` contra cada almacén incluido."""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import sqlite3
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from campanita import Draft, FeedQuery, StoreError
+from campanita.conformance import run_store_vector
+from campanita.ports import NotificationStore
+from campanita.stores import MemoryStore, SqliteStore
+
+VECTORS = sorted((Path(__file__).resolve().parents[2] / "spec" / "vectors" / "bandeja").glob("*.json"))
+
+
+def sqlite_store() -> SqliteStore:
+    # `isolation_level=None`: las transacciones las maneja el almacén.
+    store = SqliteStore(sqlite3.connect(":memory:", isolation_level=None))
+    store.create_schema()
+    return store
+
+
+STORES: dict[str, Callable[[], NotificationStore]] = {"memory": MemoryStore, "sqlite": sqlite_store}
+
+
+def test_hay_secuencias() -> None:
+    assert len(VECTORS) >= 8
+
+
+@pytest.mark.parametrize("make_store", STORES.values(), ids=STORES.keys())
+@pytest.mark.parametrize("path", VECTORS, ids=lambda p: p.stem)
+def test_secuencia(path: Path, make_store: Callable[[], NotificationStore]) -> None:
+    asyncio.run(run_store_vector(json.loads(path.read_text(encoding="utf-8")), make_store))
+
+
+def draft(**changes: Any) -> Draft:
+    base: dict[str, Any] = {
+        "recipient_id": "ana",
+        "type": "nota",
+        "category": "activity",
+        "title": "Aviso",
+        "body": None,
+        "action_url": None,
+        "payload": {},
+        "scope": None,
+        "dedupe_key": None,
+    }
+    return Draft(**{**base, **changes})
+
+
+T0 = datetime(2030, 1, 1, tzinfo=UTC)
+
+
+@pytest.mark.parametrize("make_store", STORES.values(), ids=STORES.keys())
+def test_el_corredor_avisa_en_que_paso_falla(make_store: Callable[[], NotificationStore]) -> None:
+    vector = {
+        "id": "prueba",
+        "kind": "bandeja",
+        "steps": [
+            {
+                "note": "contar",
+                "op": "count_unread",
+                "recipient_id": "ana",
+                "scope": None,
+                "cap": None,
+                "expect": 7,
+            }
+        ],
+    }
+    with pytest.raises(AssertionError, match=r"prueba paso 0 \(contar\), operación `count_unread`"):
+        asyncio.run(run_store_vector(vector, make_store))
+
+
+@pytest.mark.parametrize("make_store", STORES.values(), ids=STORES.keys())
+def test_las_fechas_se_guardan_con_milisegundos_y_en_utc(make_store: Callable[[], NotificationStore]) -> None:
+    async def run() -> None:
+        store = make_store()
+        local = timezone(timedelta(hours=-3))
+        moment = datetime(2030, 1, 1, 9, 0, 0, 123_987, tzinfo=local)
+        result = await store.add(draft(), id="n1", created_at=moment)
+        assert result.notification.created_at == datetime(2030, 1, 1, 12, 0, 0, 123_000, tzinfo=UTC)
+        page = await store.list_feed(FeedQuery("ana", limit=5))
+        assert page.items[0].created_at == result.notification.created_at
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("make_store", STORES.values(), ids=STORES.keys())
+def test_una_fecha_sin_zona_se_rechaza(make_store: Callable[[], NotificationStore]) -> None:
+    with pytest.raises(ValueError, match="zona horaria"):
+        asyncio.run(make_store().add(draft(), id="n1", created_at=datetime(2030, 1, 1)))
+
+
+@pytest.mark.parametrize("make_store", STORES.values(), ids=STORES.keys())
+def test_tocar_el_payload_despues_no_cambia_lo_guardado(make_store: Callable[[], NotificationStore]) -> None:
+    async def run() -> None:
+        store = make_store()
+        payload: dict[str, Any] = {"lista": [1, 2]}
+        await store.add(draft(payload=payload), id="n1", created_at=T0)
+        payload["lista"].append(3)
+        page = await store.list_feed(FeedQuery("ana", limit=5))
+        assert page.items[0].payload == {"lista": [1, 2]}
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("make_store", STORES.values(), ids=STORES.keys())
+def test_un_limite_que_no_es_entero_se_rechaza(make_store: Callable[[], NotificationStore]) -> None:
+    for limit in (True, 2.0, "3"):
+        with pytest.raises(StoreError) as rejected:
+            asyncio.run(make_store().list_feed(FeedQuery("ana", limit=limit)))  # type: ignore[arg-type]
+        assert rejected.value.reason == "invalid_limit"
+
+
+def test_sqlite_dos_conexiones_con_la_misma_clave_dejan_un_solo_aviso(tmp_path: Path) -> None:
+    async def run() -> None:
+        path = tmp_path / "campanita.db"
+        first = SqliteStore(sqlite3.connect(path, isolation_level=None))
+        first.create_schema()
+        second = SqliteStore(sqlite3.connect(path, isolation_level=None))
+        a = await first.add(draft(dedupe_key="k"), id="n1", created_at=T0)
+        b = await second.add(draft(dedupe_key="k", title="Otro"), id="n2", created_at=T0)
+        assert (a.created, b.created, b.notification.id) == (True, False, "n1")
+        assert await second.count_unread("ana") == 1
+
+    asyncio.run(run())
+
+
+def test_sqlite_el_nombre_de_la_tabla_se_valida() -> None:
+    with pytest.raises(ValueError, match="identificador"):
+        SqliteStore(sqlite3.connect(":memory:"), table="x; DROP TABLE y")

@@ -939,11 +939,396 @@ def aviso_armado() -> dict:
     return {**{k: v for k, v in data.items() if k != "cases"}, "catalog": CATALOGO, "cases": cases}
 
 
+# ---------------------------------------------------------------------------
+# La bandeja: un modelo en memoria hecho a fuerza bruta.
+#
+# Cada operación recorre la lista entera, filtra y ordena. No hay índices ni
+# atajos: es la definición más directa de lo que dice el spec.
+# ---------------------------------------------------------------------------
+
+
+class Modelo:
+    def __init__(self) -> None:
+        self.rows: list[dict] = []
+
+    def add(self, draft: dict, new_id: str, at_ms: int) -> dict:
+        if draft["dedupe_key"] is not None:
+            for row in self.rows:
+                if row["recipient_id"] == draft["recipient_id"] and row["dedupe_key"] == draft["dedupe_key"]:
+                    return {"created": False, "notification": dict(row)}
+        if any(row["id"] == new_id for row in self.rows):
+            return {"error": "duplicate_id"}
+        row = {"id": new_id, **draft, "created_at_ms": at_ms, "read_at_ms": None}
+        self.rows.append(row)
+        return {"created": True, "notification": dict(row)}
+
+    def _visible(self, recipient_id: str, scope: str | None) -> list[dict]:
+        return [
+            row
+            for row in self.rows
+            if row["recipient_id"] == recipient_id and (scope is None or row["scope"] in (None, scope))
+        ]
+
+    def list(self, query: dict) -> dict:
+        limit = query["limit"]
+        if type(limit) is not int or limit < 1:
+            return {"error": "invalid_limit"}
+        rows = self._visible(query["recipient_id"], query.get("scope"))
+        if query.get("unread_only"):
+            rows = [row for row in rows if row["read_at_ms"] is None]
+        if query.get("category") is not None:
+            rows = [row for row in rows if row["category"] == query["category"]]
+        rows.sort(key=lambda row: (row["created_at_ms"], row["id"]), reverse=True)
+        cursor = query.get("cursor")
+        if cursor is not None:
+            edge = (cursor["created_at_ms"], cursor["id"])
+            rows = [row for row in rows if (row["created_at_ms"], row["id"]) < edge]
+        page, rest = rows[:limit], rows[limit:]
+        last = page[-1] if page and rest else None
+        return {
+            "items": [dict(row) for row in page],
+            "next_cursor": None
+            if last is None
+            else {"created_at_ms": last["created_at_ms"], "id": last["id"]},
+        }
+
+    def count_unread(self, recipient_id: str, scope: str | None, cap: object) -> object:
+        if cap is not None and (type(cap) is not int or cap < 1):
+            return {"error": "invalid_cap"}
+        total = sum(1 for row in self._visible(recipient_id, scope) if row["read_at_ms"] is None)
+        return total if cap is None else min(total, cap)
+
+    def mark_read(self, notification_id: str, recipient_id: str, at_ms: int) -> bool:
+        for row in self.rows:
+            if (
+                row["id"] == notification_id
+                and row["recipient_id"] == recipient_id
+                and row["read_at_ms"] is None
+            ):
+                row["read_at_ms"] = at_ms
+                return True
+        return False
+
+    def mark_all_read(self, recipient_id, before_ms, at_ms, scope, category) -> int:
+        changed = 0
+        for row in self._visible(recipient_id, scope):
+            pendiente = row["read_at_ms"] is None and row["created_at_ms"] < before_ms
+            if pendiente and category in (None, row["category"]):
+                row["read_at_ms"] = at_ms
+                changed += 1
+        return changed
+
+
+def aviso(recipient="ana", category="activity", title="Aviso", **extra) -> dict:
+    """Un aviso armado, con los opcionales en nulo."""
+    base = {
+        "recipient_id": recipient,
+        "type": "nota",
+        "category": category,
+        "title": title,
+        "body": None,
+        "action_url": None,
+        "payload": {},
+        "scope": None,
+        "dedupe_key": None,
+    }
+    assert set(extra) <= set(base), extra
+    return {**base, **extra}
+
+
+class Guion:
+    """Arma los pasos de un vector contra el modelo y anota lo que devuelve."""
+
+    def __init__(self) -> None:
+        self.modelo, self.steps = Modelo(), []
+
+    def _step(self, note: str, op: str, args: dict, expect: object) -> object:
+        self.steps.append({"note": note, "op": op, **args, "expect": expect})
+        return expect
+
+    def add(self, note, new_id, at_ms, **draft):
+        d = aviso(**draft)
+        return self._step(
+            note, "add", {"draft": d, "id": new_id, "at_ms": at_ms}, self.modelo.add(d, new_id, at_ms)
+        )
+
+    def list(self, note, **query):
+        query.setdefault("recipient_id", "ana")
+        return self._step(note, "list", {"query": query}, self.modelo.list(query))
+
+    def count(self, note, recipient="ana", scope=None, cap=None):
+        args = {"recipient_id": recipient, "scope": scope, "cap": cap}
+        return self._step(note, "count_unread", args, self.modelo.count_unread(recipient, scope, cap))
+
+    def read(self, note, new_id, at_ms, recipient="ana"):
+        args = {"id": new_id, "recipient_id": recipient, "at_ms": at_ms}
+        return self._step(note, "mark_read", args, self.modelo.mark_read(new_id, recipient, at_ms))
+
+    def read_all(self, note, before_ms, at_ms, recipient="ana", scope=None, category=None):
+        args = {
+            "recipient_id": recipient,
+            "before_ms": before_ms,
+            "at_ms": at_ms,
+            "scope": scope,
+            "category": category,
+        }
+        return self._step(
+            note,
+            "mark_all_read",
+            args,
+            self.modelo.mark_all_read(recipient, before_ms, at_ms, scope, category),
+        )
+
+
+def ids(result: dict) -> list[str]:
+    return [row["id"] for row in result["items"]]
+
+
+def bandeja_basico() -> dict:
+    g = Guion()
+    assert g.list("una bandeja vacía", limit=10) == {"items": [], "next_cursor": None}
+    assert g.count("sin avisos no hay nada sin leer") == 0
+    g.add("el primer aviso", "n1", 1000, title="Uno")
+    g.add(
+        "el segundo",
+        "n2",
+        2000,
+        title="Dos",
+        body="Con cuerpo",
+        action_url="/dos",
+        payload={"k": [1, {"a": None}]},
+    )
+    g.add("el tercero", "n3", 3000, title="Tres", category="security")
+    assert ids(g.list("la bandeja sale del más nuevo al más viejo", limit=10)) == ["n3", "n2", "n1"]
+    assert g.count("tres sin leer") == 3
+    assert g.read("marcar uno como leído", "n2", 5000) is True
+    assert g.read("marcarlo de nuevo no cambia nada", "n2", 9000) is False
+    r = g.list("la hora de lectura es la primera", limit=10)
+    assert [row["read_at_ms"] for row in r["items"]] == [None, 5000, None]
+    assert g.count("quedan dos sin leer") == 2
+    assert ids(g.list("sólo los no leídos", limit=10, unread_only=True)) == ["n3", "n1"]
+    assert ids(g.list("por categoría", limit=10, category="security")) == ["n3"]
+    assert ids(g.list("una categoría sin avisos", limit=10, category="digest")) == []
+    assert ids(g.list("categoría y no leídos a la vez", limit=10, category="activity", unread_only=True)) == [
+        "n1"
+    ]
+    assert g.read("un aviso que no existe", "nope", 6000) is False
+    assert g.read("el aviso de otra persona", "n1", 6000, recipient="beto") is False
+    assert g.count("el intento ajeno no cambió nada") == 2
+    return vector("bandeja/basico", "bandeja", g.steps)
+
+
+def bandeja_duplicados() -> dict:
+    g = Guion()
+    first = g.add("un aviso con clave", "n1", 1000, title="Original", dedupe_key="k1")
+    again = g.add(
+        "la misma clave: no se crea otro y vuelve el original",
+        "n2",
+        2000,
+        title="Otro texto",
+        dedupe_key="k1",
+    )
+    assert first["created"] and not again["created"] and again["notification"] == first["notification"]
+    assert ids(g.list("sigue habiendo uno solo", limit=10)) == ["n1"]
+    assert g.add(
+        "la misma clave para otra persona sí se crea", "n3", 3000, recipient="beto", dedupe_key="k1"
+    )["created"]
+    assert g.add("otra clave sí se crea", "n4", 4000, dedupe_key="k2")["created"]
+    assert g.add("sin clave nunca se considera repetido", "n5", 5000, title="Igual")["created"]
+    assert g.add("sin clave, idéntico al anterior: se crea igual", "n6", 6000, title="Igual")["created"]
+    assert g.read("leer el original", "n1", 7000) is True
+    late = g.add("repetir una clave ya leída devuelve el aviso leído", "n7", 8000, dedupe_key="k1")
+    assert not late["created"] and late["notification"]["read_at_ms"] == 7000
+    scoped = g.add(
+        "la clave es por persona: otro ámbito no la separa", "n8", 9000, dedupe_key="k1", scope="org-1"
+    )
+    assert not scoped["created"] and scoped["notification"]["scope"] is None
+    assert g.add("un identificador que ya existe se rechaza", "n4", 10000) == {"error": "duplicate_id"}
+    dup = g.add("la clave repetida se revisa antes que el identificador", "n4", 11000, dedupe_key="k2")
+    assert dup["created"] is False and dup["notification"]["id"] == "n4"
+    assert ids(g.list("lo rechazado no dejó nada", limit=10)) == ["n6", "n5", "n4", "n1"]
+    assert g.count("y el contador coincide") == 3
+    return vector("bandeja/duplicados", "bandeja", g.steps)
+
+
+def bandeja_paginado() -> dict:
+    g = Guion()
+    for index in range(1, 8):
+        g.add(f"aviso {index}", f"n{index}", index * 1000)
+    p1 = g.list("primera página", limit=3)
+    assert ids(p1) == ["n7", "n6", "n5"] and p1["next_cursor"] == {"created_at_ms": 5000, "id": "n5"}
+    g.add("llega un aviso entre una página y la siguiente", "n8", 8000)
+    p2 = g.list("la segunda página no repite ni saltea", limit=3, cursor=p1["next_cursor"])
+    assert ids(p2) == ["n4", "n3", "n2"]
+    p3 = g.list("la última página, incompleta, no tiene cursor", limit=3, cursor=p2["next_cursor"])
+    assert ids(p3) == ["n1"] and p3["next_cursor"] is None
+    exact = g.list(
+        "una página que termina justo en el último tampoco tiene cursor",
+        limit=4,
+        cursor={"created_at_ms": 5000, "id": "n5"},
+    )
+    assert ids(exact) == ["n4", "n3", "n2", "n1"] and exact["next_cursor"] is None
+    assert ids(g.list("pedir de nuevo desde el principio trae lo nuevo", limit=3)) == ["n8", "n7", "n6"]
+    assert g.list("límite de uno", limit=1)["next_cursor"] == {"created_at_ms": 8000, "id": "n8"}
+    assert ids(g.list("un cursor más viejo que todo", limit=3, cursor={"created_at_ms": 1, "id": "a"})) == []
+    assert ids(
+        g.list(
+            "un cursor que no corresponde a ningún aviso",
+            limit=2,
+            cursor={"created_at_ms": 4500, "id": "zzz"},
+        )
+    ) == ["n4", "n3"]
+    assert ids(
+        g.list(
+            "un cursor más nuevo que todo trae desde el principio",
+            limit=2,
+            cursor={"created_at_ms": 99000, "id": "a"},
+        )
+    ) == ["n8", "n7"]
+    g.read("leer uno del medio", "n6", 20000)
+    u1 = g.list("los filtros se aplican antes de paginar", limit=2, unread_only=True)
+    assert ids(u1) == ["n8", "n7"]
+    assert ids(
+        g.list("y el cursor sigue dentro del filtro", limit=2, unread_only=True, cursor=u1["next_cursor"])
+    ) == ["n5", "n4"]
+    assert g.list("límite cero", limit=0) == {"error": "invalid_limit"}
+    assert g.list("límite negativo", limit=-1) == {"error": "invalid_limit"}
+    return vector("bandeja/paginado", "bandeja", g.steps)
+
+
+def bandeja_empates() -> dict:
+    g = Guion()
+    # Misma fecha: desempata el identificador, por punto de código. "B" (0x42)
+    # va antes que "a" (0x61), y U+FF5E antes que U+1F600 aunque en UTF-16 sea
+    # al revés.
+    for new_id in ["a", "B", "c", "～", "\U0001f600", "10", "9"]:
+        g.add(f"aviso {new_id!r} en el mismo milisegundo", new_id, 1000)
+    g.add("uno más nuevo", "z", 2000)
+    todo = g.list("con la misma fecha, ordena el identificador de mayor a menor", limit=20)
+    assert ids(todo) == ["z", "\U0001f600", "～", "c", "a", "B", "9", "10"], ids(todo)
+    p1 = g.list("paginar dentro de un empate", limit=3)
+    p2 = g.list("sigue donde quedó", limit=3, cursor=p1["next_cursor"])
+    p3 = g.list("y termina", limit=3, cursor=p2["next_cursor"])
+    assert ids(p1) + ids(p2) + ids(p3) == ids(todo) and p3["next_cursor"] is None
+    g.add("llega otro con la misma fecha y un identificador intermedio", "b", 1000)
+    assert ids(g.list("queda en su lugar del orden", limit=20)) == [
+        "z",
+        "\U0001f600",
+        "～",
+        "c",
+        "b",
+        "a",
+        "B",
+        "9",
+        "10",
+    ]
+    return vector("bandeja/empates", "bandeja", g.steps)
+
+
+def bandeja_ambitos() -> dict:
+    g = Guion()
+    g.add("un aviso de cuenta, sin ámbito", "n1", 1000, title="Cuenta")
+    g.add("uno del ámbito x", "n2", 2000, scope="x")
+    g.add("otro del ámbito x", "n3", 3000, scope="x", category="security")
+    g.add("uno del ámbito y", "n4", 4000, scope="y")
+    g.add("uno de otra persona en x", "n5", 5000, scope="x", recipient="beto")
+    assert ids(g.list("sin filtro de ámbito se ve todo lo propio", limit=10)) == ["n4", "n3", "n2", "n1"]
+    assert ids(g.list("con ámbito x: lo de x y lo que no tiene ámbito", limit=10, scope="x")) == [
+        "n3",
+        "n2",
+        "n1",
+    ]
+    assert ids(g.list("con ámbito y", limit=10, scope="y")) == ["n4", "n1"]
+    assert ids(g.list("un ámbito sin avisos igual muestra los de cuenta", limit=10, scope="z")) == ["n1"]
+    assert g.count("sin leer en total") == 4
+    assert g.count("sin leer en x", scope="x") == 3
+    assert g.count("sin leer en z", scope="z") == 1
+    assert ids(g.list("ámbito y categoría", limit=10, scope="x", category="security")) == ["n3"]
+    p = g.list("ámbito y paginado", limit=2, scope="x")
+    assert ids(g.list("el cursor respeta el ámbito", limit=2, scope="x", cursor=p["next_cursor"])) == ["n1"]
+    assert g.read_all("marcar todo en x marca también los de cuenta", 99000, 10000, scope="x") == 3
+    assert ids(g.list("lo de y sigue sin leer", limit=10, unread_only=True)) == ["n4"]
+    assert g.count("lo de la otra persona no se tocó", recipient="beto", scope="x") == 1
+    return vector("bandeja/ambitos", "bandeja", g.steps)
+
+
+def bandeja_marcar_todo() -> dict:
+    g = Guion()
+    g.add("aviso 1", "n1", 1000)
+    g.add("aviso 2", "n2", 2000, category="security")
+    g.add("aviso 3", "n3", 3000)
+    g.add("aviso 4", "n4", 4000)
+    g.add("de otra persona", "n5", 2500, recipient="beto")
+    g.read("uno ya leído de antes", "n1", 1500)
+    assert g.read_all("el corte es estricto: lo creado justo en ese instante no se marca", 3000, 9000) == 1
+    r = g.list("se marcó sólo lo anterior al corte, y lo ya leído conserva su hora", limit=10)
+    assert [(row["id"], row["read_at_ms"]) for row in r["items"]] == [
+        ("n4", None),
+        ("n3", None),
+        ("n2", 9000),
+        ("n1", 1500),
+    ]
+    assert g.read_all("repetirlo no marca nada", 3000, 9500) == 0
+    assert g.read_all("por categoría, sin avisos que coincidan", 99000, 9600, category="security") == 0
+    assert g.read_all("por categoría", 99000, 9700, category="activity") == 2
+    assert g.count("no queda nada sin leer") == 0
+    assert g.count("lo de la otra persona sigue sin leer", recipient="beto") == 1
+    assert g.read_all("una persona sin avisos", 99000, 9800, recipient="carla") == 0
+    assert g.read_all("un corte anterior a todo", 1, 9900, recipient="beto") == 0
+    return vector("bandeja/marcar-todo", "bandeja", g.steps)
+
+
+def bandeja_contador() -> dict:
+    g = Guion()
+    for index in range(1, 6):
+        g.add(f"aviso {index}", f"n{index}", index * 1000)
+    assert g.count("sin tope") == 5
+    assert g.count("tope mayor que el total", cap=99) == 5
+    assert g.count("tope igual al total", cap=5) == 5
+    assert g.count("tope menor que el total", cap=3) == 3
+    assert g.count("tope de uno: alcanza para saber si hay algo", cap=1) == 1
+    g.read("leer uno", "n3", 9000)
+    assert g.count("los leídos no cuentan", cap=99) == 4
+    assert g.count("otra persona", recipient="beto", cap=3) == 0
+    assert g.count("tope cero", cap=0) == {"error": "invalid_cap"}
+    assert g.count("tope negativo", cap=-2) == {"error": "invalid_cap"}
+    return vector("bandeja/contador", "bandeja", g.steps)
+
+
+def bandeja_personas() -> dict:
+    g = Guion()
+    g.add("de ana", "n1", 1000)
+    g.add("de beto", "n2", 2000, recipient="beto")
+    g.add("de una persona llamada constructor", "n3", 3000, recipient="constructor")
+    g.add(
+        "otra de ana, de un tipo y un ámbito llamados constructor",
+        "n4",
+        4000,
+        scope="constructor",
+        category="constructor",
+    )
+    assert ids(g.list("ana ve lo suyo", limit=10)) == ["n4", "n1"]
+    assert ids(g.list("beto ve lo suyo", limit=10, recipient_id="beto")) == ["n2"]
+    assert ids(g.list("constructor ve lo suyo", limit=10, recipient_id="constructor")) == ["n3"]
+    assert ids(g.list("una persona sin avisos", limit=10, recipient_id="toString")) == []
+    assert ids(g.list("ámbito constructor", limit=10, scope="constructor")) == ["n4", "n1"]
+    assert ids(g.list("categoría constructor", limit=10, category="constructor")) == ["n4"]
+    assert ids(g.list("categoría toString", limit=10, category="toString")) == []
+    assert g.read("beto no puede leer lo de ana", "n1", 5000, recipient="beto") is False
+    assert g.read_all("ni marcarlo todo", 99000, 6000, recipient="beto") == 1
+    assert g.count("ana sigue con dos sin leer") == 2
+    assert (
+        g.read("el identificador es de una persona: mayúsculas distintas no coinciden", "N1", 7000) is False
+    )
+    assert ids(g.list("ni el destinatario", limit=10, recipient_id="Ana")) == []
+    return vector("bandeja/personas", "bandeja", g.steps)
+
+
 def vector(vector_id: str, kind: str, cases: list, policy: dict | None = None) -> dict:
     out: dict = {"spec": SPEC, "id": vector_id, "kind": kind}
     if policy is not None:
         out["policy"] = policy
-    out["cases"] = cases
+    out["steps" if kind == "bandeja" else "cases"] = cases
     return out
 
 
@@ -960,6 +1345,14 @@ ALL = [
     plantilla_render,
     catalogo_validacion,
     aviso_armado,
+    bandeja_basico,
+    bandeja_duplicados,
+    bandeja_paginado,
+    bandeja_empates,
+    bandeja_ambitos,
+    bandeja_marcar_todo,
+    bandeja_contador,
+    bandeja_personas,
 ]
 
 
@@ -992,7 +1385,7 @@ def main(argv: list[str]) -> int:
     for path, text in expected.items():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
-    total = sum(len(json.loads(text)["cases"]) for text in expected.values())
+    total = sum(len(v.get("cases", v.get("steps"))) for v in map(json.loads, expected.values()))
     print(f"{len(expected)} vectores, {total} casos, en {VECTORS.relative_to(ROOT)}/")
     return 0
 

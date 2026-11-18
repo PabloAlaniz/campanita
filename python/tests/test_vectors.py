@@ -45,7 +45,7 @@ def cases(kind: str) -> list[Any]:
         vector = load(path)
         if vector["kind"] != kind:
             continue
-        for index, case in enumerate(vector["cases"]):
+        for index, case in enumerate(vector.get("cases", ())):
             label = case.get("note", "")
             out.append(pytest.param(vector, case, id=f"{vector['id']}[{index}] {label}".strip()))
     return out
@@ -144,5 +144,6 @@ def test_aviso(vector: dict[str, Any], case: dict[str, Any]) -> None:
 
 
 def test_todos_los_tipos_de_vector_tienen_quien_los_corra() -> None:
-    corridos = {"politica", "canales", "matriz", "preferencias", "plantilla", "catalogo", "aviso"}
+    # Los de tipo `bandeja` los corre tests/test_stores.py contra cada almacén.
+    corridos = {"politica", "canales", "matriz", "preferencias", "plantilla", "catalogo", "aviso", "bandeja"}
     assert {load(path)["kind"] for path in VECTORS} == corridos

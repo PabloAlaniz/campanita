@@ -1,0 +1,379 @@
+{
+ "spec": "0",
+ "id": "bandeja/personas",
+ "kind": "bandeja",
+ "steps": [
+  {
+   "note": "de ana",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "de beto",
+   "op": "add",
+   "draft": {
+    "recipient_id": "beto",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n2",
+     "recipient_id": "beto",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 2000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "de una persona llamada constructor",
+   "op": "add",
+   "draft": {
+    "recipient_id": "constructor",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "constructor",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "otra de ana, de un tipo y un ámbito llamados constructor",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "constructor",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": "constructor",
+    "dedupe_key": null
+   },
+   "id": "n4",
+   "at_ms": 4000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "constructor",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": "constructor",
+     "dedupe_key": null,
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "ana ve lo suyo",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n4",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "constructor",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "constructor",
+      "dedupe_key": null,
+      "created_at_ms": 4000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "beto ve lo suyo",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "recipient_id": "beto"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n2",
+      "recipient_id": "beto",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 2000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "constructor ve lo suyo",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "recipient_id": "constructor"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n3",
+      "recipient_id": "constructor",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 3000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "una persona sin avisos",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "recipient_id": "toString"
+   },
+   "expect": {
+    "items": [],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "ámbito constructor",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "scope": "constructor",
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n4",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "constructor",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "constructor",
+      "dedupe_key": null,
+      "created_at_ms": 4000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "categoría constructor",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "category": "constructor",
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n4",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "constructor",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": "constructor",
+      "dedupe_key": null,
+      "created_at_ms": 4000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "categoría toString",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "category": "toString",
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "beto no puede leer lo de ana",
+   "op": "mark_read",
+   "id": "n1",
+   "recipient_id": "beto",
+   "at_ms": 5000,
+   "expect": false
+  },
+  {
+   "note": "ni marcarlo todo",
+   "op": "mark_all_read",
+   "recipient_id": "beto",
+   "before_ms": 99000,
+   "at_ms": 6000,
+   "scope": null,
+   "category": null,
+   "expect": 1
+  },
+  {
+   "note": "ana sigue con dos sin leer",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": null,
+   "expect": 2
+  },
+  {
+   "note": "el identificador es de una persona: mayúsculas distintas no coinciden",
+   "op": "mark_read",
+   "id": "N1",
+   "recipient_id": "ana",
+   "at_ms": 7000,
+   "expect": false
+  },
+  {
+   "note": "ni el destinatario",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "recipient_id": "Ana"
+   },
+   "expect": {
+    "items": [],
+    "next_cursor": null
+   }
+  }
+ ]
+}

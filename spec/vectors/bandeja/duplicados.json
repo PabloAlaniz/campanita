@@ -1,0 +1,445 @@
+{
+ "spec": "0",
+ "id": "bandeja/duplicados",
+ "kind": "bandeja",
+ "steps": [
+  {
+   "note": "un aviso con clave",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Original",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": "k1"
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Original",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": "k1",
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "la misma clave: no se crea otro y vuelve el original",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Otro texto",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": "k1"
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "expect": {
+    "created": false,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Original",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": "k1",
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "sigue habiendo uno solo",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Original",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": "k1",
+      "created_at_ms": 1000,
+      "read_at_ms": null
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "la misma clave para otra persona sí se crea",
+   "op": "add",
+   "draft": {
+    "recipient_id": "beto",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": "k1"
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "beto",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": "k1",
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "otra clave sí se crea",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": "k2"
+   },
+   "id": "n4",
+   "at_ms": 4000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": "k2",
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "sin clave nunca se considera repetido",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Igual",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n5",
+   "at_ms": 5000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n5",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Igual",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 5000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "sin clave, idéntico al anterior: se crea igual",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Igual",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n6",
+   "at_ms": 6000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n6",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Igual",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 6000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "leer el original",
+   "op": "mark_read",
+   "id": "n1",
+   "recipient_id": "ana",
+   "at_ms": 7000,
+   "expect": true
+  },
+  {
+   "note": "repetir una clave ya leída devuelve el aviso leído",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": "k1"
+   },
+   "id": "n7",
+   "at_ms": 8000,
+   "expect": {
+    "created": false,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Original",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": "k1",
+     "created_at_ms": 1000,
+     "read_at_ms": 7000
+    }
+   }
+  },
+  {
+   "note": "la clave es por persona: otro ámbito no la separa",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": "org-1",
+    "dedupe_key": "k1"
+   },
+   "id": "n8",
+   "at_ms": 9000,
+   "expect": {
+    "created": false,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Original",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": "k1",
+     "created_at_ms": 1000,
+     "read_at_ms": 7000
+    }
+   }
+  },
+  {
+   "note": "un identificador que ya existe se rechaza",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n4",
+   "at_ms": 10000,
+   "expect": {
+    "error": "duplicate_id"
+   }
+  },
+  {
+   "note": "la clave repetida se revisa antes que el identificador",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": "k2"
+   },
+   "id": "n4",
+   "at_ms": 11000,
+   "expect": {
+    "created": false,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": "k2",
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "lo rechazado no dejó nada",
+   "op": "list",
+   "query": {
+    "limit": 10,
+    "recipient_id": "ana"
+   },
+   "expect": {
+    "items": [
+     {
+      "id": "n6",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Igual",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 6000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n5",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Igual",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": null,
+      "created_at_ms": 5000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n4",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Aviso",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": "k2",
+      "created_at_ms": 4000,
+      "read_at_ms": null
+     },
+     {
+      "id": "n1",
+      "recipient_id": "ana",
+      "type": "nota",
+      "category": "activity",
+      "title": "Original",
+      "body": null,
+      "action_url": null,
+      "payload": {},
+      "scope": null,
+      "dedupe_key": "k1",
+      "created_at_ms": 1000,
+      "read_at_ms": 7000
+     }
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "note": "y el contador coincide",
+   "op": "count_unread",
+   "recipient_id": "ana",
+   "scope": null,
+   "cap": null,
+   "expect": 3
+  }
+ ]
+}
