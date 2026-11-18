@@ -3,11 +3,11 @@
  *
  * El núcleo no conoce la base, el canal ni la superficie que muestra la bandeja.
  *
- * - `NotificationStore` está especificado: su comportamiento es el de las
- *   secuencias de `spec/vectors/bandeja/`, y `runStoreVector` las corre contra
- *   cualquier adaptador.
- * - `PreferenceStore` y `DeliveryChannel` son un BORRADOR: el spec todavía no
- *   los cubre y pueden cambiar.
+ * - `NotificationStore` y `PreferenceStore` están especificados: su
+ *   comportamiento es el de las secuencias de `spec/vectors/bandeja/` y
+ *   `spec/vectors/preferencias-guardadas/`, y `runStoreVector` y
+ *   `runPreferenceVector` las corren contra cualquier adaptador.
+ * - `DeliveryChannel` es un BORRADOR: el spec todavía no lo cubre y puede cambiar.
  */
 import type { AddResult, FeedPage, FeedQuery, Notification } from './core/inbox.js';
 import type { Change, Draft, Overrides } from './core/types.js';
@@ -40,10 +40,18 @@ export interface NotificationStore {
   ): Promise<number>;
 }
 
-/** BORRADOR. Guarda SÓLO los cambios del usuario. Sin filas = valores por defecto. */
+/**
+ * Lo que cambió cada persona. Guarda SÓLO los cambios: sin nada guardado, valen
+ * los valores de la política.
+ *
+ * El almacén no conoce la política. Qué se puede cambiar lo decide
+ * `validatePatch` antes de guardar.
+ */
 export interface PreferenceStore {
-  getOverrides(recipientId: string, scope?: string | null): Promise<Overrides>;
-  saveChanges(recipientId: string, changes: readonly Change[], scope?: string | null): Promise<void>;
+  /** Lo guardado para esa persona en ese ámbito. Los ámbitos no se heredan. */
+  getOverrides(recipientId: string, options?: { scope?: string | null }): Promise<Overrides>;
+  /** Guarda los cambios, todos o ninguno. Si una celda se repite, vale la última. */
+  saveChanges(recipientId: string, changes: readonly Change[], options?: { scope?: string | null }): Promise<void>;
 }
 
 /** `expired` = el destino ya no existe (una suscripción vencida) y hay que olvidarlo. */

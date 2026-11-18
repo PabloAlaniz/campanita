@@ -3,8 +3,8 @@
 Notificaciones con las mismas reglas en cualquier stack.
 
 > **Borrador.** Hoy existe el núcleo en Python y TypeScript: decide por qué canales sale un
-> aviso, qué puede cambiar la persona, cómo se arma un aviso a partir de un evento y cómo se
-> guarda y se lee la bandeja. Todavía no hay adaptadores de canal. La
+> aviso, qué puede cambiar la persona y cómo se arma un aviso, y guarda la bandeja y las
+> preferencias sobre cualquier base. Todavía no hay adaptadores de canal. La
 > [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene.
 
 Casi todo producto termina con una campanita: una bandeja de avisos, una pantalla de preferencias

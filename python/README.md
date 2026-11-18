@@ -107,8 +107,27 @@ alcanza para aplicaciones chicas, herramientas y tests.
 Para otra base, escribí un adaptador que cumpla `campanita.ports.NotificationStore` y probalo con
 `campanita.conformance.run_store_vector`: ver [`docs/puertos.md`](../docs/puertos.md).
 
-Los puertos de preferencias y de canales de entrega (`campanita.ports`) son un borrador: el spec
-todavía no los cubre.
+## Las preferencias guardadas
+
+Lo que cambió cada persona va a un almacén de preferencias. El recorrido completo de una pantalla
+de preferencias es validar, guardar y volver a leer:
+
+```python
+from campanita import effective_matrix, validate_patch
+from campanita.stores import MemoryPreferenceStore  # o SqlitePreferenceStore(conexión)
+
+preferences = MemoryPreferenceStore()
+
+changes = validate_patch(policy, {"activity": {"email": True}}, disponibles)  # rechaza lo bloqueado
+await preferences.save_changes("user-7", changes)
+
+overrides = await preferences.get_overrides("user-7")
+effective_matrix(policy, overrides, disponibles)  # lo que muestra la pantalla
+resolve_channels(policy, "activity", overrides, disponibles)  # por dónde sale el próximo aviso
+```
+
+El puerto de canales de entrega (`campanita.ports.DeliveryChannel`) es un borrador: el spec
+todavía no lo cubre.
 
 ## Desarrollo
 

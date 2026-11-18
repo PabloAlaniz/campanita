@@ -7,7 +7,7 @@ Están declarados en [`python/src/campanita/ports.py`](../python/src/campanita/p
 | Puerto | Qué resuelve | Estado |
 |---|---|---|
 | `NotificationStore` | Guardar avisos y leer la bandeja | Especificado, con secuencias de conformidad |
-| `PreferenceStore` | Guardar lo que cambió cada persona | Borrador |
+| `PreferenceStore` | Guardar lo que cambió cada persona | Especificado, con secuencias de conformidad |
 | `DeliveryChannel` | Entregar un aviso fuera de la bandeja | Borrador |
 
 La **bandeja** no es un puerto: es lo que se lee del `NotificationStore`. Cualquier superficie
@@ -26,7 +26,19 @@ Adaptadores incluidos:
 | En memoria | `campanita.stores.MemoryStore` | `MemoryStore` |
 | SQLite | `campanita.stores.SqliteStore` | todavía no |
 
-### Escribir un adaptador
+## El almacén de preferencias
+
+Su comportamiento está en la sección "Las preferencias guardadas" del spec y en las secuencias de
+[`spec/vectors/preferencias-guardadas/`](../spec/vectors/preferencias-guardadas).
+
+| Adaptador | Python | TypeScript |
+|---|---|---|
+| En memoria | `campanita.stores.MemoryPreferenceStore` | `MemoryPreferenceStore` |
+| SQLite | `campanita.stores.SqlitePreferenceStore` | todavía no |
+
+Las dos tablas pueden vivir en la misma base o en bases distintas: los puertos son independientes.
+
+## Escribir un adaptador
 
 Cada paquete trae el corredor de secuencias que usa para sus propios adaptadores:
 
@@ -49,6 +61,9 @@ for (const file of readdirSync('spec/vectors/bandeja')) {
 }
 ```
 
+Para un almacén de preferencias es igual, con `run_preference_vector` / `runPreferenceVector` y
+las secuencias de `spec/vectors/preferencias-guardadas/`.
+
 Cada secuencia necesita un almacén vacío. Si un paso no coincide, el corredor dice cuál, qué
 esperaba y qué obtuvo.
 
@@ -61,6 +76,7 @@ Lo que las secuencias **no** pueden probar, y cada adaptador tiene que garantiza
   `recipient_id` no pueden depender de mayúsculas, acentos ni de la configuración regional de la
   base.
 - **Que las fechas no pierdan los milisegundos.**
+- **Que guardar varios cambios de preferencias sea todo o nada.**
 
 ## Decisiones que valen para los tres puertos
 
@@ -80,5 +96,5 @@ Lo que las secuencias **no** pueden probar, y cada adaptador tiene que garantiza
 Un puerto no se da por estable hasta tener **dos adaptadores reales**. Con uno solo, el puerto
 termina teniendo la forma de ese adaptador y el segundo no entra.
 
-El almacén de avisos la cumple en Python (en memoria y SQLite). Los otros dos puertos siguen en
+Los dos almacenes la cumplen en Python (en memoria y SQLite). El canal de entrega sigue en
 borrador hasta tener los suyos.

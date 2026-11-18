@@ -1324,11 +1324,120 @@ def bandeja_personas() -> dict:
     return vector("bandeja/personas", "bandeja", g.steps)
 
 
+# ---------------------------------------------------------------------------
+# Las preferencias guardadas: un diccionario plano por (persona, ámbito, celda).
+# ---------------------------------------------------------------------------
+
+
+class Ajustes:
+    def __init__(self) -> None:
+        self.cells: dict[tuple[str, str | None, str, str], bool] = {}
+        self.steps: list[dict] = []
+
+    def save(self, note: str, changes: list[tuple[str, str, bool]], recipient="ana", scope=None) -> None:
+        for category, channel, enabled in changes:
+            self.cells[(recipient, scope, category, channel)] = enabled
+        wire = [{"category": c, "channel": ch, "enabled": e} for c, ch, e in changes]
+        self.steps.append(
+            {
+                "note": note,
+                "op": "save",
+                "recipient_id": recipient,
+                "scope": scope,
+                "changes": wire,
+                "expect": None,
+            }
+        )
+
+    def get(self, note: str, recipient="ana", scope=None) -> dict:
+        out: dict = {}
+        for (who, where, category, channel), enabled in self.cells.items():
+            if who == recipient and where == scope:
+                out.setdefault(category, {})[channel] = enabled
+        self.steps.append(
+            {"note": note, "op": "get", "recipient_id": recipient, "scope": scope, "expect": out}
+        )
+        return out
+
+
+def guardadas_basico() -> dict:
+    g = Ajustes()
+    assert g.get("quien nunca cambió nada no tiene nada guardado") == {}
+    g.save("un cambio", [("activity", "email", True)])
+    assert g.get("se lee lo que se guardó") == {"activity": {"email": True}}
+    g.save("otro canal de la misma categoría", [("activity", "push", False)])
+    g.save("otra categoría", [("digest", "email", False)])
+    assert g.get("los cambios se acumulan") == {
+        "activity": {"email": True, "push": False},
+        "digest": {"email": False},
+    }
+    g.save("volver a cambiar una celda la pisa", [("activity", "email", False)])
+    assert g.get("queda el último valor")["activity"] == {"email": False, "push": False}
+    g.save("varios cambios en un solo pedido", [("digest", "push", True), ("invitations", "email", False)])
+    g.save(
+        "la misma celda dos veces en un pedido: vale la última",
+        [("digest", "email", True), ("digest", "email", False), ("digest", "email", True)],
+    )
+    assert g.get("todo junto") == {
+        "activity": {"email": False, "push": False},
+        "digest": {"email": True, "push": True},
+        "invitations": {"email": False},
+    }
+    g.save("un pedido sin cambios no hace nada", [])
+    assert len(g.get("sigue igual")) == 3
+    g.save("un valor igual al que ya había", [("digest", "push", True)])
+    assert g.get("no cambia nada")["digest"] == {"email": True, "push": True}
+    g.save("el almacén no conoce la política: guarda cualquier celda", [("no-existe", "tampoco", True)])
+    assert g.get("y la devuelve")["no-existe"] == {"tampoco": True}
+    return vector("preferencias-guardadas/basico", "preferencias-guardadas", g.steps)
+
+
+def guardadas_aislamiento() -> dict:
+    g = Ajustes()
+    g.save("ana, sin ámbito", [("activity", "email", True)])
+    g.save("beto, sin ámbito", [("activity", "email", False), ("digest", "email", False)], recipient="beto")
+    assert g.get("ana ve lo suyo") == {"activity": {"email": True}}
+    assert g.get("beto ve lo suyo", recipient="beto") == {
+        "activity": {"email": False},
+        "digest": {"email": False},
+    }
+    assert g.get("otra persona no tiene nada", recipient="carla") == {}
+    assert g.get("el destinatario se compara como texto exacto", recipient="Ana") == {}
+    g.save("ana en el ámbito x", [("activity", "email", False), ("activity", "push", True)], scope="x")
+    assert g.get("cada ámbito es independiente: x", scope="x") == {"activity": {"email": False, "push": True}}
+    assert g.get("sin ámbito sigue como estaba") == {"activity": {"email": True}}
+    assert g.get("un ámbito sin cambios está vacío: no hereda", scope="y") == {}
+    assert g.get("el ámbito de una persona no es el de otra", recipient="beto", scope="x") == {}
+    g.save("un ámbito de texto vacío no es lo mismo que sin ámbito", [("digest", "push", True)], scope="")
+    assert g.get("sin ámbito no lo ve") == {"activity": {"email": True}}
+    assert g.get("el ámbito vacío sí", scope="") == {"digest": {"push": True}}
+    # Nombres que en algunos lenguajes chocan con propiedades heredadas, y
+    # combinaciones que no se pueden confundir por cómo se arma una clave.
+    g.save(
+        "persona, ámbito, categoría y canal llamados como propiedades heredadas",
+        [("constructor", "toString", True), ("__proto__", "__proto__", False)],
+        recipient="__proto__",
+        scope="constructor",
+    )
+    assert g.get("se leen igual que cualquier otro", recipient="__proto__", scope="constructor") == {
+        "constructor": {"toString": True},
+        "__proto__": {"__proto__": False},
+    }
+    assert g.get("y no aparecen donde no se guardaron", recipient="constructor") == {}
+    g.save("persona `a b` sin ámbito", [("c", "d", True)], recipient="a b")
+    g.save("persona `a` con ámbito `b`", [("c", "d", False)], recipient="a", scope="b")
+    assert g.get("no se mezclan (1)", recipient="a b") == {"c": {"d": True}}
+    assert g.get("no se mezclan (2)", recipient="a", scope="b") == {"c": {"d": False}}
+    g.save("categoría `x y` con canal `z`", [("x y", "z", True), ("x", "y z", False)], recipient="dani")
+    assert g.get("tampoco las celdas", recipient="dani") == {"x y": {"z": True}, "x": {"y z": False}}
+    return vector("preferencias-guardadas/aislamiento", "preferencias-guardadas", g.steps)
+
+
 def vector(vector_id: str, kind: str, cases: list, policy: dict | None = None) -> dict:
     out: dict = {"spec": SPEC, "id": vector_id, "kind": kind}
     if policy is not None:
         out["policy"] = policy
-    out["steps" if kind == "bandeja" else "cases"] = cases
+    out["steps" if kind in ("bandeja", "preferencias-guardadas") else "cases"] = cases
     return out
 
 
@@ -1353,6 +1462,8 @@ ALL = [
     bandeja_marcar_todo,
     bandeja_contador,
     bandeja_personas,
+    guardadas_basico,
+    guardadas_aislamiento,
 ]
 
 

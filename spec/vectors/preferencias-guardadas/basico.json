@@ -1,0 +1,269 @@
+{
+ "spec": "0",
+ "id": "preferencias-guardadas/basico",
+ "kind": "preferencias-guardadas",
+ "steps": [
+  {
+   "note": "quien nunca cambió nada no tiene nada guardado",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": null,
+   "expect": {}
+  },
+  {
+   "note": "un cambio",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "email",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "se lee lo que se guardó",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": null,
+   "expect": {
+    "activity": {
+     "email": true
+    }
+   }
+  },
+  {
+   "note": "otro canal de la misma categoría",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "push",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "otra categoría",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "digest",
+     "channel": "email",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "los cambios se acumulan",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": null,
+   "expect": {
+    "activity": {
+     "email": true,
+     "push": false
+    },
+    "digest": {
+     "email": false
+    }
+   }
+  },
+  {
+   "note": "volver a cambiar una celda la pisa",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "email",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "queda el último valor",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": null,
+   "expect": {
+    "activity": {
+     "email": false,
+     "push": false
+    },
+    "digest": {
+     "email": false
+    }
+   }
+  },
+  {
+   "note": "varios cambios en un solo pedido",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "digest",
+     "channel": "push",
+     "enabled": true
+    },
+    {
+     "category": "invitations",
+     "channel": "email",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "la misma celda dos veces en un pedido: vale la última",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "digest",
+     "channel": "email",
+     "enabled": true
+    },
+    {
+     "category": "digest",
+     "channel": "email",
+     "enabled": false
+    },
+    {
+     "category": "digest",
+     "channel": "email",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "todo junto",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": null,
+   "expect": {
+    "activity": {
+     "email": false,
+     "push": false
+    },
+    "digest": {
+     "email": true,
+     "push": true
+    },
+    "invitations": {
+     "email": false
+    }
+   }
+  },
+  {
+   "note": "un pedido sin cambios no hace nada",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [],
+   "expect": null
+  },
+  {
+   "note": "sigue igual",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": null,
+   "expect": {
+    "activity": {
+     "email": false,
+     "push": false
+    },
+    "digest": {
+     "email": true,
+     "push": true
+    },
+    "invitations": {
+     "email": false
+    }
+   }
+  },
+  {
+   "note": "un valor igual al que ya había",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "digest",
+     "channel": "push",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "no cambia nada",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": null,
+   "expect": {
+    "activity": {
+     "email": false,
+     "push": false
+    },
+    "digest": {
+     "email": true,
+     "push": true
+    },
+    "invitations": {
+     "email": false
+    }
+   }
+  },
+  {
+   "note": "el almacén no conoce la política: guarda cualquier celda",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "no-existe",
+     "channel": "tampoco",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "y la devuelve",
+   "op": "get",
+   "recipient_id": "ana",
+   "scope": null,
+   "expect": {
+    "activity": {
+     "email": false,
+     "push": false
+    },
+    "digest": {
+     "email": true,
+     "push": true
+    },
+    "invitations": {
+     "email": false
+    },
+    "no-existe": {
+     "tampoco": true
+    }
+   }
+  }
+ ]
+}

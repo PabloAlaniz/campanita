@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Sequence
 from datetime import datetime
 
 from .._catalog import Draft
@@ -24,6 +25,7 @@ from .._inbox import (
     from_ms,
     to_ms,
 )
+from .._types import Change, Overrides
 
 # El texto se compara byte a byte (la colación BINARY de SQLite), que en UTF-8
 # coincide con el orden por punto de código que pide el spec.
@@ -206,3 +208,72 @@ def _row(row: tuple[object, ...]) -> Notification:
         created_at=from_ms(int(str(created))),
         read_at=None if read is None else from_ms(int(str(read))),
     )
+
+
+# "Sin ámbito" y "ámbito de texto vacío" son cosas distintas, y en SQL un NULL
+# no entra en una clave primaria. `has_scope` los separa sin inventar un valor
+# reservado.
+_PREFERENCES_SCHEMA = """
+CREATE TABLE IF NOT EXISTS {table} (
+    recipient_id TEXT NOT NULL,
+    has_scope    INTEGER NOT NULL,
+    scope        TEXT NOT NULL,
+    category     TEXT NOT NULL,
+    channel      TEXT NOT NULL,
+    enabled      INTEGER NOT NULL,
+    PRIMARY KEY (recipient_id, has_scope, scope, category, channel)
+) WITHOUT ROWID;
+"""
+
+
+class SqlitePreferenceStore:
+    """Las preferencias guardadas, sobre SQLite. Usa la conexión que le pasan y no la cierra."""
+
+    def __init__(self, connection: sqlite3.Connection, *, table: str = "campanita_preferences") -> None:
+        if not table.isidentifier():
+            raise ValueError("el nombre de la tabla tiene que ser un identificador")
+        self._db = connection
+        self._table = table
+
+    def create_schema(self) -> None:
+        """Crea la tabla si no existe."""
+        self._db.executescript(_PREFERENCES_SCHEMA.format(table=self._table))
+
+    async def get_overrides(self, recipient_id: str, *, scope: str | None = None) -> Overrides:
+        rows = self._db.execute(
+            f"SELECT category, channel, enabled FROM {self._table}"
+            " WHERE recipient_id = ? AND has_scope = ? AND scope = ?",
+            (recipient_id, *_scope_key(scope)),
+        ).fetchall()
+        out: dict[str, dict[str, bool]] = {}
+        for category, channel, enabled in rows:
+            out.setdefault(str(category), {})[str(channel)] = bool(enabled)
+        return out
+
+    async def save_changes(
+        self, recipient_id: str, changes: Sequence[Change], *, scope: str | None = None
+    ) -> None:
+        if not changes:
+            return
+        key = _scope_key(scope)
+        # Una transacción: se guardan todos los cambios o ninguno.
+        self._db.execute("BEGIN IMMEDIATE")
+        try:
+            self._db.executemany(
+                f"INSERT INTO {self._table} (recipient_id, has_scope, scope, category, channel, enabled)"
+                " VALUES (?, ?, ?, ?, ?, ?)"
+                " ON CONFLICT (recipient_id, has_scope, scope, category, channel)"
+                " DO UPDATE SET enabled = excluded.enabled",
+                [
+                    (recipient_id, *key, change.category, change.channel, int(change.enabled))
+                    for change in changes
+                ],
+            )
+        except BaseException:
+            self._db.execute("ROLLBACK")
+            raise
+        self._db.execute("COMMIT")
+
+
+def _scope_key(scope: str | None) -> tuple[int, str]:
+    return (0, "") if scope is None else (1, scope)

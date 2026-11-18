@@ -7,11 +7,13 @@
  *     const vector = JSON.parse(readFileSync('spec/vectors/bandeja/basico.json', 'utf8'));
  *     await runStoreVector(vector, () => new MiAlmacen(...));
  *
+ * `runPreferenceVector` hace lo mismo con `spec/vectors/preferencias-guardadas/`.
+ *
  * Cada vector necesita un almacén vacío.
  */
 import { StoreError, type Notification } from './core/inbox.js';
-import type { Draft } from './core/types.js';
-import type { NotificationStore } from './ports.js';
+import type { Change, Draft } from './core/types.js';
+import type { NotificationStore, PreferenceStore } from './ports.js';
 
 type Wire = Record<string, unknown>;
 
@@ -66,6 +68,40 @@ export async function runStoreVector(
     } catch (error) {
       if (!(error instanceof StoreError)) throw error;
       got = { error: error.reason };
+    }
+    if (!sameJson(got, step['expect'])) {
+      throw new Error(
+        `${vector.id} paso ${index} (${String(step['note'])}), operación \`${String(step['op'])}\`:\n` +
+          `  se esperaba: ${JSON.stringify(step['expect'])}\n` +
+          `  se obtuvo:   ${JSON.stringify(got)}`,
+      );
+    }
+  }
+}
+
+/**
+ * Corre un vector de tipo `preferencias-guardadas`. Lanza un `Error` en el
+ * primer paso que no coincide, diciendo cuál.
+ */
+export async function runPreferenceVector(
+  vector: { readonly id: string; readonly kind: string; readonly steps: readonly Wire[] },
+  makeStore: () => PreferenceStore | Promise<PreferenceStore>,
+): Promise<void> {
+  if (vector.kind !== 'preferencias-guardadas') {
+    throw new TypeError('runPreferenceVector sólo corre vectores de tipo `preferencias-guardadas`');
+  }
+  const store = await makeStore();
+  for (const [index, step] of vector.steps.entries()) {
+    const recipientId = step['recipient_id'] as string;
+    const scope = step['scope'] as string | null;
+    let got: unknown;
+    if (step['op'] === 'save') {
+      await store.saveChanges(recipientId, step['changes'] as Change[], { scope });
+      got = null;
+    } else if (step['op'] === 'get') {
+      got = await store.getOverrides(recipientId, { scope });
+    } else {
+      throw new TypeError(`operación desconocida: ${String(step['op'])}`);
     }
     if (!sameJson(got, step['expect'])) {
       throw new Error(
