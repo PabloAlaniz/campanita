@@ -43,6 +43,17 @@ export type {
 } from './channels/email.js';
 export { defaultBody, HttpEmailTransport, ResendTransport } from './channels/http.js';
 export type { HttpEmailTransportOptions } from './channels/http.js';
+export {
+  escapeSlackText,
+  exchangeSlackCode,
+  isSlackWebhookUrl,
+  parseSlackOAuthResponse,
+  renderSlack,
+  SlackChannel,
+  slackAuthorizeUrl,
+  SlackOAuthError,
+} from './channels/slack.js';
+export type { RenderedSlack, SlackChannelOptions, SlackConnection } from './channels/slack.js';
 export { InvalidChannelsError, Notifier } from './core/notify.js';
 export type { NotifierOptions, NotifyResult } from './core/notify.js';
 export { StoreError } from './core/inbox.js';

@@ -1,0 +1,161 @@
+{
+  "mensaje": [
+    {
+      "note": "título, cuerpo y enlace",
+      "notification": { "title": "Ana comentó", "body": "¿Va con IVA?", "action_url": "https://example.com/doc/7" },
+      "text": "*Ana comentó*\n¿Va con IVA?\n<https://example.com/doc/7>"
+    },
+    {
+      "note": "sólo el título",
+      "notification": { "title": "Listo", "body": null, "action_url": null },
+      "text": "*Listo*"
+    },
+    {
+      "note": "un cuerpo vacío es como no tener cuerpo",
+      "notification": { "title": "Listo", "body": "", "action_url": null },
+      "text": "*Listo*"
+    },
+    {
+      "note": "el texto se escapa: no arma menciones ni enlaces",
+      "notification": { "title": "<!channel> A & B", "body": "<https://example.org|entrá> y 1 > 0", "action_url": null },
+      "text": "*&lt;!channel&gt; A &amp; B*\n&lt;https://example.org|entrá&gt; y 1 &gt; 0"
+    },
+    {
+      "note": "lo ya escapado se escapa de nuevo",
+      "notification": { "title": "&lt;b&gt;", "body": null, "action_url": null },
+      "text": "*&amp;lt;b&amp;gt;*"
+    },
+    {
+      "note": "un salto de línea en el título no parte la negrita",
+      "notification": { "title": "  Uno\r\n\tdos  ", "body": null, "action_url": null },
+      "text": "*Uno dos*"
+    },
+    {
+      "note": "el cuerpo conserva sus saltos de línea",
+      "notification": { "title": "Resumen", "body": "uno\ndos", "action_url": null },
+      "text": "*Resumen*\nuno\ndos"
+    },
+    {
+      "note": "el & de un enlace se escapa",
+      "notification": { "title": "Informe", "body": null, "action_url": "http://example.com/r?a=1&b=2" },
+      "text": "*Informe*\n<http://example.com/r?a=1&amp;b=2>"
+    },
+    {
+      "note": "una ruta relativa no es un enlace: se omite",
+      "notification": { "title": "Informe", "body": "Listo", "action_url": "/informes/7" },
+      "text": "*Informe*\nListo"
+    },
+    {
+      "note": "otro esquema no es un enlace",
+      "notification": { "title": "Informe", "body": null, "action_url": "javascript:alert(1)" },
+      "text": "*Informe*"
+    },
+    {
+      "note": "un enlace que cerraría la marca se omite",
+      "notification": { "title": "Informe", "body": null, "action_url": "https://example.com/a>b" },
+      "text": "*Informe*"
+    },
+    {
+      "note": "un enlace con una barra vertical se omite",
+      "notification": { "title": "Informe", "body": null, "action_url": "https://example.com/a|Hola" },
+      "text": "*Informe*"
+    },
+    {
+      "note": "un enlace con espacios se omite",
+      "notification": { "title": "Informe", "body": null, "action_url": "https://example.com/a b" },
+      "text": "*Informe*"
+    },
+    {
+      "note": "un enlace con un salto de línea al final se omite",
+      "notification": { "title": "Informe", "body": null, "action_url": "https://example.com/a\n" },
+      "text": "*Informe*"
+    },
+    {
+      "note": "un enlace con el esquema en mayúsculas se omite",
+      "notification": { "title": "Informe", "body": null, "action_url": "HTTPS://example.com/a" },
+      "text": "*Informe*"
+    },
+    {
+      "note": "un enlace sin nada después del esquema se omite",
+      "notification": { "title": "Informe", "body": null, "action_url": "https://" },
+      "text": "*Informe*"
+    },
+    {
+      "note": "un título sólo con espacios no deja una negrita vacía",
+      "notification": { "title": " \n ", "body": "Cuerpo", "action_url": null },
+      "text": "Cuerpo"
+    }
+  ],
+  "webhooks": [
+    { "note": "un webhook", "url": "https://hooks.slack.com/services/T0001/B0001/abcDEF123", "valid": true },
+    { "note": "con guiones", "url": "https://hooks.slack.com/services/T-1/B_2/a-b_c", "valid": true },
+    { "note": "sin https", "url": "http://hooks.slack.com/services/T0001/B0001/abc", "valid": false },
+    { "note": "otro servidor", "url": "https://example.com/services/T0001/B0001/abc", "valid": false },
+    { "note": "un servidor que termina igual", "url": "https://evil-hooks.slack.com/services/T/B/a", "valid": false },
+    { "note": "el servidor como usuario de otro", "url": "https://hooks.slack.com@example.com/services/T/B/a", "valid": false },
+    { "note": "el servidor como prefijo de otro", "url": "https://hooks.slack.com.example.com/services/T/B/a", "valid": false },
+    { "note": "con usuario", "url": "https://u:p@hooks.slack.com/services/T/B/a", "valid": false },
+    { "note": "con puerto", "url": "https://hooks.slack.com:8443/services/T/B/a", "valid": false },
+    { "note": "con consulta", "url": "https://hooks.slack.com/services/T/B/a?x=1", "valid": false },
+    { "note": "con fragmento", "url": "https://hooks.slack.com/services/T/B/a#x", "valid": false },
+    { "note": "otra ruta", "url": "https://hooks.slack.com/workflows/T/B/a", "valid": false },
+    { "note": "sin nada después de services", "url": "https://hooks.slack.com/services/", "valid": false },
+    { "note": "con una barra invertida", "url": "https://hooks.slack.com/services/T\\@example.com/a", "valid": false },
+    { "note": "con un espacio", "url": "https://hooks.slack.com/services/T/B/a b", "valid": false },
+    { "note": "con un salto de línea al final", "url": "https://hooks.slack.com/services/T/B/a\n", "valid": false },
+    { "note": "con mayúsculas en el servidor", "url": "https://HOOKS.slack.com/services/T/B/a", "valid": false },
+    { "note": "con letras fuera de ASCII", "url": "https://hooks.slack.com/services/T/B/ñ", "valid": false },
+    { "note": "con un punto", "url": "https://hooks.slack.com/services/../x", "valid": false },
+    { "note": "vacía", "url": "", "valid": false },
+    { "note": "nula", "url": null, "valid": false },
+    { "note": "un número", "url": 7, "valid": false }
+  ],
+  "oauth": [
+    {
+      "note": "una conexión completa",
+      "response": {
+        "ok": true,
+        "access_token": "xoxb-no-se-usa",
+        "team": { "id": "T0001", "name": "Equipo" },
+        "incoming_webhook": {
+          "channel": "#avisos",
+          "channel_id": "C0001",
+          "configuration_url": "https://equipo.slack.com/services/B0001",
+          "url": "https://hooks.slack.com/services/T0001/B0001/abc"
+        }
+      },
+      "connection": {
+        "webhook_url": "https://hooks.slack.com/services/T0001/B0001/abc",
+        "channel": "#avisos",
+        "channel_id": "C0001",
+        "team_id": "T0001",
+        "team_name": "Equipo",
+        "configuration_url": "https://equipo.slack.com/services/B0001"
+      }
+    },
+    {
+      "note": "sólo la URL: lo demás queda nulo",
+      "response": { "ok": true, "incoming_webhook": { "url": "https://hooks.slack.com/services/T/B/a", "channel": "", "channel_id": 7 } },
+      "connection": {
+        "webhook_url": "https://hooks.slack.com/services/T/B/a",
+        "channel": null,
+        "channel_id": null,
+        "team_id": null,
+        "team_name": null,
+        "configuration_url": null
+      }
+    },
+    { "note": "Slack rechaza el código", "response": { "ok": false, "error": "invalid_code" }, "error": "invalid_code" },
+    { "note": "la persona canceló", "response": { "ok": false, "error": "access_denied" }, "error": "access_denied" },
+    { "note": "un error que no es una palabra de Slack no se repite", "response": { "ok": false, "error": "Algo <raro>" }, "error": "invalid_response" },
+    { "note": "un error con un salto de línea al final no se repite", "response": { "ok": false, "error": "invalid_code\n" }, "error": "invalid_response" },
+    { "note": "rechazo sin error", "response": { "ok": false }, "error": "invalid_response" },
+    { "note": "`ok` que no es verdadero", "response": { "ok": "true", "incoming_webhook": { "url": "https://hooks.slack.com/services/T/B/a" } }, "error": "invalid_response" },
+    { "note": "`ok` que es un 1", "response": { "ok": 1, "incoming_webhook": { "url": "https://hooks.slack.com/services/T/B/a" } }, "error": "invalid_response" },
+    { "note": "sin webhook: faltó pedir el permiso", "response": { "ok": true, "team": { "id": "T1" } }, "error": "no_webhook" },
+    { "note": "un webhook que no es de Slack", "response": { "ok": true, "incoming_webhook": { "url": "https://example.com/services/T/B/a" } }, "error": "no_webhook" },
+    { "note": "webhook que no es un objeto", "response": { "ok": true, "incoming_webhook": "https://hooks.slack.com/services/T/B/a" }, "error": "no_webhook" },
+    { "note": "respuesta que es una lista", "response": ["ok"], "error": "invalid_response" },
+    { "note": "respuesta nula", "response": null, "error": "invalid_response" }
+  ]
+}

@@ -14,7 +14,8 @@ npm install campanita
 
 > **Versión temprana.** El núcleo decide por qué canales sale un aviso, qué puede cambiar la
 > persona y cómo se arma un aviso, y guarda la bandeja y las preferencias sobre cualquier base.
-> El primer canal de entrega es email (SMTP, HTTP o Resend); los demás los escribe quien integra.
+> Los canales de entrega incluidos son email (SMTP, HTTP o Resend) y Slack; los demás los escribe
+> quien integra.
 > Hasta la 1.0 la API puede cambiar entre versiones menores. La [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene y el
 > [CHANGELOG](CHANGELOG.md), qué cambió.
 
@@ -78,6 +79,15 @@ email = EmailChannel(
     sender="avisos@example.com",
     resolve_address=buscar_direccion,       # tu función: de un destinatario a su dirección
 )
+```
+
+Otro es Slack: cada persona conecta un canal de su espacio con OAuth, sin ver ni pegar un token, y
+los avisos le llegan ahí.
+
+```python
+from campanita.channels import SlackChannel
+
+slack = SlackChannel(resolve_webhook=buscar_webhook)   # tu función: None si no conectó
 ```
 
 Avisar es mandar un tipo y sus datos. La categoría, el texto y los canales los decide campanita:

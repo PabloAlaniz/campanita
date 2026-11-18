@@ -9,7 +9,7 @@
  *   `spec/vectors/silencio-guardado/`, y `runStoreVector`, `runPreferenceVector`
  *   y `runQuietHoursVector` las corren contra cualquier adaptador.
  * - `DeliveryChannel` se usa en el recorrido completo, que está especificado
- *   (`spec/vectors/recorrido/`). El primer canal real es `EmailChannel`.
+ *   (`spec/vectors/recorrido/`). Los canales incluidos son `EmailChannel` y `SlackChannel`.
  */
 import type { AddResult, FeedPage, FeedQuery, Notification } from './core/inbox.js';
 import type { QuietHours } from './core/quiet.js';
@@ -98,7 +98,7 @@ export interface DeliveryResult {
  * con los demás canales.
  *
  * El recorrido está especificado (`spec/vectors/recorrido/`). El primer canal
- * incluido es `EmailChannel`.
+ * incluido es `EmailChannel`; el segundo, `SlackChannel`.
  */
 export interface DeliveryChannel {
   /** El identificador del canal en la política. */

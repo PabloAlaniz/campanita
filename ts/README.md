@@ -224,6 +224,46 @@ new HttpEmailTransport('https://mail.example.com/v1/send', {
 Los transportes están probados con un `fetch` de prueba. Ninguno se probó contra un proveedor
 real: conviene hacer un envío de prueba antes de confiar en la configuración.
 
+## Slack
+
+`SlackChannel` avisa en el canal de Slack que conectó cada persona. La conexión es por OAuth: la
+persona elige el canal en la pantalla de Slack, entre los que puede usar, y nunca ve ni pega un
+token. Lo que queda es la URL de un webhook, que guarda quien integra.
+
+```ts
+import { exchangeSlackCode, SlackChannel, slackAuthorizeUrl } from 'campanita';
+
+// 1. Mandar a la persona a Slack. `state` es tuyo: atado a su sesión e imposible de adivinar.
+const url = slackAuthorizeUrl({ clientId, redirectUri, state });
+
+// 2. Slack la devuelve a `redirectUri` con `code` y `state`. Comprobá `state` y cambiá el código:
+const connection = await exchangeSlackCode({ clientId, clientSecret, code, redirectUri });
+await guardarConexion(recipientId, connection); // webhookUrl es un secreto; channel es «#avisos»
+
+// 3. El canal pide la URL cuando hay algo que entregar.
+const slack = new SlackChannel({
+  resolveWebhook: async (recipientId) => buscarWebhook(recipientId), // null si no conectó
+});
+```
+
+- **La app de Slack es tuya**: se crea en Slack con el permiso `incoming-webhook` y la dirección
+  de vuelta. Para conectarla a espacios ajenos tiene que estar habilitada la distribución.
+- **Quién puede publicar dónde lo decide Slack.** La pantalla de conexión sólo ofrece los canales
+  que esa persona puede usar; campanita no lista canales ni guarda tokens.
+- **Sin conexión no es una falla**: la entrega queda como `skipped`.
+- **`expired` es para reconectar.** Si Slack contesta que el webhook se quitó o que el canal se
+  archivó, la entrega queda como `expired`: conviene borrar la conexión y avisarle a la persona.
+- **El mensaje por omisión** lleva el título en negrita, el cuerpo y el enlace si es una URL
+  `http` o `https`. El texto del aviso sale escapado: no arma menciones ni enlaces. Se cambia con
+  `render`, que devuelve el cuerpo JSON del webhook.
+- **Sólo se publica en `https://hooks.slack.com/services/…`.** Otra URL no se usa, y ningún error
+  repite la del webhook.
+- **Desconectar es borrar la URL guardada.** El webhook sigue existiendo en Slack hasta que la
+  persona lo quita desde ahí (`configurationUrl`).
+
+Está probado con un `fetch` de prueba, no contra Slack: conviene hacer una conexión real antes de
+confiar en la configuración.
+
 ## Desarrollo
 
 Desde la raíz del repo:

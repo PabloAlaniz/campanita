@@ -9,7 +9,7 @@ Están declarados en [`python/src/campanita/ports.py`](../python/src/campanita/p
 | `NotificationStore` | Guardar avisos y leer la bandeja | Especificado, con secuencias de conformidad |
 | `PreferenceStore` | Guardar lo que cambió cada persona | Especificado, con secuencias de conformidad |
 | `QuietHoursStore` | Guardar el horario de no molestar de cada persona | Especificado, con secuencias de conformidad |
-| `DeliveryChannel` | Entregar un aviso fuera de la bandeja | Especificado dentro del recorrido; el primer canal es email |
+| `DeliveryChannel` | Entregar un aviso fuera de la bandeja | Especificado dentro del recorrido; incluye email y Slack |
 
 La **bandeja** no es un puerto: es lo que se lee del `NotificationStore`. Cualquier superficie
 que la muestre (un panel web, una app, un bot) es un cliente de esa lectura.
@@ -116,6 +116,25 @@ Lo que cada transporte garantiza por su cuenta:
 Los transportes están probados contra servidores de prueba locales. Ninguno se probó contra un
 proveedor real.
 
+### Slack
+
+El canal de Slack (`SlackChannel`) publica en el canal que conectó cada persona, por un «incoming
+webhook». Busca la URL del webhook con una función de quien integra, igual que el de email busca
+la dirección.
+
+La conexión se hace con OAuth y dos funciones: una arma la URL a la que se manda a la persona y
+la otra cambia el código de vuelta por la conexión. La persona elige el canal en la pantalla de
+Slack, que sólo le ofrece los que puede usar. Guardar la conexión y comprobar el `state` es de
+quien integra.
+
+- **Sólo publica en `https://hooks.slack.com/services/…`**, sin seguir redirecciones.
+- **Ningún error repite la URL del webhook, el secreto ni el código.**
+- **Un webhook quitado o un canal archivado es `expired`**, no `failed`: reintentar no sirve.
+
+Slack es un adaptador y no está en el spec. Lo que tiene que dar igual en los dos lenguajes (el
+mensaje por omisión, qué URL se acepta y cómo se lee la respuesta de la conexión) está en
+[`fixtures/slack.json`](../fixtures/slack.json), que leen los tests de los dos paquetes.
+
 ## Escribir un adaptador
 
 Cada paquete trae el corredor de secuencias que usa para sus propios adaptadores:
@@ -176,4 +195,4 @@ Un puerto no se da por estable hasta tener **dos adaptadores reales**. Con uno s
 termina teniendo la forma de ese adaptador y el segundo no entra.
 
 Los dos almacenes la cumplen en los dos lenguajes (en memoria y SQLite en Python; en memoria y D1
-en TypeScript), y el transporte de email también. El canal de entrega tiene hoy un solo canal real, el de email: le falta el segundo.
+en TypeScript), y el transporte de email también. El canal de entrega también: email y Slack.

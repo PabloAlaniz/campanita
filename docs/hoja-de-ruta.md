@@ -10,6 +10,7 @@
 - El recorrido completo: una sola operación que arma el aviso, lo guarda y lo entrega por los
   canales que corresponden.
 - El canal de email, con transporte intercambiable: SMTP (Python), HTTP genérico y Resend.
+- El canal de Slack: cada persona conecta un canal con OAuth, sin tokens a la vista.
 - No molestar: un horario por persona en el que los canales no interrumpen, salvo lo que la
   política marca como urgente.
 - Almacenes incluidos, para avisos, preferencias y horarios: en memoria (Python y TypeScript), SQLite
@@ -21,8 +22,7 @@
 
 ## Lo que sigue
 
-1. **Web push**, y después push nativo. Es el segundo canal, el que termina de fijar el puerto
-   de entrega.
+1. **Web push**, y después push nativo.
 2. **Registro y reintento de entregas.** Guardar qué pasó con cada entrega y volver a intentar
    las que fallaron.
 3. **Más de email.** SMTP en TypeScript, mensajes en HTML y qué hacer con los rebotes.
@@ -39,5 +39,6 @@
 ## Fuera de alcance
 
 - Flujos con pasos y esperas, y un editor visual de plantillas.
-- Un catálogo propio de proveedores: cada canal es un adaptador que escribe quien lo necesita.
+- Un catálogo de proveedores: se incluyen unos pocos canales de uso general; cualquier otro es
+  un adaptador que escribe quien lo necesita.
 - Autenticación y autorización: el núcleo recibe datos ya autorizados.

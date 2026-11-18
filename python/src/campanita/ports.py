@@ -8,7 +8,7 @@ El núcleo no conoce la base, el canal ni la superficie que muestra la bandeja.
   `spec/vectors/silencio-guardado/`, y `campanita.conformance` las corre contra
   cualquier adaptador.
 - `DeliveryChannel` se usa en el recorrido completo, que está especificado
-  (`spec/vectors/recorrido/`). El primer canal real es el de email
+  (`spec/vectors/recorrido/`). Los canales incluidos son email y Slack
   (`campanita.channels`).
 """
 
