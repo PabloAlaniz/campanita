@@ -9,13 +9,16 @@ import { Miniflare } from 'miniflare';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   D1PreferenceStore,
+  D1QuietHoursStore,
   D1Store,
   d1Schema,
   EmailChannel,
   Notifier,
   parseCatalog,
   parsePolicy,
+  parseQuietHours,
   runPreferenceVector,
+  runQuietHoursVector,
   runStoreVector,
   StoreError,
   type D1Like,
@@ -43,6 +46,12 @@ const store = async (): Promise<D1Store> => {
 };
 const preferences = async (): Promise<D1PreferenceStore> => {
   const made = new D1PreferenceStore(db, { table: table() });
+  await made.createSchema();
+  return made;
+};
+
+const quietHours = async (): Promise<D1QuietHoursStore> => {
+  const made = new D1QuietHoursStore(db, { table: table() });
   await made.createSchema();
   return made;
 };
@@ -206,4 +215,77 @@ it('el recorrido completo sobre D1', async () => {
 
   expect(sent).toEqual(['ana@example.com: Beto comentó', 'ana@example.com: Nuevo inicio de sesión desde Firefox']);
   expect(await notifications.countUnread('ana')).toBe(3);
+});
+
+describe('D1QuietHoursStore', () => {
+  for (const file of files('silencio-guardado')) {
+    it(`silencio-guardado/${file.replace('.json', '')}`, async () => {
+      await runQuietHoursVector(load('silencio-guardado', file), quietHours);
+    });
+  }
+
+  it('createSchema se puede correr dos veces', async () => {
+    const made = await quietHours();
+    await made.setQuietHours(
+      'ana',
+      parseQuietHours({
+        enabled: true,
+        start: '22:00',
+        end: '08:00',
+        timezone: 'UTC',
+      }),
+    );
+    await made.createSchema();
+    expect((await made.getQuietHours('ana'))?.start).toBe('22:00');
+  });
+
+  it('el nombre de la tabla se valida', () => {
+    expect(() => new D1QuietHoursStore(db, { table: 'x; DROP TABLE y' })).toThrow(/identificador/);
+    expect(() => d1Schema({ quietHours: 'x-y' })).toThrow(/identificador/);
+  });
+});
+
+it('no molestar sobre D1: lo no urgente se silencia', async () => {
+  const policy = parsePolicy({
+    activity: {
+      inapp: { default: true, locked: true },
+      email: { default: true },
+      sms: { default: true, urgent: true },
+    },
+  });
+  const sent: string[] = [];
+  const channel = (id: string) => ({
+    id,
+    send: async () => {
+      sent.push(id);
+      return { outcome: 'sent' as const };
+    },
+  });
+  const quiet = await quietHours();
+  await quiet.setQuietHours(
+    'ana',
+    parseQuietHours({
+      enabled: true,
+      start: '22:00',
+      end: '08:00',
+      timezone: 'UTC',
+    }),
+  );
+  const notifier = new Notifier({
+    policy,
+    catalog: parseCatalog({ nota: { category: 'activity', title: 'Hola' } }, policy),
+    store: await store(),
+    preferences: await preferences(),
+    channels: [channel('email'), channel('sms')],
+    quietHours: quiet,
+  });
+  const result = await notifier.notify(
+    { type: 'nota', recipient_id: 'ana' },
+    { createdAt: new Date('2030-01-15T23:00:00Z') },
+  );
+  expect(Object.fromEntries([...result.deliveries].map(([id, d]) => [id, d.outcome]))).toEqual({
+    email: 'silenced',
+    sms: 'sent',
+  });
+  expect(sent).toEqual(['sms']);
 });

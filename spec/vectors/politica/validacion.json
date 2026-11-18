@@ -188,6 +188,99 @@
    "valid": true
   },
   {
+   "note": "celda urgente: se entrega aun en no molestar",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "sms": {
+      "default": true,
+      "locked": true,
+      "urgent": true
+     }
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "`urgent: false` explícito",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "sms": {
+      "default": false,
+      "urgent": false
+     }
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "`urgent` en `inapp` se acepta y no cambia nada",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true,
+      "urgent": true
+     }
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "`urgent` no es booleano: número",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "sms": {
+      "default": true,
+      "urgent": 1
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "`urgent` no es booleano: nulo",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "sms": {
+      "default": true,
+      "urgent": null
+     }
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "`urgent` sin `default`",
+   "policy": {
+    "a": {
+     "inapp": {
+      "default": true,
+      "locked": true
+     },
+     "sms": {
+      "urgent": true
+     }
+    }
+   },
+   "valid": false
+  },
+  {
    "note": "sin categorías",
    "policy": {},
    "valid": false

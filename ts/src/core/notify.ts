@@ -1,8 +1,9 @@
 /** El recorrido completo: armar el aviso, guardarlo y entregarlo. */
-import type { DeliveryChannel, DeliveryResult, NotificationStore, PreferenceStore } from '../ports.js';
+import type { DeliveryChannel, DeliveryResult, NotificationStore, PreferenceStore, QuietHoursStore } from '../ports.js';
 import { buildNotification } from './catalog.js';
 import { resolveChannels } from './channels.js';
 import type { Notification } from './inbox.js';
+import { isQuiet, localMinute } from './quiet.js';
 import { INBOX, type Catalog, type Policy } from './types.js';
 
 const ID = /^[a-z][a-z0-9_-]{0,63}$/;
@@ -17,7 +18,10 @@ export interface NotifyResult {
   readonly notification: Notification;
   /** `false` cuando la clave ya existía: no se guardó nada nuevo ni se entregó. */
   readonly created: boolean;
-  /** Qué pasó en cada canal que se intentó, en el orden en que se intentaron. */
+  /**
+   * Qué pasó en cada canal por el que el aviso iba a salir, en orden. Incluye
+   * los que no se intentaron por no molestar (`silenced`).
+   */
   readonly deliveries: ReadonlyMap<string, DeliveryResult>;
 }
 
@@ -27,6 +31,13 @@ export interface NotifierOptions {
   readonly store: NotificationStore;
   readonly preferences: PreferenceStore;
   readonly channels?: Iterable<DeliveryChannel>;
+  /** Los horarios de no molestar. Sin almacén, nadie está en silencio. */
+  readonly quietHours?: QuietHoursStore;
+  /**
+   * De una zona horaria y un instante al minuto local, o `null` si la zona no
+   * se conoce. Por omisión, `localMinute`, que usa `Intl`.
+   */
+  readonly localMinute?: (timezone: string, moment: Date) => number | null;
   /** Por omisión, `crypto.randomUUID()`. */
   readonly newId?: () => string;
   /** Por omisión, `new Date()`. */
@@ -71,10 +82,27 @@ export class Notifier {
 
     const overrides = await preferences.getOverrides(draft.recipientId, { scope: draft.scope });
     // `resolveChannels` ya los devuelve ordenados por punto de código.
-    for (const channelId of resolveChannels(policy, draft.category, overrides, this.#channels.keys())) {
+    const targets = resolveChannels(policy, draft.category, overrides, this.#channels.keys());
+    const silent = targets.length > 0 && (await this.#isQuiet(added.notification));
+    for (const channelId of targets) {
+      if (silent && !policy[draft.category]![channelId]!.urgent) {
+        deliveries.set(channelId, { outcome: 'silenced' });
+        continue;
+      }
       deliveries.set(channelId, await deliver(this.#channels.get(channelId)!, added.notification));
     }
     return { notification: added.notification, created: true, deliveries };
+  }
+
+  /** Si el destinatario está en su horario de no molestar cuando se creó el aviso. */
+  async #isQuiet(notification: Notification): Promise<boolean> {
+    const store = this.#options.quietHours;
+    if (store === undefined) return false;
+    const quietHours = await store.getQuietHours(notification.recipientId);
+    if (quietHours === null || !quietHours.enabled) return false;
+    const minute = (this.#options.localMinute ?? localMinute)(quietHours.timezone, notification.createdAt);
+    // Zona desconocida: ante la duda, se entrega.
+    return minute !== null && isQuiet(quietHours, minute);
   }
 }
 

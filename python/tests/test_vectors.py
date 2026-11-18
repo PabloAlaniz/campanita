@@ -17,17 +17,21 @@ from campanita import (
     EventRejected,
     InvalidCatalog,
     InvalidPolicy,
+    InvalidQuietHours,
     InvalidTemplate,
     PatchRejected,
     TemplateError,
     build_notification,
     effective_matrix,
+    is_quiet,
     parse_catalog,
     parse_policy,
+    parse_quiet_hours,
     render_template,
     resolve_channels,
     validate_patch,
 )
+from campanita.conformance import quiet_hours_to_wire
 
 SPEC = Path(__file__).resolve().parents[2] / "spec"
 VECTORS = sorted((SPEC / "vectors").rglob("*.json"))
@@ -143,8 +147,23 @@ def test_aviso(vector: dict[str, Any], case: dict[str, Any]) -> None:
         assert {"reason": rejected.value.reason, "detail": rejected.value.detail} == expect["error"]
 
 
+@pytest.mark.parametrize(("_vector", "case"), cases("silencio-validacion"))
+def test_silencio_validacion(_vector: dict[str, Any], case: dict[str, Any]) -> None:
+    if case["valid"]:
+        parsed = parse_quiet_hours(case["setting"])
+        assert quiet_hours_to_wire(parsed) == case["setting"]
+    else:
+        with pytest.raises(InvalidQuietHours):
+            parse_quiet_hours(case["setting"])
+
+
+@pytest.mark.parametrize(("_vector", "case"), cases("silencio"))
+def test_silencio(_vector: dict[str, Any], case: dict[str, Any]) -> None:
+    assert is_quiet(parse_quiet_hours(case["setting"]), case["minute"]) is case["expect"]
+
+
 def test_todos_los_tipos_de_vector_tienen_quien_los_corra() -> None:
-    # Los de `bandeja` y `preferencias-guardadas` los corre tests/test_stores.py
+    # Los de `bandeja`, `preferencias-guardadas` y `silencio-guardado` los corre tests/test_stores.py
     # contra cada almacén; los de `recorrido`, tests/test_notify.py; y los de
     # email, tests/test_email.py.
     corridos = {
@@ -161,5 +180,8 @@ def test_todos_los_tipos_de_vector_tienen_quien_los_corra() -> None:
         "recorrido-canales",
         "email-mensaje",
         "email-direcciones",
+        "silencio-validacion",
+        "silencio",
+        "silencio-guardado",
     }
     assert {load(path)["kind"] for path in VECTORS} == corridos

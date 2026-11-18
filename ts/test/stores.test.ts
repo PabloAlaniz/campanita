@@ -8,7 +8,9 @@ import {
   MemoryStore,
   parsePolicy,
   resolveChannels,
+  MemoryQuietHoursStore,
   runPreferenceVector,
+  runQuietHoursVector,
   runStoreVector,
   StoreError,
   validatePatch,
@@ -147,3 +149,25 @@ for (const [name, makeStore] of Object.entries(preferenceStores)) {
     });
   });
 }
+
+// --- horarios de no molestar -------------------------------------------------
+
+const QUIET_DIR = fileURLToPath(new URL('../../spec/vectors/silencio-guardado', import.meta.url));
+const quietFiles = readdirSync(QUIET_DIR)
+  .filter((file) => file.endsWith('.json'))
+  .sort();
+
+it('hay secuencias de horarios', () => {
+  expect(quietFiles.length).toBeGreaterThanOrEqual(1);
+});
+
+describe('horarios: memory', () => {
+  for (const file of quietFiles) {
+    it(file.replace('.json', ''), async () => {
+      await runQuietHoursVector(
+        JSON.parse(readFileSync(join(QUIET_DIR, file), 'utf8')),
+        () => new MemoryQuietHoursStore(),
+      );
+    });
+  }
+});

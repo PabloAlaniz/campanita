@@ -19,6 +19,7 @@ from .._inbox import (
     from_ms,
     to_ms,
 )
+from .._quiet import QuietHours
 from .._types import Change, Overrides
 
 
@@ -110,6 +111,19 @@ class MemoryStore:
 def _position(item: Notification) -> tuple[int, str]:
     # `str` se compara por punto de código, que es el desempate que pide el spec.
     return (to_ms(item.created_at), item.id)
+
+
+class MemoryQuietHoursStore:
+    """Los horarios de no molestar, en el proceso."""
+
+    def __init__(self) -> None:
+        self._by_recipient: dict[str, QuietHours] = {}
+
+    async def get_quiet_hours(self, recipient_id: str) -> QuietHours | None:
+        return self._by_recipient.get(recipient_id)
+
+    async def set_quiet_hours(self, recipient_id: str, quiet_hours: QuietHours) -> None:
+        self._by_recipient[recipient_id] = quiet_hours
 
 
 class MemoryPreferenceStore:

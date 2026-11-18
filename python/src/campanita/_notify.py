@@ -12,8 +12,9 @@ from ._catalog import Catalog, build_notification
 from ._channels import resolve_channels
 from ._inbox import Notification
 from ._policy import Policy
+from ._quiet import is_quiet, local_minute
 from ._types import INBOX
-from .ports import DeliveryChannel, DeliveryResult, NotificationStore, PreferenceStore
+from .ports import DeliveryChannel, DeliveryResult, NotificationStore, PreferenceStore, QuietHoursStore
 
 _ID = re.compile(r"[a-z][a-z0-9_-]{0,63}")
 _OUTCOMES = frozenset({"sent", "expired", "failed", "skipped"})
@@ -28,7 +29,8 @@ class NotifyResult:
     notification: Notification
     #: `False` cuando la clave ya existía: no se guardó nada nuevo ni se entregó.
     created: bool
-    #: Qué pasó en cada canal que se intentó, en el orden en que se intentaron.
+    #: Qué pasó en cada canal por el que el aviso iba a salir, en orden. Incluye
+    #: los que no se intentaron por no molestar (`silenced`).
     deliveries: Mapping[str, DeliveryResult]
 
 
@@ -46,6 +48,8 @@ class Notifier:
         store: NotificationStore,
         preferences: PreferenceStore,
         channels: Iterable[DeliveryChannel] = (),
+        quiet_hours: QuietHoursStore | None = None,
+        local_minute: Callable[[str, datetime], int | None] = local_minute,
         new_id: Callable[[], str] = lambda: str(uuid.uuid4()),
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
@@ -54,6 +58,11 @@ class Notifier:
         self._store = store
         self._preferences = preferences
         self._channels = check_channels(channels)
+        #: Sin almacén de horarios, nadie está en no molestar.
+        self._quiet_hours = quiet_hours
+        #: De una zona horaria y un instante al minuto local. Se puede reemplazar
+        #: si la base de zonas de la plataforma no alcanza.
+        self._local_minute = local_minute
         self._new_id = new_id
         self._clock = clock
 
@@ -83,11 +92,27 @@ class Notifier:
 
         overrides = await self._preferences.get_overrides(draft.recipient_id, scope=draft.scope)
         targets = resolve_channels(self._policy, draft.category, overrides, self._channels.keys())
+        silent = bool(targets) and await self._is_quiet(added.notification)
+        cells = self._policy[draft.category]
         deliveries: dict[str, DeliveryResult] = {}
         # `sorted` sobre `str` ordena por punto de código: el orden del spec.
         for channel_id in sorted(targets):
+            if silent and not cells[channel_id].urgent:
+                deliveries[channel_id] = DeliveryResult("silenced")
+                continue
             deliveries[channel_id] = await _deliver(self._channels[channel_id], added.notification)
         return NotifyResult(added.notification, created=True, deliveries=deliveries)
+
+    async def _is_quiet(self, notification: Notification) -> bool:
+        """Si el destinatario está en su horario de no molestar cuando se creó el aviso."""
+        if self._quiet_hours is None:
+            return False
+        quiet_hours = await self._quiet_hours.get_quiet_hours(notification.recipient_id)
+        if quiet_hours is None or not quiet_hours.enabled:
+            return False
+        minute = self._local_minute(quiet_hours.timezone, notification.created_at)
+        # Zona desconocida: ante la duda, se entrega.
+        return minute is not None and is_quiet(quiet_hours, minute)
 
 
 def check_channels(channels: Iterable[DeliveryChannel]) -> dict[str, DeliveryChannel]:

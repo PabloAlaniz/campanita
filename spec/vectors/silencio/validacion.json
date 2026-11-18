@@ -1,0 +1,437 @@
+{
+ "spec": "0",
+ "id": "silencio/validacion",
+ "kind": "silencio-validacion",
+ "cases": [
+  {
+   "note": "un horario que cruza la medianoche",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": true
+  },
+  {
+   "note": "un horario dentro del mismo día",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "valid": true
+  },
+  {
+   "note": "apagado",
+   "setting": {
+    "enabled": false,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": true
+  },
+  {
+   "note": "los extremos del día",
+   "setting": {
+    "enabled": true,
+    "start": "00:00",
+    "end": "23:59",
+    "timezone": "America/Lima"
+   },
+   "valid": true
+  },
+  {
+   "note": "inicio y fin iguales (horario vacío)",
+   "setting": {
+    "enabled": true,
+    "start": "09:00",
+    "end": "09:00",
+    "timezone": "America/Lima"
+   },
+   "valid": true
+  },
+  {
+   "note": "zona `UTC`",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "UTC"
+   },
+   "valid": true
+  },
+  {
+   "note": "zona con signo y dígitos",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "Etc/GMT+3"
+   },
+   "valid": true
+  },
+  {
+   "note": "zona con guion y guion bajo",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Port-au-Prince_x"
+   },
+   "valid": true
+  },
+  {
+   "note": "zona de 64 caracteres",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   },
+   "valid": true
+  },
+  {
+   "note": "no es un objeto: nulo",
+   "setting": null,
+   "valid": false
+  },
+  {
+   "note": "no es un objeto: lista",
+   "setting": [],
+   "valid": false
+  },
+  {
+   "note": "no es un objeto: texto",
+   "setting": "22:00-08:00",
+   "valid": false
+  },
+  {
+   "note": "objeto vacío",
+   "setting": {},
+   "valid": false
+  },
+  {
+   "note": "falta `enabled`",
+   "setting": {
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "falta `start`",
+   "setting": {
+    "enabled": true,
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "falta `end`",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "falta `timezone`",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00"
+   },
+   "valid": false
+  },
+  {
+   "note": "clave de más",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima",
+    "days": [
+     1,
+     2
+    ]
+   },
+   "valid": false
+  },
+  {
+   "note": "`enabled` no es booleano: número",
+   "setting": {
+    "enabled": 1,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "`enabled` no es booleano: texto",
+   "setting": {
+    "enabled": "true",
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "`enabled` no es booleano: nulo",
+   "setting": {
+    "enabled": null,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "hora 24",
+   "setting": {
+    "enabled": true,
+    "start": "24:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "minuto 60",
+   "setting": {
+    "enabled": true,
+    "start": "23:60",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "hora de un dígito",
+   "setting": {
+    "enabled": true,
+    "start": "9:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "minuto de un dígito",
+   "setting": {
+    "enabled": true,
+    "start": "09:5",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "con segundos",
+   "setting": {
+    "enabled": true,
+    "start": "09:00:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "sin dos puntos",
+   "setting": {
+    "enabled": true,
+    "start": "0900",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "con punto",
+   "setting": {
+    "enabled": true,
+    "start": "09.00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "con espacio adelante",
+   "setting": {
+    "enabled": true,
+    "start": " 09:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "con salto de línea al final",
+   "setting": {
+    "enabled": true,
+    "start": "09:00\n",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "con signo",
+   "setting": {
+    "enabled": true,
+    "start": "-9:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "dígitos que no son ASCII",
+   "setting": {
+    "enabled": true,
+    "start": "０９:００",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "hora vacía",
+   "setting": {
+    "enabled": true,
+    "start": "",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "`start` no es texto: número",
+   "setting": {
+    "enabled": true,
+    "start": 900,
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "`start` no es texto: nulo",
+   "setting": {
+    "enabled": true,
+    "start": null,
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "`end` inválido",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "25:00",
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "`end` no es texto",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": 480,
+    "timezone": "America/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "zona vacía",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": ""
+   },
+   "valid": false
+  },
+  {
+   "note": "zona de 65 caracteres",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   },
+   "valid": false
+  },
+  {
+   "note": "zona con espacio",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/New York"
+   },
+   "valid": false
+  },
+  {
+   "note": "zona con letra no ASCII",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "América/Lima"
+   },
+   "valid": false
+  },
+  {
+   "note": "zona con dos puntos",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "UTC+03:00"
+   },
+   "valid": false
+  },
+  {
+   "note": "zona con salto de línea al final",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "UTC\n"
+   },
+   "valid": false
+  },
+  {
+   "note": "zona que no es texto: número",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": -180
+   },
+   "valid": false
+  },
+  {
+   "note": "zona que no es texto: nulo",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": null
+   },
+   "valid": false
+  }
+ ]
+}

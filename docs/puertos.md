@@ -1,6 +1,6 @@
 # Puertos
 
-El núcleo de campanita decide; no guarda, no envía y no dibuja. Todo eso entra por tres puertos.
+El núcleo de campanita decide; no guarda, no envía y no dibuja. Todo eso entra por cuatro puertos.
 Están declarados en [`python/src/campanita/ports.py`](../python/src/campanita/ports.py) y en
 [`ts/src/ports.ts`](../ts/src/ports.ts).
 
@@ -8,6 +8,7 @@ Están declarados en [`python/src/campanita/ports.py`](../python/src/campanita/p
 |---|---|---|
 | `NotificationStore` | Guardar avisos y leer la bandeja | Especificado, con secuencias de conformidad |
 | `PreferenceStore` | Guardar lo que cambió cada persona | Especificado, con secuencias de conformidad |
+| `QuietHoursStore` | Guardar el horario de no molestar de cada persona | Especificado, con secuencias de conformidad |
 | `DeliveryChannel` | Entregar un aviso fuera de la bandeja | Especificado dentro del recorrido; el primer canal es email |
 
 La **bandeja** no es un puerto: es lo que se lee del `NotificationStore`. Cualquier superficie
@@ -38,7 +39,20 @@ Su comportamiento está en la sección "Las preferencias guardadas" del spec y e
 | SQLite | `campanita.stores.SqlitePreferenceStore` | todavía no |
 | Cloudflare D1 | no aplica | `D1PreferenceStore` |
 
-Las dos tablas pueden vivir en la misma base o en bases distintas: los puertos son independientes.
+## El almacén de horarios
+
+Guarda el horario de no molestar de cada persona. Su comportamiento está en la sección "No
+molestar" del spec y en las secuencias de
+[`spec/vectors/silencio-guardado/`](../spec/vectors/silencio-guardado). Es opcional: sin él,
+nadie está en silencio.
+
+| Adaptador | Python | TypeScript |
+|---|---|---|
+| En memoria | `campanita.stores.MemoryQuietHoursStore` | `MemoryQuietHoursStore` |
+| SQLite | `campanita.stores.SqliteQuietHoursStore` | todavía no |
+| Cloudflare D1 | no aplica | `D1QuietHoursStore` |
+
+Las tablas pueden vivir en la misma base o en bases distintas: los puertos son independientes.
 
 ## El canal de entrega
 
@@ -126,7 +140,8 @@ for (const file of readdirSync('spec/vectors/bandeja')) {
 ```
 
 Para un almacén de preferencias es igual, con `run_preference_vector` / `runPreferenceVector` y
-las secuencias de `spec/vectors/preferencias-guardadas/`.
+las secuencias de `spec/vectors/preferencias-guardadas/`; y para uno de horarios, con
+`run_quiet_hours_vector` / `runQuietHoursVector` y las de `spec/vectors/silencio-guardado/`.
 
 Cada secuencia necesita un almacén vacío. Si un paso no coincide, el corredor dice cuál, qué
 esperaba y qué obtuvo.
@@ -142,7 +157,7 @@ Lo que las secuencias **no** pueden probar, y cada adaptador tiene que garantiza
 - **Que las fechas no pierdan los milisegundos.**
 - **Que guardar varios cambios de preferencias sea todo o nada.**
 
-## Decisiones que valen para los tres puertos
+## Decisiones que valen para todos los puertos
 
 - **Toda lectura pide el destinatario.** Es el único alcance de seguridad, y por eso es un
   parámetro obligatorio y no algo que quien llama se tiene que acordar de filtrar.

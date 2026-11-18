@@ -25,6 +25,7 @@ from .._inbox import (
     from_ms,
     to_ms,
 )
+from .._quiet import QuietHours
 from .._types import Change, Overrides
 
 # El texto se compara byte a byte (la colación BINARY de SQLite), que en UTF-8
@@ -277,3 +278,54 @@ class SqlitePreferenceStore:
 
 def _scope_key(scope: str | None) -> tuple[int, str]:
     return (0, "") if scope is None else (1, scope)
+
+
+_QUIET_HOURS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS {table} (
+    recipient_id TEXT PRIMARY KEY,
+    enabled      INTEGER NOT NULL,
+    start_time   TEXT NOT NULL,
+    end_time     TEXT NOT NULL,
+    timezone     TEXT NOT NULL
+) WITHOUT ROWID;
+"""
+
+
+class SqliteQuietHoursStore:
+    """Los horarios de no molestar, sobre SQLite. Usa la conexión que le pasan y no la cierra."""
+
+    def __init__(self, connection: sqlite3.Connection, *, table: str = "campanita_quiet_hours") -> None:
+        if not table.isidentifier():
+            raise ValueError("el nombre de la tabla tiene que ser un identificador")
+        self._db = connection
+        self._table = table
+
+    def create_schema(self) -> None:
+        """Crea la tabla si no existe."""
+        self._db.executescript(_QUIET_HOURS_SCHEMA.format(table=self._table))
+
+    async def get_quiet_hours(self, recipient_id: str) -> QuietHours | None:
+        row = self._db.execute(
+            f"SELECT enabled, start_time, end_time, timezone FROM {self._table} WHERE recipient_id = ?",
+            (recipient_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        enabled, start, end, timezone = row
+        return QuietHours(enabled=bool(enabled), start=str(start), end=str(end), timezone=str(timezone))
+
+    async def set_quiet_hours(self, recipient_id: str, quiet_hours: QuietHours) -> None:
+        self._db.execute(
+            f"INSERT INTO {self._table} (recipient_id, enabled, start_time, end_time, timezone)"
+            " VALUES (?, ?, ?, ?, ?)"
+            " ON CONFLICT (recipient_id) DO UPDATE SET enabled = excluded.enabled,"
+            " start_time = excluded.start_time, end_time = excluded.end_time, timezone = excluded.timezone",
+            (
+                recipient_id,
+                int(quiet_hours.enabled),
+                quiet_hours.start,
+                quiet_hours.end,
+                quiet_hours.timezone,
+            ),
+        )
+        self._db.commit()

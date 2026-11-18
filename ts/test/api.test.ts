@@ -23,7 +23,7 @@ it('la política es inmutable', () => {
   expect(Object.isFrozen(policy)).toBe(true);
   expect(Object.isFrozen(policy['activity'])).toBe(true);
   expect(Object.isFrozen(policy['activity']?.['email'])).toBe(true);
-  expect(policy['activity']?.['email']).toEqual({ default: false, locked: false });
+  expect(policy['activity']?.['email']).toEqual({ default: false, locked: false, urgent: false });
 });
 
 it('cambiar el dato original no cambia la política', () => {

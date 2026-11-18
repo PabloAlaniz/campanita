@@ -13,9 +13,16 @@ from typing import Any
 import pytest
 
 from campanita import Change, Draft, FeedQuery, StoreError
-from campanita.conformance import run_preference_vector, run_store_vector
-from campanita.ports import NotificationStore, PreferenceStore
-from campanita.stores import MemoryPreferenceStore, MemoryStore, SqlitePreferenceStore, SqliteStore
+from campanita.conformance import run_preference_vector, run_quiet_hours_vector, run_store_vector
+from campanita.ports import NotificationStore, PreferenceStore, QuietHoursStore
+from campanita.stores import (
+    MemoryPreferenceStore,
+    MemoryQuietHoursStore,
+    MemoryStore,
+    SqlitePreferenceStore,
+    SqliteQuietHoursStore,
+    SqliteStore,
+)
 
 VECTORS = sorted((Path(__file__).resolve().parents[2] / "spec" / "vectors" / "bandeja").glob("*.json"))
 
@@ -211,3 +218,60 @@ def test_las_preferencias_guardadas_sirven_para_resolver_canales() -> None:
         assert resolve_channels(policy, "activity", await store.get_overrides("beto"), ["email"]) == set()
 
     asyncio.run(run())
+
+
+# --- horarios de no molestar ------------------------------------------------
+
+QUIET_HOURS_VECTORS = sorted(
+    (Path(__file__).resolve().parents[2] / "spec" / "vectors" / "silencio-guardado").glob("*.json")
+)
+
+
+def sqlite_quiet_hours() -> SqliteQuietHoursStore:
+    store = SqliteQuietHoursStore(sqlite3.connect(":memory:", isolation_level=None))
+    store.create_schema()
+    return store
+
+
+def sqlite_quiet_hours_con_transacciones() -> SqliteQuietHoursStore:
+    # La conexión por omisión de `sqlite3`, que abre transacciones sola.
+    store = SqliteQuietHoursStore(sqlite3.connect(":memory:"))
+    store.create_schema()
+    return store
+
+
+QUIET_HOURS_STORES: dict[str, Callable[[], QuietHoursStore]] = {
+    "memory": MemoryQuietHoursStore,
+    "sqlite": sqlite_quiet_hours,
+    "sqlite-transacciones": sqlite_quiet_hours_con_transacciones,
+}
+
+
+def test_hay_secuencias_de_horarios() -> None:
+    assert len(QUIET_HOURS_VECTORS) >= 1
+
+
+@pytest.mark.parametrize("make_store", QUIET_HOURS_STORES.values(), ids=QUIET_HOURS_STORES.keys())
+@pytest.mark.parametrize("path", QUIET_HOURS_VECTORS, ids=lambda p: p.stem)
+def test_secuencia_de_horarios(path: Path, make_store: Callable[[], QuietHoursStore]) -> None:
+    asyncio.run(run_quiet_hours_vector(json.loads(path.read_text(encoding="utf-8")), make_store))
+
+
+def test_sqlite_el_horario_lo_ve_otra_conexion(tmp_path: Path) -> None:
+    from campanita import parse_quiet_hours
+
+    async def run() -> None:
+        path = tmp_path / "campanita.db"
+        first = SqliteQuietHoursStore(sqlite3.connect(path))
+        first.create_schema()
+        setting = parse_quiet_hours({"enabled": True, "start": "22:00", "end": "08:00", "timezone": "UTC"})
+        await first.set_quiet_hours("ana", setting)
+        second = SqliteQuietHoursStore(sqlite3.connect(path))
+        assert await second.get_quiet_hours("ana") == setting
+
+    asyncio.run(run())
+
+
+def test_sqlite_el_nombre_de_la_tabla_de_horarios_se_valida() -> None:
+    with pytest.raises(ValueError, match="identificador"):
+        SqliteQuietHoursStore(sqlite3.connect(":memory:"), table="x; DROP TABLE y")

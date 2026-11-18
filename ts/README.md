@@ -102,13 +102,15 @@ await store.markAllRead('user-7', { before: page.items[0]!.createdAt, readAt: ne
 
 ### Cloudflare D1
 
-`D1Store` y `D1PreferenceStore` guardan en una base D1. Reciben el binding del Worker tal cual:
+`D1Store`, `D1PreferenceStore` y `D1QuietHoursStore` guardan en una base D1. Reciben el binding
+del Worker tal cual:
 
 ```ts
-import { D1PreferenceStore, D1Store, d1Schema } from 'campanita';
+import { D1PreferenceStore, D1QuietHoursStore, D1Store, d1Schema } from 'campanita';
 
 const store = new D1Store(env.DB);
 const preferences = new D1PreferenceStore(env.DB);
+const quietHours = new D1QuietHoursStore(env.DB);
 ```
 
 Las tablas se crean una vez. `d1Schema()` devuelve las sentencias para copiar a una migración, o
@@ -165,6 +167,29 @@ result.deliveries; // Map { 'email' => { outcome: 'sent' } }
 
 Primero se guarda y después se entrega: un canal que falla, o que rechaza, no deshace el aviso ni
 impide intentar los demás. Un canal es cualquier objeto con `id` y `send`.
+
+## No molestar
+
+Cada persona puede tener un horario en el que los canales no la interrumpen. El aviso se guarda
+igual; lo que no sale queda anotado como `silenced`.
+
+```ts
+import { MemoryQuietHoursStore, parseQuietHours } from 'campanita';
+
+const quietHours = new MemoryQuietHoursStore();
+await quietHours.setQuietHours(
+  'user-7',
+  parseQuietHours({ enabled: true, start: '22:00', end: '08:00', timezone: 'America/Lima' }),
+);
+
+const notifier = new Notifier({ policy, catalog, store, preferences, channels, quietHours });
+const result = await notifier.notify(evento); // a las 23:30 de esa persona
+result.deliveries; // Map { 'email' => { outcome: 'silenced' } }
+```
+
+Una celda de la política con `urgent: true` se entrega igual:
+`{ default: true, locked: true, urgent: true }`. La hora local sale de `Intl`; si la plataforma no
+conoce la zona, se entrega. Lo silenciado no se manda después: eso lo decide quien integra.
 
 ## Email
 

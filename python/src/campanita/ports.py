@@ -2,10 +2,11 @@
 
 El núcleo no conoce la base, el canal ni la superficie que muestra la bandeja.
 
-- `NotificationStore` y `PreferenceStore` están especificados: su
-  comportamiento es el de las secuencias de `spec/vectors/bandeja/` y
-  `spec/vectors/preferencias-guardadas/`, y `campanita.conformance` las corre
-  contra cualquier adaptador.
+- `NotificationStore`, `PreferenceStore` y `QuietHoursStore` están
+  especificados: su comportamiento es el de las secuencias de
+  `spec/vectors/bandeja/`, `spec/vectors/preferencias-guardadas/` y
+  `spec/vectors/silencio-guardado/`, y `campanita.conformance` las corre contra
+  cualquier adaptador.
 - `DeliveryChannel` se usa en el recorrido completo, que está especificado
   (`spec/vectors/recorrido/`). El primer canal real es el de email
   (`campanita.channels`).
@@ -20,6 +21,7 @@ from typing import Literal, Protocol
 
 from ._catalog import Draft
 from ._inbox import AddResult, FeedPage, FeedQuery, Notification
+from ._quiet import QuietHours
 from ._types import Change, Overrides
 
 
@@ -82,11 +84,29 @@ class PreferenceStore(Protocol):
         ...
 
 
+class QuietHoursStore(Protocol):
+    """El horario de no molestar de cada persona. Es de la persona, no de un ámbito.
+
+    El almacén guarda el horario que le pasen: lo valida `parse_quiet_hours`
+    antes. Su comportamiento es el de `spec/vectors/silencio-guardado/`.
+    """
+
+    async def get_quiet_hours(self, recipient_id: str) -> QuietHours | None:
+        """El horario de esa persona, o `None` si nunca definió uno."""
+        ...
+
+    async def set_quiet_hours(self, recipient_id: str, quiet_hours: QuietHours) -> None:
+        """Lo guarda, reemplazando el que hubiera."""
+        ...
+
+
 #: - `sent`: el proveedor aceptó el aviso.
 #: - `expired`: el destino ya no existe y el adaptador lo tiene que olvidar.
 #: - `failed`: no se pudo entregar.
 #: - `skipped`: no había a dónde entregar. Reintentar no sirve.
-DeliveryOutcome = Literal["sent", "expired", "failed", "skipped"]
+#: - `silenced`: no lo contesta un canal, lo anota `Notifier`: el canal no se
+#:   intentó porque la persona está en su horario de no molestar.
+DeliveryOutcome = Literal["sent", "expired", "failed", "skipped", "silenced"]
 
 
 @dataclass(frozen=True, slots=True)

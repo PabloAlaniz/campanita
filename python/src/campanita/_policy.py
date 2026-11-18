@@ -10,7 +10,7 @@ from typing import final
 from ._types import INBOX, Cell, InvalidPolicy
 
 _ID = re.compile(r"[a-z][a-z0-9_-]{0,63}")
-_CELL_KEYS = frozenset({"default", "locked"})
+_CELL_KEYS = frozenset({"default", "locked", "urgent"})
 
 
 @final
@@ -67,7 +67,8 @@ def parse_policy(raw: object) -> Policy:
 
         # La bandeja siempre recibe: no es un canal opcional, es donde la
         # notificación vive.
-        if parsed.get(INBOX) != Cell(default=True, locked=True):
+        inbox = parsed.get(INBOX)
+        if inbox is None or not inbox.default or not inbox.locked:
             raise InvalidPolicy(f"{category}: falta `{INBOX}` con `default: true` y `locked: true`")
         categories[category] = parsed
 
@@ -89,10 +90,12 @@ def _parse_cell(cell: object, where: str) -> Cell:
         raise InvalidPolicy(f"{where}: clave desconocida `{extra[0]}`")
     if "default" not in cell:
         raise InvalidPolicy(f"{where}: falta `default`")
-    default, locked = cell["default"], cell.get("locked", False)
+    default, locked, urgent = cell["default"], cell.get("locked", False), cell.get("urgent", False)
     # `isinstance(1, bool)` es False, que es lo que queremos: 1 no es un booleano.
     if not isinstance(default, bool):
         raise InvalidPolicy(f"{where}: `default` tiene que ser un booleano")
     if not isinstance(locked, bool):
         raise InvalidPolicy(f"{where}: `locked` tiene que ser un booleano")
-    return Cell(default=default, locked=locked)
+    if not isinstance(urgent, bool):
+        raise InvalidPolicy(f"{where}: `urgent` tiene que ser un booleano")
+    return Cell(default=default, locked=locked, urgent=urgent)

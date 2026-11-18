@@ -17,8 +17,9 @@ import {
   type FeedQuery,
   type Notification,
 } from '../core/inbox.js';
+import type { QuietHours } from '../core/quiet.js';
 import type { Change, Draft, Overrides } from '../core/types.js';
-import type { NotificationStore, PreferenceStore } from '../ports.js';
+import type { NotificationStore, PreferenceStore, QuietHoursStore } from '../ports.js';
 
 /** Lo que los almacenes usan de una sentencia preparada de D1. */
 export interface D1StatementLike {
@@ -37,6 +38,7 @@ export interface D1Like {
 const TABLE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const NOTIFICATIONS = 'campanita_notifications';
 const PREFERENCES = 'campanita_preferences';
+const QUIET_HOURS = 'campanita_quiet_hours';
 const COLUMNS =
   'id, recipient_id, type, category, title, body, action_url, payload, scope, dedupe_key, created_at_ms, read_at_ms';
 
@@ -50,9 +52,16 @@ function checkTable(table: string): string {
  * migración. El texto se compara byte a byte (la colación por omisión de
  * SQLite), que en UTF-8 es el orden por punto de código que pide el spec.
  */
-export function d1Schema(tables: { notifications?: string; preferences?: string } = {}): string[] {
+export function d1Schema(
+  tables: {
+    notifications?: string;
+    preferences?: string;
+    quietHours?: string;
+  } = {},
+): string[] {
   const n = checkTable(tables.notifications ?? NOTIFICATIONS);
   const p = checkTable(tables.preferences ?? PREFERENCES);
+  const q = checkTable(tables.quietHours ?? QUIET_HOURS);
   return [
     `CREATE TABLE IF NOT EXISTS ${n} (
   id            TEXT PRIMARY KEY,
@@ -80,6 +89,13 @@ export function d1Schema(tables: { notifications?: string; preferences?: string 
   channel      TEXT NOT NULL,
   enabled      INTEGER NOT NULL,
   PRIMARY KEY (recipient_id, has_scope, scope, category, channel)
+) WITHOUT ROWID`,
+    `CREATE TABLE IF NOT EXISTS ${q} (
+  recipient_id TEXT PRIMARY KEY,
+  enabled      INTEGER NOT NULL,
+  start_time   TEXT NOT NULL,
+  end_time     TEXT NOT NULL,
+  timezone     TEXT NOT NULL
 ) WITHOUT ROWID`,
   ];
 }
@@ -308,5 +324,52 @@ ON CONFLICT (recipient_id, has_scope, scope, category, channel) DO UPDATE SET en
         upsert.bind(recipientId, scope === null ? 0 : 1, scope ?? '', change.category, change.channel, change.enabled ? 1 : 0),
       ),
     );
+  }
+}
+
+/** Los horarios de no molestar, sobre D1. */
+export class D1QuietHoursStore implements QuietHoursStore {
+  readonly #db: D1Like;
+  readonly #table: string;
+
+  constructor(db: D1Like, options: { table?: string } = {}) {
+    this.#db = db;
+    this.#table = checkTable(options.table ?? QUIET_HOURS);
+  }
+
+  /** Crea la tabla si no existe. */
+  async createSchema(): Promise<void> {
+    const sql = d1Schema({ quietHours: this.#table })[4]!;
+    await this.#db.batch([this.#db.prepare(sql)]);
+  }
+
+  async getQuietHours(recipientId: string): Promise<QuietHours | null> {
+    const found = await this.#db
+      .prepare(`SELECT enabled, start_time, end_time, timezone FROM ${this.#table} WHERE recipient_id = ?`)
+      .bind(recipientId)
+      .all<{
+        enabled: number;
+        start_time: string;
+        end_time: string;
+        timezone: string;
+      }>();
+    const row = found.results[0];
+    if (row === undefined) return null;
+    return {
+      enabled: row.enabled !== 0,
+      start: row.start_time,
+      end: row.end_time,
+      timezone: row.timezone,
+    };
+  }
+
+  async setQuietHours(recipientId: string, quietHours: QuietHours): Promise<void> {
+    await this.#db
+      .prepare(
+        `INSERT INTO ${this.#table} (recipient_id, enabled, start_time, end_time, timezone) VALUES (?, ?, ?, ?, ?)
+ON CONFLICT (recipient_id) DO UPDATE SET enabled = excluded.enabled, start_time = excluded.start_time, end_time = excluded.end_time, timezone = excluded.timezone`,
+      )
+      .bind(recipientId, quietHours.enabled ? 1 : 0, quietHours.start, quietHours.end, quietHours.timezone)
+      .run();
   }
 }

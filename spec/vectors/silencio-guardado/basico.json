@@ -1,0 +1,267 @@
+{
+ "spec": "0",
+ "id": "silencio-guardado/basico",
+ "kind": "silencio-guardado",
+ "steps": [
+  {
+   "note": "quien nunca definió un horario no tiene ninguno",
+   "op": "get",
+   "recipient_id": "ana",
+   "expect": null
+  },
+  {
+   "note": "ana define su horario",
+   "op": "set",
+   "recipient_id": "ana",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "expect": null
+  },
+  {
+   "note": "se lee lo que se guardó",
+   "op": "get",
+   "recipient_id": "ana",
+   "expect": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   }
+  },
+  {
+   "note": "es de ana: beto no tiene",
+   "op": "get",
+   "recipient_id": "beto",
+   "expect": null
+  },
+  {
+   "note": "beto define otro",
+   "op": "set",
+   "recipient_id": "beto",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "Europe/Madrid"
+   },
+   "expect": null
+  },
+  {
+   "note": "cada uno ve el suyo",
+   "op": "get",
+   "recipient_id": "beto",
+   "expect": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "Europe/Madrid"
+   }
+  },
+  {
+   "note": "el de ana no cambió",
+   "op": "get",
+   "recipient_id": "ana",
+   "expect": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   }
+  },
+  {
+   "note": "volver a guardar lo reemplaza entero",
+   "op": "set",
+   "recipient_id": "ana",
+   "setting": {
+    "enabled": true,
+    "start": "23:30",
+    "end": "06:15",
+    "timezone": "UTC"
+   },
+   "expect": null
+  },
+  {
+   "note": "queda el último",
+   "op": "get",
+   "recipient_id": "ana",
+   "expect": {
+    "enabled": true,
+    "start": "23:30",
+    "end": "06:15",
+    "timezone": "UTC"
+   }
+  },
+  {
+   "note": "apagarlo lo deja guardado",
+   "op": "set",
+   "recipient_id": "ana",
+   "setting": {
+    "enabled": false,
+    "start": "23:30",
+    "end": "06:15",
+    "timezone": "UTC"
+   },
+   "expect": null
+  },
+  {
+   "note": "apagado, con sus horas",
+   "op": "get",
+   "recipient_id": "ana",
+   "expect": {
+    "enabled": false,
+    "start": "23:30",
+    "end": "06:15",
+    "timezone": "UTC"
+   }
+  },
+  {
+   "note": "guardar lo mismo que ya había",
+   "op": "set",
+   "recipient_id": "ana",
+   "setting": {
+    "enabled": false,
+    "start": "23:30",
+    "end": "06:15",
+    "timezone": "UTC"
+   },
+   "expect": null
+  },
+  {
+   "note": "no cambia nada",
+   "op": "get",
+   "recipient_id": "ana",
+   "expect": {
+    "enabled": false,
+    "start": "23:30",
+    "end": "06:15",
+    "timezone": "UTC"
+   }
+  },
+  {
+   "note": "los extremos del día",
+   "op": "set",
+   "recipient_id": "caro",
+   "setting": {
+    "enabled": true,
+    "start": "00:00",
+    "end": "23:59",
+    "timezone": "America/Lima"
+   },
+   "expect": null
+  },
+  {
+   "note": "se guardan tal cual",
+   "op": "get",
+   "recipient_id": "caro",
+   "expect": {
+    "enabled": true,
+    "start": "00:00",
+    "end": "23:59",
+    "timezone": "America/Lima"
+   }
+  },
+  {
+   "note": "la persona es texto exacto: 'Ana' no es ana",
+   "op": "get",
+   "recipient_id": "Ana",
+   "expect": null
+  },
+  {
+   "note": "la persona es texto exacto: 'ana ' no es ana",
+   "op": "get",
+   "recipient_id": "ana ",
+   "expect": null
+  },
+  {
+   "note": "la persona es texto exacto: '' no es ana",
+   "op": "get",
+   "recipient_id": "",
+   "expect": null
+  },
+  {
+   "note": "la persona es texto exacto: 'ana%' no es ana",
+   "op": "get",
+   "recipient_id": "ana%",
+   "expect": null
+  },
+  {
+   "note": "la persona es texto exacto: 'an_' no es ana",
+   "op": "get",
+   "recipient_id": "an_",
+   "expect": null
+  },
+  {
+   "note": "la persona es texto exacto: \"ana'--\" no es ana",
+   "op": "get",
+   "recipient_id": "ana'--",
+   "expect": null
+  },
+  {
+   "note": "la persona es texto exacto: 'ANA' no es ana",
+   "op": "get",
+   "recipient_id": "ANA",
+   "expect": null
+  },
+  {
+   "note": "una persona de texto vacío es una persona más",
+   "op": "set",
+   "recipient_id": "",
+   "setting": {
+    "enabled": true,
+    "start": "01:00",
+    "end": "02:00",
+    "timezone": "America/Lima"
+   },
+   "expect": null
+  },
+  {
+   "note": "y una con comodines también",
+   "op": "set",
+   "recipient_id": "an_",
+   "setting": {
+    "enabled": true,
+    "start": "03:00",
+    "end": "04:00",
+    "timezone": "America/Lima"
+   },
+   "expect": null
+  },
+  {
+   "note": "la vacía",
+   "op": "get",
+   "recipient_id": "",
+   "expect": {
+    "enabled": true,
+    "start": "01:00",
+    "end": "02:00",
+    "timezone": "America/Lima"
+   }
+  },
+  {
+   "note": "la de comodines",
+   "op": "get",
+   "recipient_id": "an_",
+   "expect": {
+    "enabled": true,
+    "start": "03:00",
+    "end": "04:00",
+    "timezone": "America/Lima"
+   }
+  },
+  {
+   "note": "ana sigue con el suyo",
+   "op": "get",
+   "recipient_id": "ana",
+   "expect": {
+    "enabled": false,
+    "start": "23:30",
+    "end": "06:15",
+    "timezone": "UTC"
+   }
+  }
+ ]
+}

@@ -45,11 +45,12 @@ def is_valid_policy(policy: object) -> bool:
         for channel, cell in cells.items():
             if not ID.fullmatch(channel) or type(cell) is not dict:
                 return False
-            if set(cell) - {"default", "locked"} or "default" not in cell:
+            if set(cell) - {"default", "locked", "urgent"} or "default" not in cell:
                 return False
             if any(type(value) is not bool for value in cell.values()):
                 return False
-        if cells.get(INBOX) != {"default": True, "locked": True}:
+        inbox = cells.get(INBOX)
+        if inbox is None or inbox["default"] is not True or inbox.get("locked") is not True:
             return False
     return True
 
@@ -330,6 +331,32 @@ def politica_validacion() -> dict:
             {"a": {"inapp": BANDEJA, "sms": {"default": False, "locked": True}}},
             True,
         ),
+        (
+            "celda urgente: se entrega aun en no molestar",
+            {"a": {"inapp": BANDEJA, "sms": {"default": True, "locked": True, "urgent": True}}},
+            True,
+        ),
+        (
+            "`urgent: false` explícito",
+            {"a": {"inapp": BANDEJA, "sms": {"default": False, "urgent": False}}},
+            True,
+        ),
+        (
+            "`urgent` en `inapp` se acepta y no cambia nada",
+            {"a": {"inapp": {**BANDEJA, "urgent": True}}},
+            True,
+        ),
+        (
+            "`urgent` no es booleano: número",
+            {"a": {"inapp": BANDEJA, "sms": {"default": True, "urgent": 1}}},
+            False,
+        ),
+        (
+            "`urgent` no es booleano: nulo",
+            {"a": {"inapp": BANDEJA, "sms": {"default": True, "urgent": None}}},
+            False,
+        ),
+        ("`urgent` sin `default`", {"a": {"inapp": BANDEJA, "sms": {"urgent": True}}}, False),
         ("sin categorías", {}, False),
         ("no es un objeto: lista", [], False),
         ("no es un objeto: nulo", None, False),
@@ -1451,36 +1478,369 @@ def valid_channels(channels: object) -> bool:
     return len(set(channels)) == len(channels)
 
 
+# ---------------------------------------------------------------------------
+# No molestar: un horario por persona. La cuenta se hace sobre una tabla de los
+# 1440 minutos del día, no con comparaciones: es otra manera de llegar a lo mismo.
+# ---------------------------------------------------------------------------
+
+HORA = re.compile(r"[0-9]{2}:[0-9]{2}")
+ZONA = re.compile(r"[A-Za-z0-9_+/-]{1,64}")
+
+
+def minute_of(text: str) -> int | None:
+    if type(text) is not str or not HORA.fullmatch(text) or not text.isascii():
+        return None
+    hours, minutes = int(text[:2]), int(text[3:])
+    return hours * 60 + minutes if hours < 24 and minutes < 60 else None
+
+
+def valid_quiet_hours(setting: object) -> bool:
+    if type(setting) is not dict or set(setting) != {"enabled", "start", "end", "timezone"}:
+        return False
+    if type(setting["enabled"]) is not bool:
+        return False
+    if minute_of(setting["start"]) is None or minute_of(setting["end"]) is None:
+        return False
+    zone = setting["timezone"]
+    return type(zone) is str and ZONA.fullmatch(zone) is not None
+
+
+def quiet_minutes(setting: dict) -> set[int]:
+    """Los minutos del día que caen en el horario: se camina desde `start` hasta `end`."""
+    if not setting["enabled"]:
+        return set()
+    minute, end, out = minute_of(setting["start"]), minute_of(setting["end"]), set()
+    while minute != end:
+        out.add(minute)
+        minute = (minute + 1) % 1440
+    return out
+
+
+def in_quiet_hours(setting: dict, minute: int) -> bool:
+    return minute in quiet_minutes(setting)
+
+
+def horario(start="22:00", end="08:00", enabled=True, timezone="America/Lima") -> dict:
+    return {"enabled": enabled, "start": start, "end": end, "timezone": timezone}
+
+
+def silencio_validacion() -> dict:
+    base = horario()
+    casos = [
+        ("un horario que cruza la medianoche", base, True),
+        ("un horario dentro del mismo día", horario("13:00", "15:30"), True),
+        ("apagado", horario(enabled=False), True),
+        ("los extremos del día", horario("00:00", "23:59"), True),
+        ("inicio y fin iguales (horario vacío)", horario("09:00", "09:00"), True),
+        ("zona `UTC`", horario(timezone="UTC"), True),
+        ("zona con signo y dígitos", horario(timezone="Etc/GMT+3"), True),
+        ("zona con guion y guion bajo", horario(timezone="America/Port-au-Prince_x"), True),
+        ("zona de 64 caracteres", horario(timezone="a" * 64), True),
+        ("no es un objeto: nulo", None, False),
+        ("no es un objeto: lista", [], False),
+        ("no es un objeto: texto", "22:00-08:00", False),
+        ("objeto vacío", {}, False),
+        ("falta `enabled`", {k: v for k, v in base.items() if k != "enabled"}, False),
+        ("falta `start`", {k: v for k, v in base.items() if k != "start"}, False),
+        ("falta `end`", {k: v for k, v in base.items() if k != "end"}, False),
+        ("falta `timezone`", {k: v for k, v in base.items() if k != "timezone"}, False),
+        ("clave de más", {**base, "days": [1, 2]}, False),
+        ("`enabled` no es booleano: número", {**base, "enabled": 1}, False),
+        ("`enabled` no es booleano: texto", {**base, "enabled": "true"}, False),
+        ("`enabled` no es booleano: nulo", {**base, "enabled": None}, False),
+        ("hora 24", horario("24:00"), False),
+        ("minuto 60", horario("23:60"), False),
+        ("hora de un dígito", horario("9:00"), False),
+        ("minuto de un dígito", horario("09:5"), False),
+        ("con segundos", horario("09:00:00"), False),
+        ("sin dos puntos", horario("0900"), False),
+        ("con punto", horario("09.00"), False),
+        ("con espacio adelante", horario(" 09:00"), False),
+        ("con salto de línea al final", horario("09:00\n"), False),
+        ("con signo", horario("-9:00"), False),
+        ("dígitos que no son ASCII", horario("０９:００"), False),
+        ("hora vacía", horario(""), False),
+        ("`start` no es texto: número", {**base, "start": 900}, False),
+        ("`start` no es texto: nulo", {**base, "start": None}, False),
+        ("`end` inválido", horario(end="25:00"), False),
+        ("`end` no es texto", {**base, "end": 480}, False),
+        ("zona vacía", horario(timezone=""), False),
+        ("zona de 65 caracteres", horario(timezone="a" * 65), False),
+        ("zona con espacio", horario(timezone="America/New York"), False),
+        ("zona con letra no ASCII", horario(timezone="América/Lima"), False),
+        ("zona con dos puntos", horario(timezone="UTC+03:00"), False),
+        ("zona con salto de línea al final", horario(timezone="UTC\n"), False),
+        ("zona que no es texto: número", {**base, "timezone": -180}, False),
+        ("zona que no es texto: nulo", {**base, "timezone": None}, False),
+    ]
+    cases = []
+    for note, setting, valid in casos:
+        assert valid_quiet_hours(setting) is valid, f"el generador no coincide con: {note}"
+        cases.append({"note": note, "setting": setting, "valid": valid})
+    return vector("silencio/validacion", "silencio-validacion", cases)
+
+
+def silencio_horario() -> dict:
+    cases = []
+
+    def caso(note: str, setting: dict, hhmm: str, expect: bool) -> None:
+        minute = minute_of(hhmm)
+        # El valor esperado está escrito a mano; el modelo tiene que coincidir.
+        assert in_quiet_hours(setting, minute) is expect, f"el generador no coincide con: {note}"
+        cases.append({"note": f"{note} ({hhmm})", "setting": setting, "minute": minute, "expect": expect})
+
+    noche = horario("22:00", "08:00")
+    caso("cruza la medianoche: un minuto antes de empezar", noche, "21:59", False)
+    caso("cruza la medianoche: el inicio entra", noche, "22:00", True)
+    caso("cruza la medianoche: último minuto del día", noche, "23:59", True)
+    caso("cruza la medianoche: primer minuto del día", noche, "00:00", True)
+    caso("cruza la medianoche: de madrugada", noche, "03:30", True)
+    caso("cruza la medianoche: un minuto antes de terminar", noche, "07:59", True)
+    caso("cruza la medianoche: el fin no entra", noche, "08:00", False)
+    caso("cruza la medianoche: al mediodía", noche, "12:00", False)
+
+    siesta = horario("13:00", "15:30")
+    caso("mismo día: un minuto antes", siesta, "12:59", False)
+    caso("mismo día: el inicio entra", siesta, "13:00", True)
+    caso("mismo día: en el medio", siesta, "14:15", True)
+    caso("mismo día: un minuto antes de terminar", siesta, "15:29", True)
+    caso("mismo día: el fin no entra", siesta, "15:30", False)
+    caso("mismo día: a la medianoche", siesta, "00:00", False)
+    caso("mismo día: último minuto del día", siesta, "23:59", False)
+
+    vacio = horario("09:00", "09:00")
+    caso("inicio y fin iguales: nunca, ni en ese minuto", vacio, "09:00", False)
+    caso("inicio y fin iguales: nunca, ni el resto del día", vacio, "21:00", False)
+
+    casi_todo = horario("08:00", "07:59")
+    caso("todo el día menos un minuto: ese minuto queda afuera", casi_todo, "07:59", False)
+    caso("todo el día menos un minuto: el siguiente entra", casi_todo, "08:00", True)
+    caso("todo el día menos un minuto: el anterior entra", casi_todo, "07:58", True)
+
+    desde_cero = horario("00:00", "06:00")
+    caso("empieza a la medianoche: primer minuto", desde_cero, "00:00", True)
+    caso("empieza a la medianoche: último minuto del día anterior", desde_cero, "23:59", False)
+    hasta_cero = horario("20:00", "00:00")
+    caso("termina a la medianoche: último minuto del día", hasta_cero, "23:59", True)
+    caso("termina a la medianoche: la medianoche no entra", hasta_cero, "00:00", False)
+    un_minuto = horario("23:59", "00:00")
+    caso("un solo minuto, el último del día", un_minuto, "23:59", True)
+    caso("un solo minuto: el anterior no", un_minuto, "23:58", False)
+
+    apagado = horario("22:00", "08:00", enabled=False)
+    caso("apagado: nunca, aunque caiga en el rango", apagado, "23:00", False)
+    caso("apagado: nunca", apagado, "12:00", False)
+    caso("la zona no cambia la cuenta: el minuto ya es local", horario(timezone="Asia/Tokyo"), "23:00", True)
+
+    # Barrido completo de dos horarios: cada minuto del día, contra la tabla.
+    for setting in (noche, siesta):
+        for minute in range(0, 1440, 97):
+            cases.append(
+                {
+                    "note": f"barrido {setting['start']}–{setting['end']}, minuto {minute}",
+                    "setting": setting,
+                    "minute": minute,
+                    "expect": in_quiet_hours(setting, minute),
+                }
+            )
+    return vector("silencio/horario", "silencio", cases)
+
+
+class Horarios:
+    def __init__(self) -> None:
+        self.saved: dict[str, dict] = {}
+        self.steps: list[dict] = []
+
+    def set(self, note: str, setting: dict, recipient="ana") -> None:
+        self.saved[recipient] = setting
+        self.steps.append(
+            {"note": note, "op": "set", "recipient_id": recipient, "setting": setting, "expect": None}
+        )
+
+    def get(self, note: str, recipient="ana") -> dict | None:
+        out = self.saved.get(recipient)
+        self.steps.append({"note": note, "op": "get", "recipient_id": recipient, "expect": out})
+        return out
+
+
+def silencio_guardado() -> dict:
+    h = Horarios()
+    assert h.get("quien nunca definió un horario no tiene ninguno") is None
+    h.set("ana define su horario", horario())
+    assert h.get("se lee lo que se guardó") == horario()
+    assert h.get("es de ana: beto no tiene", recipient="beto") is None
+    h.set("beto define otro", horario("13:00", "15:30", timezone="Europe/Madrid"), recipient="beto")
+    assert h.get("cada uno ve el suyo", recipient="beto")["start"] == "13:00"
+    assert h.get("el de ana no cambió")["start"] == "22:00"
+    h.set("volver a guardar lo reemplaza entero", horario("23:30", "06:15", timezone="UTC"))
+    assert h.get("queda el último") == horario("23:30", "06:15", timezone="UTC")
+    h.set("apagarlo lo deja guardado", horario("23:30", "06:15", enabled=False, timezone="UTC"))
+    assert h.get("apagado, con sus horas")["enabled"] is False
+    h.set("guardar lo mismo que ya había", horario("23:30", "06:15", enabled=False, timezone="UTC"))
+    assert h.get("no cambia nada")["end"] == "06:15"
+    h.set("los extremos del día", horario("00:00", "23:59"), recipient="caro")
+    assert h.get("se guardan tal cual", recipient="caro")["end"] == "23:59"
+    for raro in ("Ana", "ana ", "", "ana%", "an_", "ana'--", "ANA"):
+        assert h.get(f"la persona es texto exacto: {raro!r} no es ana", recipient=raro) is None
+    h.set("una persona de texto vacío es una persona más", horario("01:00", "02:00"), recipient="")
+    h.set("y una con comodines también", horario("03:00", "04:00"), recipient="an_")
+    assert h.get("la vacía", recipient="")["start"] == "01:00"
+    assert h.get("la de comodines", recipient="an_")["start"] == "03:00"
+    assert h.get("ana sigue con el suyo")["start"] == "23:30"
+    return vector("silencio-guardado/basico", "silencio-guardado", h.steps)
+
+
+def recorrido_silencio() -> dict:
+    policy = {
+        "security": {
+            "inapp": BANDEJA,
+            "email": {"default": True, "locked": True},
+            "sms": {"default": True, "locked": True, "urgent": True},
+        },
+        "activity": {
+            "inapp": BANDEJA,
+            "email": {"default": True},
+            "push": {"default": True, "urgent": True},
+            "sms": {"default": False},
+        },
+        "quiet": {"inapp": {**BANDEJA, "urgent": True}},
+    }
+    r = Recorrido(policy, RECORRIDO_CATALOGO_SILENCIO, ["email", "push", "sms"])
+    comment = {"type": "comment.new", "recipient_id": "ana", "payload": {"author": "Beto", "excerpt": "Hola"}}
+    login = {"type": "login.new", "recipient_id": "ana", "payload": {"device": "Firefox"}}
+    de_noche, de_dia = minute_of("23:30"), minute_of("12:00")
+
+    a = r.notify("sin horario definido, la hora no importa", comment, "n1", 1000, minute=de_noche)
+    assert a["attempted"] == ["email", "push"]
+    r.quiet("ana no quiere que la molesten de noche", horario("22:00", "08:00"))
+    b = r.notify("de día, todo sale como siempre", comment, "n2", 2000, minute=de_dia)
+    assert b["deliveries"] == {"email": "sent", "push": "sent"}
+    c = r.notify(
+        "de noche, lo que no es urgente se silencia y lo urgente sale", comment, "n3", 3000, minute=de_noche
+    )
+    assert c["created"] and c["attempted"] == ["push"]
+    assert c["deliveries"] == {"email": "silenced", "push": "sent"}
+    d = r.notify(
+        "un canal bloqueado también se silencia si no es urgente", login, "n4", 4000, minute=de_noche
+    )
+    assert d["attempted"] == ["sms"] and d["deliveries"] == {"email": "silenced", "sms": "sent"}
+    e = r.notify(
+        "lo que contesta el canal urgente se anota igual que siempre",
+        login,
+        "n5",
+        5000,
+        minute=de_noche,
+        sms="throws",
+        email="sent",
+    )
+    assert e["deliveries"] == {"email": "silenced", "sms": "failed"}
+    f = r.notify(
+        "el horario es de ana: a beto le llega todo",
+        {**comment, "recipient_id": "beto"},
+        "n6",
+        6000,
+        minute=de_noche,
+    )
+    assert f["attempted"] == ["email", "push"]
+    g = r.notify(
+        "vale para cualquier ámbito: el horario es de la persona",
+        {**comment, "scope": "proyecto-1"},
+        "n7",
+        7000,
+        minute=de_noche,
+    )
+    assert g["deliveries"] == {"email": "silenced", "push": "sent"}
+    r.save(
+        "ana pide sms para la actividad y apaga el email",
+        [("activity", "sms", True), ("activity", "email", False)],
+    )
+    h = r.notify("se silencia sólo lo que iba a salir", comment, "n8", 8000, minute=de_noche)
+    assert h["deliveries"] == {"push": "sent", "sms": "silenced"}
+    i = r.notify("el fin del horario no entra", comment, "n9", 9000, minute=minute_of("08:00"))
+    assert i["attempted"] == ["push", "sms"]
+    j = r.notify("el inicio sí", comment, "n10", 10000, minute=minute_of("22:00"))
+    assert j["attempted"] == ["push"]
+    k = r.notify(
+        "un repetido no se entrega ni se silencia: no pasa nada",
+        {**comment, "dedupe_key": "k1"},
+        "n11",
+        11000,
+        minute=de_dia,
+    )
+    assert k["created"]
+    again = r.notify("la segunda vez", {**comment, "dedupe_key": "k1"}, "n12", 12000, minute=de_noche)
+    assert not again["created"] and again["deliveries"] == {}
+    solo = r.notify(
+        "una categoría que sólo tiene bandeja se guarda y listo",
+        {"type": "note.saved", "recipient_id": "ana"},
+        "n13",
+        13000,
+        minute=de_noche,
+    )
+    assert solo["created"] and solo["deliveries"] == {}
+    r.quiet("ana apaga el horario sin borrarlo", horario("22:00", "08:00", enabled=False))
+    m = r.notify("apagado, de noche sale todo", comment, "n14", 14000, minute=de_noche)
+    assert m["attempted"] == ["push", "sms"]
+    r.quiet("un horario vacío no silencia nada", horario("09:00", "09:00"))
+    n = r.notify("ni en ese minuto", comment, "n15", 15000, minute=minute_of("09:00"))
+    assert n["attempted"] == ["push", "sms"]
+    r.quiet("un horario de siesta", horario("13:00", "15:30"))
+    o = r.notify("silencia a la siesta", comment, "n16", 16000, minute=minute_of("14:00"))
+    assert o["deliveries"] == {"push": "sent", "sms": "silenced"}
+    p = r.notify("y no de noche", comment, "n17", 17000, minute=de_noche)
+    assert p["attempted"] == ["push", "sms"]
+    return recorrido_vector("recorrido/silencio", r)
+
+
+RECORRIDO_CATALOGO_SILENCIO = {
+    "login.new": {"category": "security", "title": "Nuevo inicio de sesión desde {device}"},
+    "comment.new": {"category": "activity", "title": "{author} comentó", "body": "{excerpt}"},
+    "note.saved": {"category": "quiet", "title": "Nota guardada"},
+}
+
+
 class Recorrido:
     def __init__(self, policy: dict, catalog: dict, channels: list[str]) -> None:
         assert is_valid_policy(policy) and is_valid_catalog(catalog, policy) and valid_channels(channels)
         self.policy, self.catalog, self.channels = policy, catalog, channels
         self.store, self.prefs, self.steps = Modelo(), Ajustes(), []
+        self.quiet_hours: dict[str, dict] = {}
+
+    def quiet(self, note: str, setting: dict, recipient="ana") -> None:
+        assert valid_quiet_hours(setting), "el generador recibió un horario inválido"
+        self.quiet_hours[recipient] = setting
+        self.steps.append(
+            {"note": note, "op": "quiet", "recipient_id": recipient, "setting": setting, "expect": None}
+        )
 
     def save(self, note: str, changes: list[tuple[str, str, bool]], recipient="ana", scope=None) -> None:
         self.prefs.save(note, changes, recipient, scope)
         self.steps.append(self.prefs.steps.pop())
 
-    def notify(self, note: str, event: dict, new_id: str, at_ms: int, **outcomes: str) -> dict:
-        """`outcomes` dice qué contesta cada canal en este paso; por omisión, `sent`.
+    def notify(
+        self, note: str, event: dict, new_id: str, at_ms: int, minute: int | None = None, **outcomes: str
+    ) -> dict:
+        """`minute` es el minuto local del destinatario en este paso (para no molestar).
+        `outcomes` dice qué contesta cada canal en este paso; por omisión, `sent`.
         Además de los tres resultados válidos: `throws` (el canal falla con una
         excepción), `garbage` (devuelve algo que no es un resultado) y `unknown`
         (devuelve un resultado bien formado con un valor que no existe)."""
-        expect = self._notify(event, new_id, at_ms, outcomes)
-        self.steps.append(
-            {
-                "note": note,
-                "op": "notify",
-                "event": event,
-                "id": new_id,
-                "at_ms": at_ms,
-                "outcomes": outcomes,
-                "expect": expect,
-            }
-        )
+        expect = self._notify(event, new_id, at_ms, outcomes, minute)
+        step = {
+            "note": note,
+            "op": "notify",
+            "event": event,
+            "id": new_id,
+            "at_ms": at_ms,
+            "outcomes": outcomes,
+            "expect": expect,
+        }
+        if minute is not None:
+            step["local_minute"] = minute
+        self.steps.append(step)
         return expect
 
-    def _notify(self, event: dict, new_id: str, at_ms: int, outcomes: dict) -> dict:
+    def _notify(self, event: dict, new_id: str, at_ms: int, outcomes: dict, minute: int | None) -> dict:
         try:
             draft = build_draft(self.catalog, event)
         except Fallo as fallo:
@@ -1495,11 +1855,17 @@ class Recorrido:
             if who == draft["recipient_id"] and where == draft["scope"]:
                 saved.setdefault(category, {})[channel] = enabled
         targets = channels_for(self.policy, draft["category"], saved, self.channels)
-        deliveries = {}
+        setting = self.quiet_hours.get(draft["recipient_id"])
+        silent = setting is not None and minute is not None and in_quiet_hours(setting, minute)
+        deliveries, attempted = {}, []
         for channel in targets:
+            if silent and not self.policy[draft["category"]][channel].get("urgent", False):
+                deliveries[channel] = "silenced"
+                continue
+            attempted.append(channel)
             answer = outcomes.get(channel, "sent")
             deliveries[channel] = answer if answer in OUTCOMES else "failed"
-        return {**added, "attempted": targets, "deliveries": deliveries}
+        return {**added, "attempted": attempted, "deliveries": deliveries}
 
 
 RECORRIDO_POLITICA = {
@@ -1878,7 +2244,7 @@ def vector(vector_id: str, kind: str, cases: list, policy: dict | None = None) -
     out: dict = {"spec": SPEC, "id": vector_id, "kind": kind}
     if policy is not None:
         out["policy"] = policy
-    out["steps" if kind in ("bandeja", "preferencias-guardadas") else "cases"] = cases
+    out["steps" if kind in ("bandeja", "preferencias-guardadas", "silencio-guardado") else "cases"] = cases
     return out
 
 
@@ -1912,7 +2278,11 @@ ALL = [
     recorrido_ambitos,
     recorrido_disponibles,
     recorrido_sin_canales,
+    recorrido_silencio,
     canales_configurados,
+    silencio_validacion,
+    silencio_horario,
+    silencio_guardado,
     email_mensaje,
     email_direcciones,
 ]

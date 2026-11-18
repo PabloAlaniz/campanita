@@ -161,6 +161,38 @@ result.deliveries  # {'email': DeliveryResult(outcome='sent', ...)}
 Primero se guarda y después se entrega: un canal que falla, o que lanza un error, no deshace el
 aviso ni impide intentar los demás. Un canal es cualquier objeto con `id` y `send`.
 
+## No molestar
+
+Cada persona puede tener un horario en el que los canales no la interrumpen. El aviso se guarda
+igual; lo que no sale queda anotado como `silenced`.
+
+```python
+from campanita import parse_quiet_hours
+from campanita.stores import MemoryQuietHoursStore  # o SqliteQuietHoursStore(conexión)
+
+quiet_hours = MemoryQuietHoursStore()
+await quiet_hours.set_quiet_hours(
+    "user-7",
+    parse_quiet_hours({"enabled": True, "start": "22:00", "end": "08:00", "timezone": "America/Lima"}),
+)
+
+notifier = Notifier(
+    policy=policy,
+    catalog=catalog,
+    store=store,
+    preferences=preferences,
+    channels=channels,
+    quiet_hours=quiet_hours,
+)
+result = await notifier.notify(evento)  # a las 23:30 de esa persona
+result.deliveries  # {'email': DeliveryResult(outcome='silenced', ...)}
+```
+
+Una celda de la política con `urgent: true` se entrega igual:
+`{"default": True, "locked": True, "urgent": True}`. La hora local sale de `zoneinfo`, que
+en Windows necesita el paquete `tzdata`; si la plataforma no conoce la zona, se entrega. Lo silenciado no se manda después: eso lo decide quien
+integra.
+
 ## Email
 
 `EmailChannel` busca la dirección de la persona, arma el mensaje y se lo pasa a un transporte. El

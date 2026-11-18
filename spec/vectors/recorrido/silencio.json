@@ -1,0 +1,858 @@
+{
+ "spec": "0",
+ "id": "recorrido/silencio",
+ "kind": "recorrido",
+ "policy": {
+  "security": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "sms": {
+    "default": true,
+    "locked": true,
+    "urgent": true
+   }
+  },
+  "activity": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": true,
+    "urgent": true
+   },
+   "sms": {
+    "default": false
+   }
+  },
+  "quiet": {
+   "inapp": {
+    "default": true,
+    "locked": true,
+    "urgent": true
+   }
+  }
+ },
+ "catalog": {
+  "login.new": {
+   "category": "security",
+   "title": "Nuevo inicio de sesión desde {device}"
+  },
+  "comment.new": {
+   "category": "activity",
+   "title": "{author} comentó",
+   "body": "{excerpt}"
+  },
+  "note.saved": {
+   "category": "quiet",
+   "title": "Nota guardada"
+  }
+ },
+ "channels": [
+  "email",
+  "push",
+  "sms"
+ ],
+ "steps": [
+  {
+   "note": "sin horario definido, la hora no importa",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "email",
+     "push"
+    ],
+    "deliveries": {
+     "email": "sent",
+     "push": "sent"
+    }
+   },
+   "local_minute": 1410
+  },
+  {
+   "note": "ana no quiere que la molesten de noche",
+   "op": "quiet",
+   "recipient_id": "ana",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "expect": null
+  },
+  {
+   "note": "de día, todo sale como siempre",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n2",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 2000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "email",
+     "push"
+    ],
+    "deliveries": {
+     "email": "sent",
+     "push": "sent"
+    }
+   },
+   "local_minute": 720
+  },
+  {
+   "note": "de noche, lo que no es urgente se silencia y lo urgente sale",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "email": "silenced",
+     "push": "sent"
+    }
+   },
+   "local_minute": 1410
+  },
+  {
+   "note": "un canal bloqueado también se silencia si no es urgente",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "ana",
+    "payload": {
+     "device": "Firefox"
+    }
+   },
+   "id": "n4",
+   "at_ms": 4000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "ana",
+     "type": "login.new",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "sms"
+    ],
+    "deliveries": {
+     "email": "silenced",
+     "sms": "sent"
+    }
+   },
+   "local_minute": 1410
+  },
+  {
+   "note": "lo que contesta el canal urgente se anota igual que siempre",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "ana",
+    "payload": {
+     "device": "Firefox"
+    }
+   },
+   "id": "n5",
+   "at_ms": 5000,
+   "outcomes": {
+    "sms": "throws",
+    "email": "sent"
+   },
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n5",
+     "recipient_id": "ana",
+     "type": "login.new",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 5000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "sms"
+    ],
+    "deliveries": {
+     "email": "silenced",
+     "sms": "failed"
+    }
+   },
+   "local_minute": 1410
+  },
+  {
+   "note": "el horario es de ana: a beto le llega todo",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "beto",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n6",
+   "at_ms": 6000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n6",
+     "recipient_id": "beto",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 6000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "email",
+     "push"
+    ],
+    "deliveries": {
+     "email": "sent",
+     "push": "sent"
+    }
+   },
+   "local_minute": 1410
+  },
+  {
+   "note": "vale para cualquier ámbito: el horario es de la persona",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    },
+    "scope": "proyecto-1"
+   },
+   "id": "n7",
+   "at_ms": 7000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n7",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": "proyecto-1",
+     "dedupe_key": null,
+     "created_at_ms": 7000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "email": "silenced",
+     "push": "sent"
+    }
+   },
+   "local_minute": 1410
+  },
+  {
+   "note": "ana pide sms para la actividad y apaga el email",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "sms",
+     "enabled": true
+    },
+    {
+     "category": "activity",
+     "channel": "email",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "se silencia sólo lo que iba a salir",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n8",
+   "at_ms": 8000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n8",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 8000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "push": "sent",
+     "sms": "silenced"
+    }
+   },
+   "local_minute": 1410
+  },
+  {
+   "note": "el fin del horario no entra",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n9",
+   "at_ms": 9000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n9",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 9000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push",
+     "sms"
+    ],
+    "deliveries": {
+     "push": "sent",
+     "sms": "sent"
+    }
+   },
+   "local_minute": 480
+  },
+  {
+   "note": "el inicio sí",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n10",
+   "at_ms": 10000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n10",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 10000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "push": "sent",
+     "sms": "silenced"
+    }
+   },
+   "local_minute": 1320
+  },
+  {
+   "note": "un repetido no se entrega ni se silencia: no pasa nada",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    },
+    "dedupe_key": "k1"
+   },
+   "id": "n11",
+   "at_ms": 11000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n11",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": "k1",
+     "created_at_ms": 11000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push",
+     "sms"
+    ],
+    "deliveries": {
+     "push": "sent",
+     "sms": "sent"
+    }
+   },
+   "local_minute": 720
+  },
+  {
+   "note": "la segunda vez",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    },
+    "dedupe_key": "k1"
+   },
+   "id": "n12",
+   "at_ms": 12000,
+   "outcomes": {},
+   "expect": {
+    "created": false,
+    "notification": {
+     "id": "n11",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": "k1",
+     "created_at_ms": 11000,
+     "read_at_ms": null
+    },
+    "attempted": [],
+    "deliveries": {}
+   },
+   "local_minute": 1410
+  },
+  {
+   "note": "una categoría que sólo tiene bandeja se guarda y listo",
+   "op": "notify",
+   "event": {
+    "type": "note.saved",
+    "recipient_id": "ana"
+   },
+   "id": "n13",
+   "at_ms": 13000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n13",
+     "recipient_id": "ana",
+     "type": "note.saved",
+     "category": "quiet",
+     "title": "Nota guardada",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 13000,
+     "read_at_ms": null
+    },
+    "attempted": [],
+    "deliveries": {}
+   },
+   "local_minute": 1410
+  },
+  {
+   "note": "ana apaga el horario sin borrarlo",
+   "op": "quiet",
+   "recipient_id": "ana",
+   "setting": {
+    "enabled": false,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "expect": null
+  },
+  {
+   "note": "apagado, de noche sale todo",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n14",
+   "at_ms": 14000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n14",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 14000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push",
+     "sms"
+    ],
+    "deliveries": {
+     "push": "sent",
+     "sms": "sent"
+    }
+   },
+   "local_minute": 1410
+  },
+  {
+   "note": "un horario vacío no silencia nada",
+   "op": "quiet",
+   "recipient_id": "ana",
+   "setting": {
+    "enabled": true,
+    "start": "09:00",
+    "end": "09:00",
+    "timezone": "America/Lima"
+   },
+   "expect": null
+  },
+  {
+   "note": "ni en ese minuto",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n15",
+   "at_ms": 15000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n15",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 15000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push",
+     "sms"
+    ],
+    "deliveries": {
+     "push": "sent",
+     "sms": "sent"
+    }
+   },
+   "local_minute": 540
+  },
+  {
+   "note": "un horario de siesta",
+   "op": "quiet",
+   "recipient_id": "ana",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "expect": null
+  },
+  {
+   "note": "silencia a la siesta",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n16",
+   "at_ms": 16000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n16",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 16000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "push": "sent",
+     "sms": "silenced"
+    }
+   },
+   "local_minute": 840
+  },
+  {
+   "note": "y no de noche",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n17",
+   "at_ms": 17000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n17",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 17000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push",
+     "sms"
+    ],
+    "deliveries": {
+     "push": "sent",
+     "sms": "sent"
+    }
+   },
+   "local_minute": 1410
+  }
+ ]
+}

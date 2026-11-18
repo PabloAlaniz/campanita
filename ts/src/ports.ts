@@ -3,14 +3,16 @@
  *
  * El núcleo no conoce la base, el canal ni la superficie que muestra la bandeja.
  *
- * - `NotificationStore` y `PreferenceStore` están especificados: su
- *   comportamiento es el de las secuencias de `spec/vectors/bandeja/` y
- *   `spec/vectors/preferencias-guardadas/`, y `runStoreVector` y
- *   `runPreferenceVector` las corren contra cualquier adaptador.
+ * - `NotificationStore`, `PreferenceStore` y `QuietHoursStore` están
+ *   especificados: su comportamiento es el de las secuencias de
+ *   `spec/vectors/bandeja/`, `spec/vectors/preferencias-guardadas/` y
+ *   `spec/vectors/silencio-guardado/`, y `runStoreVector`, `runPreferenceVector`
+ *   y `runQuietHoursVector` las corren contra cualquier adaptador.
  * - `DeliveryChannel` se usa en el recorrido completo, que está especificado
  *   (`spec/vectors/recorrido/`). El primer canal real es `EmailChannel`.
  */
 import type { AddResult, FeedPage, FeedQuery, Notification } from './core/inbox.js';
+import type { QuietHours } from './core/quiet.js';
 import type { Change, Draft, Overrides } from './core/types.js';
 
 /**
@@ -56,12 +58,27 @@ export interface PreferenceStore {
 }
 
 /**
+ * El horario de no molestar de cada persona. Es de la persona, no de un ámbito.
+ *
+ * El almacén guarda el horario que le pasen: lo valida `parseQuietHours` antes.
+ * Su comportamiento es el de `spec/vectors/silencio-guardado/`.
+ */
+export interface QuietHoursStore {
+  /** El horario de esa persona, o `null` si nunca definió uno. */
+  getQuietHours(recipientId: string): Promise<QuietHours | null>;
+  /** Lo guarda, reemplazando el que hubiera. */
+  setQuietHours(recipientId: string, quietHours: QuietHours): Promise<void>;
+}
+
+/**
  * - `sent`: el proveedor aceptó el aviso.
  * - `expired`: el destino ya no existe y el adaptador lo tiene que olvidar.
  * - `failed`: no se pudo entregar.
  * - `skipped`: no había a dónde entregar. Reintentar no sirve.
+ * - `silenced`: no lo contesta un canal, lo anota `Notifier`: el canal no se
+ *   intentó porque la persona está en su horario de no molestar.
  */
-export type DeliveryOutcome = 'sent' | 'expired' | 'failed' | 'skipped';
+export type DeliveryOutcome = 'sent' | 'expired' | 'failed' | 'skipped' | 'silenced';
 
 export interface DeliveryResult {
   readonly outcome: DeliveryOutcome;

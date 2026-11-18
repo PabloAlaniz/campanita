@@ -1,4 +1,4 @@
-"""Corre las secuencias del spec contra un almacén de avisos o de preferencias.
+"""Corre las secuencias del spec contra un almacén de avisos, de preferencias o de horarios.
 
 Es lo que usa este paquete para probar sus adaptadores, y lo que puede usar
 quien escriba el suyo:
@@ -6,7 +6,8 @@ quien escriba el suyo:
     vector = json.loads(Path("spec/vectors/bandeja/basico.json").read_text())
     await run_store_vector(vector, lambda: MiAlmacen(...))
 
-`run_preference_vector` hace lo mismo con `spec/vectors/preferencias-guardadas/`.
+`run_preference_vector` hace lo mismo con `spec/vectors/preferencias-guardadas/`, y
+`run_quiet_hours_vector` con `spec/vectors/silencio-guardado/`.
 
 Cada vector necesita un almacén vacío.
 """
@@ -18,8 +19,9 @@ from typing import Any
 
 from ._catalog import Draft
 from ._inbox import FeedQuery, Notification, StoreError, from_ms, to_ms
+from ._quiet import QuietHours, parse_quiet_hours
 from ._types import Change
-from .ports import NotificationStore, PreferenceStore
+from .ports import NotificationStore, PreferenceStore, QuietHoursStore
 
 
 def notification_to_wire(item: Notification) -> dict[str, Any]:
@@ -118,6 +120,45 @@ async def run_preference_vector(
         elif step["op"] == "get":
             found = await store.get_overrides(step["recipient_id"], scope=step["scope"])
             got = {category: dict(channels) for category, channels in found.items()}
+        else:
+            raise ValueError(f"operación desconocida: {step['op']}")
+        if got != step["expect"]:
+            raise AssertionError(
+                f"{vector['id']} paso {index} ({step['note']}), operación `{step['op']}`:\n"
+                f"  se esperaba: {step['expect']!r}\n"
+                f"  se obtuvo:   {got!r}"
+            )
+
+
+def quiet_hours_to_wire(quiet_hours: QuietHours) -> dict[str, Any]:
+    """El horario con los nombres que usan los vectores."""
+    return {
+        "enabled": quiet_hours.enabled,
+        "start": quiet_hours.start,
+        "end": quiet_hours.end,
+        "timezone": quiet_hours.timezone,
+    }
+
+
+async def run_quiet_hours_vector(
+    vector: Mapping[str, Any],
+    make_store: Callable[[], QuietHoursStore | Awaitable[QuietHoursStore]],
+) -> None:
+    """Corre un vector de tipo `silencio-guardado`. Lanza `AssertionError` en el
+    primer paso que no coincide, diciendo cuál."""
+    if vector.get("kind") != "silencio-guardado":
+        raise ValueError("run_quiet_hours_vector sólo corre vectores de tipo `silencio-guardado`")
+    made = make_store()
+    store = await made if isinstance(made, Awaitable) else made
+
+    for index, step in enumerate(vector["steps"]):
+        got: Any
+        if step["op"] == "set":
+            await store.set_quiet_hours(step["recipient_id"], parse_quiet_hours(step["setting"]))
+            got = None
+        elif step["op"] == "get":
+            found = await store.get_quiet_hours(step["recipient_id"])
+            got = None if found is None else quiet_hours_to_wire(found)
         else:
             raise ValueError(f"operación desconocida: {step['op']}")
         if got != step["expect"]:

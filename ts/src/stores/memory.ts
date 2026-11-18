@@ -10,8 +10,9 @@ import {
   type FeedQuery,
   type Notification,
 } from '../core/inbox.js';
+import type { QuietHours } from '../core/quiet.js';
 import type { Change, Draft, Overrides } from '../core/types.js';
-import type { NotificationStore, PreferenceStore } from '../ports.js';
+import type { NotificationStore, PreferenceStore, QuietHoursStore } from '../ports.js';
 
 /** Todo vive en el proceso y se pierde al terminar. */
 export class MemoryStore implements NotificationStore {
@@ -152,6 +153,19 @@ export class MemoryPreferenceStore implements PreferenceStore {
     for (const change of changes) {
       getOrCreate(categories, change.category).set(change.channel, change.enabled);
     }
+  }
+}
+
+/** Los horarios de no molestar, en el proceso. */
+export class MemoryQuietHoursStore implements QuietHoursStore {
+  readonly #byRecipient = new Map<string, QuietHours>();
+
+  async getQuietHours(recipientId: string): Promise<QuietHours | null> {
+    return this.#byRecipient.get(recipientId) ?? null;
+  }
+
+  async setQuietHours(recipientId: string, quietHours: QuietHours): Promise<void> {
+    this.#byRecipient.set(recipientId, { ...quietHours });
   }
 }
 

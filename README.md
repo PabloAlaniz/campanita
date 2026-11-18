@@ -105,6 +105,9 @@ changes = validate_patch(policy, {"security": {"email": False}}, available=["ema
 # PatchRejected: cambio de preferencias rechazado en security.email: la celda está bloqueada
 ```
 
+Cada persona puede además definir un horario de **no molestar**: en ese rango los canales no la
+interrumpen (salvo lo que la política marca como `urgent`) y el aviso la espera en la bandeja.
+
 En TypeScript es lo mismo, con los nombres del lenguaje:
 
 ```ts

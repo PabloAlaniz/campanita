@@ -25,6 +25,8 @@ class Cell:
     default: bool
     #: El usuario no puede cambiarla.
     locked: bool = False
+    #: Se entrega aunque la persona esté en su horario de no molestar.
+    urgent: bool = False
 
 
 @dataclass(frozen=True, slots=True)

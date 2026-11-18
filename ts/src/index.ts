@@ -8,6 +8,8 @@
 export { buildNotification, parseCatalog } from './core/catalog.js';
 export { effectiveMatrix, resolveChannels, validatePatch } from './core/channels.js';
 export { parsePolicy } from './core/policy.js';
+export { InvalidQuietHoursError, isQuiet, localMinute, parseQuietHours } from './core/quiet.js';
+export type { QuietHours } from './core/quiet.js';
 export { renderTemplate } from './core/templates.js';
 export {
   EventRejectedError,
@@ -52,9 +54,15 @@ export type {
   Notification,
   StoreReason,
 } from './core/inbox.js';
-export { notificationToWire, runPreferenceVector, runStoreVector } from './conformance.js';
-export { MemoryPreferenceStore, MemoryStore } from './stores/memory.js';
-export { D1PreferenceStore, D1Store, d1Schema } from './stores/d1.js';
+export {
+  notificationToWire,
+  quietHoursToWire,
+  runPreferenceVector,
+  runQuietHoursVector,
+  runStoreVector,
+} from './conformance.js';
+export { MemoryPreferenceStore, MemoryQuietHoursStore, MemoryStore } from './stores/memory.js';
+export { D1PreferenceStore, D1QuietHoursStore, D1Store, d1Schema } from './stores/d1.js';
 export type { D1Like, D1StatementLike } from './stores/d1.js';
 export type {
   DeliveryChannel,
@@ -62,6 +70,7 @@ export type {
   DeliveryResult,
   NotificationStore,
   PreferenceStore,
+  QuietHoursStore,
 } from './ports.js';
 
 /** La versión del spec que implementa este paquete. */

@@ -10,6 +10,8 @@ export interface Cell {
   readonly default: boolean;
   /** El usuario no puede cambiarla. */
   readonly locked: boolean;
+  /** Se entrega aunque la persona esté en su horario de no molestar. */
+  readonly urgent: boolean;
 }
 
 declare const validated: unique symbol;

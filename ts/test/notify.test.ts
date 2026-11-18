@@ -6,12 +6,16 @@ import { describe, expect, it } from 'vitest';
 import {
   EventRejectedError,
   InvalidChannelsError,
+  localMinute,
   MemoryPreferenceStore,
+  MemoryQuietHoursStore,
   MemoryStore,
   Notifier,
   notificationToWire,
   parseCatalog,
   parsePolicy,
+  parseQuietHours,
+  isQuiet,
   StoreError,
   type Change,
   type DeliveryChannel,
@@ -43,7 +47,7 @@ class Scripted implements DeliveryChannel {
 type Step = Record<string, unknown>;
 
 it('hay recorridos', () => {
-  expect(files.length).toBeGreaterThanOrEqual(7);
+  expect(files.length).toBeGreaterThanOrEqual(8);
 });
 
 describe('recorrido', () => {
@@ -59,12 +63,17 @@ describe('recorrido', () => {
       const policy = parsePolicy(vector.policy);
       const channels = vector.channels.map((id) => new Scripted(id));
       const preferences = new MemoryPreferenceStore();
+      const quietHours = new MemoryQuietHoursStore();
+      // El minuto local lo dice cada paso: la base de zonas horarias no entra en los vectores.
+      let minute: number | null = null;
       const notifier = new Notifier({
         policy,
         catalog: parseCatalog(vector.catalog, policy),
         store: new MemoryStore(),
         preferences,
         channels,
+        quietHours,
+        localMinute: () => minute,
       });
 
       for (const [index, step] of vector.steps.entries()) {
@@ -75,6 +84,11 @@ describe('recorrido', () => {
           });
           continue;
         }
+        if (step['op'] === 'quiet') {
+          await quietHours.setQuietHours(step['recipient_id'] as string, parseQuietHours(step['setting']));
+          continue;
+        }
+        minute = (step['local_minute'] as number | undefined) ?? null;
         const outcomes = step['outcomes'] as Record<string, string>;
         for (const channel of channels) {
           channel.answer = Object.hasOwn(outcomes, channel.id) ? outcomes[channel.id]! : 'sent';
@@ -89,7 +103,9 @@ describe('recorrido', () => {
           got = {
             created: result.created,
             notification: notificationToWire(result.notification),
-            attempted: [...result.deliveries.keys()],
+            attempted: [...result.deliveries]
+              .filter(([, delivery]) => delivery.outcome !== 'silenced')
+              .map(([id]) => id),
             deliveries: Object.fromEntries([...result.deliveries].map(([id, delivery]) => [id, delivery.outcome])),
           };
         } catch (error) {
@@ -163,4 +179,130 @@ it('el error de un canal que lanza queda en el resultado', async () => {
   });
   const result = await notifier.notify({ type: 'nota', recipient_id: 'ana' });
   expect(result.deliveries.get('email')).toEqual({ outcome: 'failed', error: 'Error: el proveedor no responde' });
+});
+
+// --- no molestar: lo que depende de la plataforma ---------------------------
+
+describe('no molestar', () => {
+  const policy = parsePolicy({
+    activity: {
+      inapp: { default: true, locked: true },
+      email: { default: true },
+    },
+  });
+  const catalog = parseCatalog({ nota: { category: 'activity', title: 'Hola' } }, policy);
+  const event = { type: 'nota', recipient_id: 'ana' };
+  const setup = (options: { localMinute?: () => number | null } = {}) => {
+    const channel = new Scripted('email');
+    const quietHours = new MemoryQuietHoursStore();
+    const notifier = new Notifier({
+      policy,
+      catalog,
+      store: new MemoryStore(),
+      preferences: new MemoryPreferenceStore(),
+      channels: [channel],
+      quietHours,
+      ...options,
+    });
+    return { channel, quietHours, notifier };
+  };
+
+  it('el minuto local sale de la zona horaria', () => {
+    const moment = new Date('2030-01-15T02:30:00Z');
+    expect(localMinute('UTC', moment)).toBe(2 * 60 + 30);
+    // Sin horario de verano: tres horas detrás de UTC todo el año.
+    expect(localMinute('America/Argentina/Buenos_Aires', moment)).toBe(23 * 60 + 30);
+    expect(localMinute('Asia/Tokyo', moment)).toBe(11 * 60 + 30);
+    expect(localMinute('Asia/Kolkata', moment)).toBe(8 * 60);
+    // Con horario de verano: la misma hora UTC cae distinto en enero y en julio.
+    expect(localMinute('Europe/Madrid', moment)).toBe(3 * 60 + 30);
+    expect(localMinute('Europe/Madrid', new Date('2030-07-15T02:30:00Z'))).toBe(4 * 60 + 30);
+    // La medianoche es el minuto 0, no el 1440.
+    expect(localMinute('UTC', new Date('2030-01-15T00:00:00Z'))).toBe(0);
+  });
+
+  it.each(['No/Existe', 'x', '../etc/passwd', 'America/', 'a'.repeat(64)])(
+    'una zona que la plataforma no conoce no tiene minuto: %s',
+    (zone) => {
+      expect(localMinute(zone, new Date('2030-01-15T00:00:00Z'))).toBeNull();
+    },
+  );
+
+  it('usa la hora local del momento en que se creó el aviso', async () => {
+    const { channel, quietHours, notifier } = setup();
+    await quietHours.setQuietHours(
+      'ana',
+      parseQuietHours({
+        enabled: true,
+        start: '22:00',
+        end: '08:00',
+        timezone: 'Asia/Tokyo',
+      }),
+    );
+    // 15:00 UTC son las 00:00 en Tokio: de noche. 03:00 UTC son las 12:00: de día.
+    const night = await notifier.notify(event, {
+      createdAt: new Date('2030-01-15T15:00:00Z'),
+    });
+    const day = await notifier.notify(event, {
+      createdAt: new Date('2030-01-15T03:00:00Z'),
+    });
+    expect(night.deliveries.get('email')?.outcome).toBe('silenced');
+    expect(day.deliveries.get('email')?.outcome).toBe('sent');
+    expect(channel.sent).toEqual([day.notification.id]);
+  });
+
+  it('con una zona desconocida se entrega', async () => {
+    const { quietHours, notifier } = setup();
+    await quietHours.setQuietHours(
+      'ana',
+      parseQuietHours({
+        enabled: true,
+        start: '00:00',
+        end: '23:59',
+        timezone: 'No/Existe',
+      }),
+    );
+    expect((await notifier.notify(event)).deliveries.get('email')?.outcome).toBe('sent');
+  });
+
+  it('sin almacén de horarios nadie está en silencio', async () => {
+    const notifier = new Notifier({
+      policy,
+      catalog,
+      store: new MemoryStore(),
+      preferences: new MemoryPreferenceStore(),
+      channels: [new Scripted('email')],
+      localMinute: () => 0,
+    });
+    expect((await notifier.notify(event)).deliveries.get('email')?.outcome).toBe('sent');
+  });
+
+  it('un canal que contesta `silenced` cuenta como falla', async () => {
+    const { channel, notifier } = setup();
+    channel.answer = 'silenced';
+    expect((await notifier.notify(event)).deliveries.get('email')?.outcome).toBe('failed');
+  });
+
+  it.each([-1, 1440, 1.5, Number.NaN, '600', null])('isQuiet rechaza un minuto fuera del día: %s', (minute) => {
+    const setting = parseQuietHours({
+      enabled: true,
+      start: '22:00',
+      end: '08:00',
+      timezone: 'UTC',
+    });
+    expect(() => isQuiet(setting, minute as number)).toThrow(/minuto/);
+  });
+
+  it('tocar el horario devuelto no cambia lo guardado', async () => {
+    const { quietHours } = setup();
+    const setting = {
+      enabled: true,
+      start: '22:00',
+      end: '08:00',
+      timezone: 'UTC',
+    };
+    await quietHours.setQuietHours('ana', setting);
+    setting.start = '10:00';
+    expect((await quietHours.getQuietHours('ana'))?.start).toBe('22:00');
+  });
 });

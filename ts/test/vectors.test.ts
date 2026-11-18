@@ -8,6 +8,10 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
+  InvalidQuietHoursError,
+  isQuiet,
+  parseQuietHours,
+  quietHoursToWire,
   buildNotification,
   effectiveMatrix,
   EventRejectedError,
@@ -44,7 +48,10 @@ interface Vector {
     | 'recorrido'
     | 'recorrido-canales'
     | 'email-mensaje'
-    | 'email-direcciones';
+    | 'email-direcciones'
+    | 'silencio-validacion'
+    | 'silencio'
+    | 'silencio-guardado';
   policy?: unknown;
   catalog?: unknown;
   /** Los de tipo `bandeja` tienen `steps` y los corre test/stores.test.ts. */
@@ -93,6 +100,9 @@ it('todos los tipos de vector tienen quien los corra', () => {
     'preferencias-guardadas',
     'recorrido',
     'recorrido-canales',
+    'silencio',
+    'silencio-guardado',
+    'silencio-validacion',
   ]);
 });
 
@@ -107,6 +117,7 @@ for (const vector of vectors) {
       'recorrido-canales',
       'email-mensaje',
       'email-direcciones',
+      'silencio-guardado',
     ].includes(vector.kind)
   ) {
     continue;
@@ -115,6 +126,18 @@ for (const vector of vectors) {
     (vector.cases ?? []).forEach((test, index) => {
       it(label(index, test), () => {
         switch (vector.kind) {
+          case 'silencio-validacion':
+            if (test['valid']) {
+              expect(quietHoursToWire(parseQuietHours(test['setting']))).toEqual(test['setting']);
+            } else {
+              expect(() => parseQuietHours(test['setting'])).toThrow(InvalidQuietHoursError);
+            }
+            return;
+
+          case 'silencio':
+            expect(isQuiet(parseQuietHours(test['setting']), test['minute'] as number)).toBe(test['expect']);
+            return;
+
           case 'politica':
             if (test['valid']) {
               expect(() => parsePolicy(test['policy'])).not.toThrow();

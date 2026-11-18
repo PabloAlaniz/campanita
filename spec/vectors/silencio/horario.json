@@ -1,0 +1,656 @@
+{
+ "spec": "0",
+ "id": "silencio/horario",
+ "kind": "silencio",
+ "cases": [
+  {
+   "note": "cruza la medianoche: un minuto antes de empezar (21:59)",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1319,
+   "expect": false
+  },
+  {
+   "note": "cruza la medianoche: el inicio entra (22:00)",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1320,
+   "expect": true
+  },
+  {
+   "note": "cruza la medianoche: último minuto del día (23:59)",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1439,
+   "expect": true
+  },
+  {
+   "note": "cruza la medianoche: primer minuto del día (00:00)",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 0,
+   "expect": true
+  },
+  {
+   "note": "cruza la medianoche: de madrugada (03:30)",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 210,
+   "expect": true
+  },
+  {
+   "note": "cruza la medianoche: un minuto antes de terminar (07:59)",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 479,
+   "expect": true
+  },
+  {
+   "note": "cruza la medianoche: el fin no entra (08:00)",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 480,
+   "expect": false
+  },
+  {
+   "note": "cruza la medianoche: al mediodía (12:00)",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 720,
+   "expect": false
+  },
+  {
+   "note": "mismo día: un minuto antes (12:59)",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 779,
+   "expect": false
+  },
+  {
+   "note": "mismo día: el inicio entra (13:00)",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 780,
+   "expect": true
+  },
+  {
+   "note": "mismo día: en el medio (14:15)",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 855,
+   "expect": true
+  },
+  {
+   "note": "mismo día: un minuto antes de terminar (15:29)",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 929,
+   "expect": true
+  },
+  {
+   "note": "mismo día: el fin no entra (15:30)",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 930,
+   "expect": false
+  },
+  {
+   "note": "mismo día: a la medianoche (00:00)",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 0,
+   "expect": false
+  },
+  {
+   "note": "mismo día: último minuto del día (23:59)",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 1439,
+   "expect": false
+  },
+  {
+   "note": "inicio y fin iguales: nunca, ni en ese minuto (09:00)",
+   "setting": {
+    "enabled": true,
+    "start": "09:00",
+    "end": "09:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 540,
+   "expect": false
+  },
+  {
+   "note": "inicio y fin iguales: nunca, ni el resto del día (21:00)",
+   "setting": {
+    "enabled": true,
+    "start": "09:00",
+    "end": "09:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1260,
+   "expect": false
+  },
+  {
+   "note": "todo el día menos un minuto: ese minuto queda afuera (07:59)",
+   "setting": {
+    "enabled": true,
+    "start": "08:00",
+    "end": "07:59",
+    "timezone": "America/Lima"
+   },
+   "minute": 479,
+   "expect": false
+  },
+  {
+   "note": "todo el día menos un minuto: el siguiente entra (08:00)",
+   "setting": {
+    "enabled": true,
+    "start": "08:00",
+    "end": "07:59",
+    "timezone": "America/Lima"
+   },
+   "minute": 480,
+   "expect": true
+  },
+  {
+   "note": "todo el día menos un minuto: el anterior entra (07:58)",
+   "setting": {
+    "enabled": true,
+    "start": "08:00",
+    "end": "07:59",
+    "timezone": "America/Lima"
+   },
+   "minute": 478,
+   "expect": true
+  },
+  {
+   "note": "empieza a la medianoche: primer minuto (00:00)",
+   "setting": {
+    "enabled": true,
+    "start": "00:00",
+    "end": "06:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 0,
+   "expect": true
+  },
+  {
+   "note": "empieza a la medianoche: último minuto del día anterior (23:59)",
+   "setting": {
+    "enabled": true,
+    "start": "00:00",
+    "end": "06:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1439,
+   "expect": false
+  },
+  {
+   "note": "termina a la medianoche: último minuto del día (23:59)",
+   "setting": {
+    "enabled": true,
+    "start": "20:00",
+    "end": "00:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1439,
+   "expect": true
+  },
+  {
+   "note": "termina a la medianoche: la medianoche no entra (00:00)",
+   "setting": {
+    "enabled": true,
+    "start": "20:00",
+    "end": "00:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 0,
+   "expect": false
+  },
+  {
+   "note": "un solo minuto, el último del día (23:59)",
+   "setting": {
+    "enabled": true,
+    "start": "23:59",
+    "end": "00:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1439,
+   "expect": true
+  },
+  {
+   "note": "un solo minuto: el anterior no (23:58)",
+   "setting": {
+    "enabled": true,
+    "start": "23:59",
+    "end": "00:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1438,
+   "expect": false
+  },
+  {
+   "note": "apagado: nunca, aunque caiga en el rango (23:00)",
+   "setting": {
+    "enabled": false,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1380,
+   "expect": false
+  },
+  {
+   "note": "apagado: nunca (12:00)",
+   "setting": {
+    "enabled": false,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 720,
+   "expect": false
+  },
+  {
+   "note": "la zona no cambia la cuenta: el minuto ya es local (23:00)",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "Asia/Tokyo"
+   },
+   "minute": 1380,
+   "expect": true
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 0",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 0,
+   "expect": true
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 97",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 97,
+   "expect": true
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 194",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 194,
+   "expect": true
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 291",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 291,
+   "expect": true
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 388",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 388,
+   "expect": true
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 485",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 485,
+   "expect": false
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 582",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 582,
+   "expect": false
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 679",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 679,
+   "expect": false
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 776",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 776,
+   "expect": false
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 873",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 873,
+   "expect": false
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 970",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 970,
+   "expect": false
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 1067",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1067,
+   "expect": false
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 1164",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1164,
+   "expect": false
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 1261",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1261,
+   "expect": false
+  },
+  {
+   "note": "barrido 22:00–08:00, minuto 1358",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "minute": 1358,
+   "expect": true
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 0",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 0,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 97",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 97,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 194",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 194,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 291",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 291,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 388",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 388,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 485",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 485,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 582",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 582,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 679",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 679,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 776",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 776,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 873",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 873,
+   "expect": true
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 970",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 970,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 1067",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 1067,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 1164",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 1164,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 1261",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 1261,
+   "expect": false
+  },
+  {
+   "note": "barrido 13:00–15:30, minuto 1358",
+   "setting": {
+    "enabled": true,
+    "start": "13:00",
+    "end": "15:30",
+    "timezone": "America/Lima"
+   },
+   "minute": 1358,
+   "expect": false
+  }
+ ]
+}

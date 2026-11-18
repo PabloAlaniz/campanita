@@ -63,7 +63,7 @@ function parseCell(cell: unknown, where: string): Cell {
     throw new InvalidPolicyError(`${where}: la celda tiene que ser un objeto`);
   }
   const extra = Object.keys(cell)
-    .filter((key) => key !== 'default' && key !== 'locked')
+    .filter((key) => key !== 'default' && key !== 'locked' && key !== 'urgent')
     .sort();
   if (extra[0] !== undefined) {
     throw new InvalidPolicyError(`${where}: clave desconocida \`${extra[0]}\``);
@@ -79,5 +79,9 @@ function parseCell(cell: unknown, where: string): Cell {
   if (typeof locked !== 'boolean') {
     throw new InvalidPolicyError(`${where}: \`locked\` tiene que ser un booleano`);
   }
-  return Object.freeze({ default: fallback, locked });
+  const urgent = Object.hasOwn(cell, 'urgent') ? cell['urgent'] : false;
+  if (typeof urgent !== 'boolean') {
+    throw new InvalidPolicyError(`${where}: \`urgent\` tiene que ser un booleano`);
+  }
+  return Object.freeze({ default: fallback, locked, urgent });
 }

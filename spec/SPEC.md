@@ -62,14 +62,17 @@ Cada **celda** tiene:
 
 - `default` (booleano, obligatorio): el valor cuando el usuario nunca tocó la celda.
 - `locked` (booleano, opcional, por omisión `false`): el usuario no la puede cambiar.
+- `urgent` (booleano, opcional, por omisión `false`): se entrega aunque la persona esté en su
+  horario de [no molestar](#no-molestar).
 
 Una política es **válida** cuando se cumple todo esto:
 
 1. Es un objeto con al menos una categoría.
 2. Cada clave de categoría y de canal es un identificador.
 3. Cada categoría es un objeto de celdas, y cada celda es un objeto que sólo tiene `default` y,
-   opcionalmente, `locked`, los dos booleanos.
-4. Cada categoría incluye `inapp` con `default: true` y `locked: true`.
+   opcionalmente, `locked` y `urgent`, todos booleanos.
+4. Cada categoría incluye `inapp` con `default: true` y `locked: true`. En `inapp`, `urgent` no
+   cambia nada: la bandeja recibe siempre.
 
 La regla 4 es la primera invariante del dominio: **la bandeja siempre recibe**. No es un canal
 opcional, es donde la notificación vive.
@@ -413,9 +416,11 @@ avisos, un almacén de preferencias y una lista de canales de entrega.
        devolver el aviso que había, sin entregas
 4. overrides = preferencias.get_overrides(recipient_id, ámbito del aviso)
 5. canales = resolve_channels(política, categoría, overrides, canales configurados)
-6. para cada canal, en orden por punto de código:
-       intentar la entrega y anotar el resultado
-7. devolver el aviso, que se creó, y el resultado de cada canal
+6. en_silencio = la persona está ahora en su horario de no molestar
+7. para cada canal, en orden por punto de código:
+       si en_silencio y la celda no es `urgent`: anotar `silenced`, sin intentar la entrega
+       si no: intentar la entrega y anotar el resultado
+8. devolver el aviso, que se creó, y el resultado de cada canal
 ```
 
 - **Primero se guarda, después se entrega.** La bandeja es la fuente de verdad: una entrega que
@@ -442,12 +447,61 @@ Un canal recibe el aviso guardado y contesta uno de cuatro resultados:
 Un canal que lanza un error, o que contesta algo que no es uno de esos cuatro, cuenta como
 `failed`.
 
+Hay un quinto resultado, `silenced`, que no lo contesta un canal sino el recorrido: el canal no
+se intentó porque la persona está en su horario de [no molestar](#no-molestar). Un canal que
+contesta `silenced` cuenta como `failed`.
+
 Cada canal resuelve sus propios destinos a partir del destinatario: a qué dirección o a qué
 dispositivos va un aviso no pasa por el núcleo.
 
 Los canales configurados son **válidos** cuando cada identificador cumple la forma de
 identificador, ninguno es `inapp` y ninguno se repite. Puede no haber ninguno: entonces los
 avisos se guardan y no se entregan.
+
+## No molestar
+
+Cada persona puede definir un horario en el que los canales de entrega no la interrumpen. La
+bandeja no se entera: el aviso se guarda igual y está ahí cuando la persona mire.
+
+```json
+{ "enabled": true, "start": "22:00", "end": "08:00", "timezone": "America/Lima" }
+```
+
+Un horario es **válido** cuando es un objeto que tiene exactamente estas cuatro claves:
+
+- `enabled`: booleano. Apagado, el horario queda guardado pero no silencia nada.
+- `start` y `end`: texto `HH:MM`, de `00:00` a `23:59`, siempre con dos dígitos y dos dígitos.
+- `timezone`: texto de 1 a 64 caracteres entre letras ASCII, dígitos y `_ + - /`. Es el nombre
+  de la zona horaria de la persona. El núcleo no lo interpreta.
+
+`is_quiet(horario, minuto)` dice si un momento cae dentro del horario. `minuto` es el minuto del
+día en la hora local de la persona, de 0 a 1439.
+
+- Con `enabled` en `false`, nunca.
+- Si `start` es menor que `end`, desde `start` inclusive hasta `end` exclusive.
+- Si `start` es mayor que `end`, el horario cruza la medianoche: desde `start` hasta el final del
+  día, y desde `00:00` hasta `end` exclusive.
+- Si son iguales, el horario está vacío: nunca.
+
+Reglas del recorrido:
+
+- **El horario es de la persona, no de un ámbito.** Vale para todos sus avisos.
+- **Quien nunca definió un horario no tiene ninguno.** Y una instalación sin almacén de horarios
+  no silencia nada.
+- **Una celda `urgent` se entrega igual.** Qué es urgente lo decide quien escribe la política.
+- **Lo silenciado no se entrega después.** El resultado queda anotado como `silenced`; juntar lo
+  silenciado y mandarlo más tarde es decisión de quien integra.
+- **Pasar del instante al minuto local es asunto de cada port**, con la base de zonas horarias
+  de su plataforma: es lo único de esta sección que los vectores no cubren. Si la plataforma no
+  conoce la zona, la persona no está en silencio: ante la duda, se entrega.
+
+El horario se guarda en un **almacén de horarios**, que cumple cuando reproduce las secuencias de
+`vectors/silencio-guardado/`:
+
+- `get_quiet_hours(recipient_id)` devuelve el horario de esa persona, o nada.
+- `set_quiet_hours(recipient_id, horario)` lo guarda, reemplazando el que hubiera.
+
+El almacén guarda el horario que le pasen, sin validarlo, y la persona es texto exacto.
 
 ## Email
 
@@ -505,23 +559,30 @@ casos.
 | `preferencias-guardadas` | las preferencias sobre un almacén | secuencia de pasos (ver abajo) |
 | `recorrido` | el recorrido completo | secuencia de pasos (ver abajo) |
 | `recorrido-canales` | validación de los canales configurados | `channels`, `valid` |
+| `silencio-validacion` | validez de un horario de no molestar | `setting`, `valid` |
+| `silencio` | si un minuto cae en el horario | `setting`, `minute`, `expect` |
+| `silencio-guardado` | los horarios sobre un almacén | secuencia de pasos (ver abajo) |
 | `email-mensaje` | el mensaje por omisión | `notification`, `expect` |
 | `email-direcciones` | validez de una dirección | `address`, `valid` |
 
 Los vectores de `canales`, `matriz`, `preferencias` y `catalogo` llevan la `policy` una vez por
 archivo; los de `aviso` llevan además el `catalog`.
 
-Los vectores de `bandeja` y `preferencias-guardadas` no tienen `cases` sino `steps`: una secuencia
+Los vectores de `bandeja`, `preferencias-guardadas`, `silencio-guardado` y `recorrido` no tienen
+`cases` sino `steps`: una secuencia
 que se corre en orden sobre un almacén vacío. Cada paso tiene `op`, sus argumentos y `expect`,
 que es lo que la operación devuelve, o `{"error": motivo}` cuando la rechaza.
 
 - En `bandeja`, `op` es `add`, `list`, `count_unread`, `mark_read` o `mark_all_read`.
 - En `preferencias-guardadas`, `op` es `save` (devuelve nulo) o `get`.
+- En `silencio-guardado`, `op` es `set` (devuelve nulo) o `get` (devuelve el horario o nulo).
 - En `recorrido`, el vector trae la `policy`, el `catalog` y los `channels` configurados, y `op` es
   `notify` o `save` (guardar preferencias). Cada `notify` lleva `outcomes`: qué contesta cada
   canal en ese paso (por omisión, `sent`). Además de los cuatro resultados, `throws` hace que el
   canal lance un error; `garbage`, que conteste algo que no es un resultado; y `unknown`, que
-  conteste un resultado con un valor que no existe. `expect` tiene `created`,
+  conteste un resultado con un valor que no existe. `op` también puede ser `quiet` (guardar el
+  horario de no molestar de una persona), y entonces cada `notify` puede traer `local_minute`: el
+  minuto local que el recorrido tiene que usar para el destinatario en ese paso. `expect` tiene `created`,
   `notification`, `attempted` (los canales intentados, en orden) y `deliveries`, o
   `{"error": {"reason", "detail"}}`.
 

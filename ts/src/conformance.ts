@@ -7,13 +7,15 @@
  *     const vector = JSON.parse(readFileSync('spec/vectors/bandeja/basico.json', 'utf8'));
  *     await runStoreVector(vector, () => new MiAlmacen(...));
  *
- * `runPreferenceVector` hace lo mismo con `spec/vectors/preferencias-guardadas/`.
+ * `runPreferenceVector` hace lo mismo con `spec/vectors/preferencias-guardadas/`, y
+ * `runQuietHoursVector` con `spec/vectors/silencio-guardado/`.
  *
  * Cada vector necesita un almacén vacío.
  */
 import { StoreError, type Notification } from './core/inbox.js';
 import type { Change, Draft } from './core/types.js';
-import type { NotificationStore, PreferenceStore } from './ports.js';
+import { parseQuietHours, type QuietHours } from './core/quiet.js';
+import type { NotificationStore, PreferenceStore, QuietHoursStore } from './ports.js';
 
 type Wire = Record<string, unknown>;
 
@@ -100,6 +102,54 @@ export async function runPreferenceVector(
       got = null;
     } else if (step['op'] === 'get') {
       got = await store.getOverrides(recipientId, { scope });
+    } else {
+      throw new TypeError(`operación desconocida: ${String(step['op'])}`);
+    }
+    if (!sameJson(got, step['expect'])) {
+      throw new Error(
+        `${vector.id} paso ${index} (${String(step['note'])}), operación \`${String(step['op'])}\`:\n` +
+          `  se esperaba: ${JSON.stringify(step['expect'])}\n` +
+          `  se obtuvo:   ${JSON.stringify(got)}`,
+      );
+    }
+  }
+}
+
+/** El horario con los nombres que usan los vectores. */
+export function quietHoursToWire(quietHours: QuietHours): Wire {
+  return {
+    enabled: quietHours.enabled,
+    start: quietHours.start,
+    end: quietHours.end,
+    timezone: quietHours.timezone,
+  };
+}
+
+/**
+ * Corre un vector de tipo `silencio-guardado`. Lanza un `Error` en el primer
+ * paso que no coincide, diciendo cuál.
+ */
+export async function runQuietHoursVector(
+  vector: {
+    readonly id: string;
+    readonly kind: string;
+    readonly steps: readonly Wire[];
+  },
+  makeStore: () => QuietHoursStore | Promise<QuietHoursStore>,
+): Promise<void> {
+  if (vector.kind !== 'silencio-guardado') {
+    throw new TypeError('runQuietHoursVector sólo corre vectores de tipo `silencio-guardado`');
+  }
+  const store = await makeStore();
+  for (const [index, step] of vector.steps.entries()) {
+    const recipientId = step['recipient_id'] as string;
+    let got: unknown;
+    if (step['op'] === 'set') {
+      await store.setQuietHours(recipientId, parseQuietHours(step['setting']));
+      got = null;
+    } else if (step['op'] === 'get') {
+      const found = await store.getQuietHours(recipientId);
+      got = found === null ? null : quietHoursToWire(found);
     } else {
       throw new TypeError(`operación desconocida: ${String(step['op'])}`);
     }
