@@ -1440,7 +1440,7 @@ def guardadas_aislamiento() -> dict:
 # preferencias guardadas y la resolución de canales.
 # ---------------------------------------------------------------------------
 
-OUTCOMES = ("sent", "expired", "failed")
+OUTCOMES = ("sent", "expired", "failed", "skipped")
 
 
 def valid_channels(channels: object) -> bool:
@@ -1600,6 +1600,9 @@ def recorrido_fallas() -> dict:
         4500,
         email="unknown",
     )["deliveries"] == {"email": "failed", "sms": "sent"}
+    assert r.notify(
+        "un canal que no tiene a dónde entregar lo informa como omitido", login, "n4c", 4700, sms="skipped"
+    )["deliveries"] == {"email": "sent", "sms": "skipped"}
     b = r.notify(
         "todos fallan: el aviso queda guardado igual", login, "n5", 5000, email="throws", sms="failed"
     )
@@ -1766,6 +1769,111 @@ def canales_configurados() -> dict:
     return {"spec": SPEC, "id": "recorrido-canales/validacion", "kind": "recorrido-canales", "cases": cases}
 
 
+# ---------------------------------------------------------------------------
+# Email: el mensaje por omisión y qué direcciones se aceptan.
+# ---------------------------------------------------------------------------
+
+CONTROL = re.compile(r"[\x00-\x1f\x7f]+")
+PROHIBIDOS = set('<>,;:"()[]\\')
+
+
+def email_message(notification: dict) -> dict:
+    parts = [p for p in (notification["body"], notification["action_url"]) if p]
+    return {
+        "subject": CONTROL.sub(" ", notification["title"]),
+        "text": "\n\n".join(parts) if parts else notification["title"],
+    }
+
+
+def valid_address(address: object) -> bool:
+    if type(address) is not str or not 3 <= len(address) <= 254:
+        return False
+    if any(not "!" <= char <= "~" or char in PROHIBIDOS for char in address):
+        return False
+    local, at, domain = address.partition("@")
+    return at == "@" and "@" not in domain and local != "" and domain != ""
+
+
+def email_mensaje() -> dict:
+    casos = [
+        ("sólo título: el texto es el título", aviso(title="Nuevo inicio de sesión")),
+        ("con cuerpo", aviso(title="Ana comentó", body="¿Va con IVA?")),
+        ("con enlace", aviso(title="Ana comentó", action_url="https://example.com/doc/7")),
+        (
+            "con cuerpo y enlace: separados por una línea en blanco",
+            aviso(title="Ana comentó", body="¿Va con IVA?", action_url="https://example.com/doc/7"),
+        ),
+        ("un cuerpo vacío es como no tener cuerpo", aviso(title="Ana comentó", body="", action_url="/doc/7")),
+        ("un cuerpo vacío y sin enlace: el texto es el título", aviso(title="Ana comentó", body="")),
+        (
+            "el cuerpo se copia tal cual, con sus saltos de línea",
+            aviso(title="Resumen", body="Uno\nDos\r\n\tTres  "),
+        ),
+        ("el enlace no se interpreta", aviso(title="Aviso", action_url="/relativo?x=1&y=2")),
+        ("un salto de línea en el título pasa a ser un espacio", aviso(title="Línea uno\nLínea dos")),
+        ("varios caracteres de control seguidos son un solo espacio", aviso(title="A\r\n\t B")),
+        (
+            "un intento de inyectar una cabecera queda en una línea",
+            aviso(title="Hola\r\nBcc: otro@example.com"),
+        ),
+        ("otros caracteres de control también", aviso(title="A\x00B\x1fC\x7fD")),
+        ("control al principio y al final: queda el espacio", aviso(title="\nHola\n")),
+        ("los espacios comunes no se tocan", aviso(title="  dos  espacios  ")),
+        ("el texto no latino y fuera del plano básico pasa igual", aviso(title="🔔 Ñandú — 通知", body="😀")),
+        ("si el texto es el título, va sin tocar", aviso(title="Uno\nDos")),
+    ]
+    cases = [
+        {
+            "note": note,
+            "notification": {"id": "n1", **n, "created_at_ms": 1000, "read_at_ms": None},
+            "expect": email_message(n),
+        }
+        for note, n in casos
+    ]
+    return {"spec": SPEC, "id": "email/mensaje", "kind": "email-mensaje", "cases": cases}
+
+
+def email_direcciones() -> dict:
+    casos = [
+        ("una dirección común", "ana@example.com", True),
+        ("con punto, guion y más", "ana.perez+avisos@mail-1.example.com", True),
+        ("lo más corto posible", "a@b", True),
+        ("con caracteres raros pero permitidos", "a!#$%&'*/=?^_`{|}~@example.com", True),
+        ("de 254 caracteres", "a" * 242 + "@example.com", True),
+        ("de 255 caracteres", "a" * 243 + "@example.com", False),
+        ("vacía", "", False),
+        ("sin arroba", "ana.example.com", False),
+        ("dos arrobas", "ana@uno@example.com", False),
+        ("sin parte local", "@example.com", False),
+        ("sin dominio", "ana@", False),
+        ("sólo la arroba", "@", False),
+        ("con espacio", "ana perez@example.com", False),
+        ("con espacio al final", "ana@example.com ", False),
+        ("con salto de línea", "ana@example.com\nBcc: otro@example.com", False),
+        ("con retorno de carro", "ana@example.com\r", False),
+        ("con tabulación", "ana\t@example.com", False),
+        ("con nulo", "ana\x00@example.com", False),
+        ("con nombre y corchetes angulares", "Ana <ana@example.com>", False),
+        ("con corchetes angulares", "<ana@example.com>", False),
+        ("dos direcciones con coma", "ana@example.com,beto@example.com", False),
+        ("dos direcciones con punto y coma", "ana@example.com;beto@example.com", False),
+        ("con comillas", '"ana"@example.com', False),
+        ("con paréntesis", "ana(comentario)@example.com", False),
+        ("con dos puntos", "mailto:ana@example.com", False),
+        ("con barra invertida", "ana\\@example.com", False),
+        ("con letra no ASCII", "ñandú@example.com", False),
+        ("con dominio no ASCII", "ana@ñandú.example", False),
+        ("no es texto: nulo", None, False),
+        ("no es texto: número", 7, False),
+        ("no es texto: lista", ["ana@example.com"], False),
+    ]
+    cases = []
+    for note, address, valid in casos:
+        assert valid_address(address) is valid, note
+        cases.append({"note": note, "address": address, "valid": valid})
+    return {"spec": SPEC, "id": "email/direcciones", "kind": "email-direcciones", "cases": cases}
+
+
 def vector(vector_id: str, kind: str, cases: list, policy: dict | None = None) -> dict:
     out: dict = {"spec": SPEC, "id": vector_id, "kind": kind}
     if policy is not None:
@@ -1805,6 +1913,8 @@ ALL = [
     recorrido_disponibles,
     recorrido_sin_canales,
     canales_configurados,
+    email_mensaje,
+    email_direcciones,
 ]
 
 

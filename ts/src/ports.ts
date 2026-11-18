@@ -8,7 +8,7 @@
  *   `spec/vectors/preferencias-guardadas/`, y `runStoreVector` y
  *   `runPreferenceVector` las corren contra cualquier adaptador.
  * - `DeliveryChannel` se usa en el recorrido completo, que está especificado
- *   (`spec/vectors/recorrido/`), pero todavía no tiene adaptadores reales.
+ *   (`spec/vectors/recorrido/`). El primer canal real es `EmailChannel`.
  */
 import type { AddResult, FeedPage, FeedQuery, Notification } from './core/inbox.js';
 import type { Change, Draft, Overrides } from './core/types.js';
@@ -55,8 +55,13 @@ export interface PreferenceStore {
   saveChanges(recipientId: string, changes: readonly Change[], options?: { scope?: string | null }): Promise<void>;
 }
 
-/** `expired` = el destino ya no existe (una suscripción vencida) y hay que olvidarlo. */
-export type DeliveryOutcome = 'sent' | 'expired' | 'failed';
+/**
+ * - `sent`: el proveedor aceptó el aviso.
+ * - `expired`: el destino ya no existe y el adaptador lo tiene que olvidar.
+ * - `failed`: no se pudo entregar.
+ * - `skipped`: no había a dónde entregar. Reintentar no sirve.
+ */
+export type DeliveryOutcome = 'sent' | 'expired' | 'failed' | 'skipped';
 
 export interface DeliveryResult {
   readonly outcome: DeliveryOutcome;
@@ -71,12 +76,12 @@ export interface DeliveryResult {
  * Cada adaptador resuelve sus propios destinos a partir de `recipientId`: a qué
  * dirección o a qué dispositivos va un aviso es asunto suyo.
  *
- * `send` no debería rechazar: un destino roto se informa como `failed`, y uno
- * que ya no existe, como `expired`. Si igual rechaza, `Notifier` lo anota como
- * `failed` y sigue con los demás canales.
+ * `send` no debería rechazar: informa uno de los resultados de
+ * `DeliveryOutcome`. Si igual rechaza, `Notifier` lo anota como `failed` y sigue
+ * con los demás canales.
  *
- * El recorrido está especificado (`spec/vectors/recorrido/`). Lo que todavía no
- * hay son adaptadores reales, así que el puerto puede ajustarse.
+ * El recorrido está especificado (`spec/vectors/recorrido/`). El primer canal
+ * incluido es `EmailChannel`.
  */
 export interface DeliveryChannel {
   /** El identificador del canal en la política. */

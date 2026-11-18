@@ -5,13 +5,18 @@ siga así.
 
 ## 1. El núcleo no conoce a nadie
 
-Ni el spec ni los paquetes nombran un producto, una empresa, un proveedor ni una base. Tampoco
-traen categorías, canales o tipos de aviso propios: los que aparecen en los ejemplos y en los
-vectores son datos de prueba.
+Ni el spec ni el núcleo nombran un producto, una empresa, un proveedor ni una base. Tampoco traen
+categorías, canales o tipos de aviso propios: los que aparecen en los ejemplos y en los vectores
+son datos de prueba.
 
 Una forma de comprobarlo: cada regla del spec se tiene que poder explicar sin mencionar ningún
 sistema en particular. Si para justificarla hace falta decir "porque en tal producto…", no es una
 regla del spec.
+
+Un **adaptador** sí nombra lo que adapta, porque para eso existe: un almacén sobre una base, un
+transporte para un protocolo o para un servicio público. Vive en su propio módulo, fuera del
+núcleo, y nada del núcleo lo importa. Lo que un adaptador no nombra nunca es el sistema de quien
+lo usa: un servicio propio se conecta configurando un adaptador genérico, desde afuera.
 
 ## 2. Lo particular entra como dato o como adaptador
 

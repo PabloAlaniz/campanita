@@ -42,7 +42,9 @@ interface Vector {
     | 'bandeja'
     | 'preferencias-guardadas'
     | 'recorrido'
-    | 'recorrido-canales';
+    | 'recorrido-canales'
+    | 'email-mensaje'
+    | 'email-direcciones';
   policy?: unknown;
   catalog?: unknown;
   /** Los de tipo `bandeja` tienen `steps` y los corre test/stores.test.ts. */
@@ -82,6 +84,8 @@ it('todos los tipos de vector tienen quien los corra', () => {
     'bandeja',
     'canales',
     'catalogo',
+    'email-direcciones',
+    'email-mensaje',
     'matriz',
     'plantilla',
     'politica',
@@ -94,7 +98,19 @@ it('todos los tipos de vector tienen quien los corra', () => {
 
 for (const vector of vectors) {
   // Las secuencias las corren test/stores.test.ts y test/notify.test.ts.
-  if (['bandeja', 'preferencias-guardadas', 'recorrido', 'recorrido-canales'].includes(vector.kind)) continue;
+  // Los de email, test/email.test.ts.
+  if (
+    [
+      'bandeja',
+      'preferencias-guardadas',
+      'recorrido',
+      'recorrido-canales',
+      'email-mensaje',
+      'email-direcciones',
+    ].includes(vector.kind)
+  ) {
+    continue;
+  }
   describe(vector.id, () => {
     (vector.cases ?? []).forEach((test, index) => {
       it(label(index, test), () => {
@@ -224,6 +240,8 @@ for (const vector of vectors) {
           case 'preferencias-guardadas':
           case 'recorrido':
           case 'recorrido-canales':
+          case 'email-mensaje':
+          case 'email-direcciones':
             throw new Error('los vectores de secuencias no tienen casos');
         }
       });

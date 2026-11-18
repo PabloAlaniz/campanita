@@ -32,6 +32,15 @@ export type {
   TemplateReason,
   TypeSpec,
 } from './core/types.js';
+export { EmailChannel, formatSender, isValidAddress, renderEmail } from './channels/email.js';
+export type {
+  EmailChannelOptions,
+  EmailMessage,
+  EmailTransport,
+  RenderedEmail,
+} from './channels/email.js';
+export { defaultBody, HttpEmailTransport, ResendTransport } from './channels/http.js';
+export type { HttpEmailTransportOptions } from './channels/http.js';
 export { InvalidChannelsError, Notifier } from './core/notify.js';
 export type { NotifierOptions, NotifyResult } from './core/notify.js';
 export { StoreError } from './core/inbox.js';

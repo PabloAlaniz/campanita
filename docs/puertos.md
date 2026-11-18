@@ -8,7 +8,7 @@ Están declarados en [`python/src/campanita/ports.py`](../python/src/campanita/p
 |---|---|---|
 | `NotificationStore` | Guardar avisos y leer la bandeja | Especificado, con secuencias de conformidad |
 | `PreferenceStore` | Guardar lo que cambió cada persona | Especificado, con secuencias de conformidad |
-| `DeliveryChannel` | Entregar un aviso fuera de la bandeja | Especificado dentro del recorrido; sin adaptadores reales todavía |
+| `DeliveryChannel` | Entregar un aviso fuera de la bandeja | Especificado dentro del recorrido; el primer canal es email |
 
 La **bandeja** no es un puerto: es lo que se lee del `NotificationStore`. Cualquier superficie
 que la muestre (un panel web, una app, un bot) es un cliente de esa lectura.
@@ -41,8 +41,8 @@ Las dos tablas pueden vivir en la misma base o en bases distintas: los puertos s
 ## El canal de entrega
 
 Un canal tiene un identificador (el mismo que usa la política) y una operación: recibe un aviso
-guardado y contesta `sent`, `expired` o `failed`. Lo usa el recorrido completo (`Notifier`), que
-está en la sección "El recorrido completo" del spec y en
+guardado y contesta `sent`, `expired`, `failed` o `skipped`. Lo usa el recorrido completo
+(`Notifier`), que está en la sección "El recorrido completo" del spec y en
 [`spec/vectors/recorrido/`](../spec/vectors/recorrido).
 
 Un canal mínimo:
@@ -71,8 +71,34 @@ const consola: DeliveryChannel = {
 };
 ```
 
-Todavía no hay adaptadores para proveedores reales, así que este puerto es el que más puede
-cambiar.
+### Email
+
+El canal de email (`EmailChannel`) separa qué se dice de con qué se manda. Busca la dirección de
+la persona con una función de quien integra, arma el mensaje y se lo pasa a un **transporte**, que
+es un puerto más chico: `send(mensaje)`.
+
+| Transporte | Python | TypeScript |
+|---|---|---|
+| SMTP | `campanita.channels.SmtpTransport` | todavía no |
+| HTTP genérico | `campanita.channels.HttpEmailTransport` | `HttpEmailTransport` |
+| Resend | `campanita.channels.ResendTransport` | `ResendTransport` |
+
+- El **HTTP genérico** sirve para cualquier servicio de email con una API: se le pasa la URL, las
+  cabeceras y, si el servicio espera otra forma, cómo armar el cuerpo. Es la forma de conectar un
+  servicio propio sin escribir un transporte.
+- El mensaje por omisión y la validez de una dirección están en la sección "Email" del spec y en
+  [`spec/vectors/email/`](../spec/vectors/email). El envío en sí es de cada transporte.
+
+Lo que cada transporte garantiza por su cuenta:
+
+- **No sigue redirecciones**, para no reenviar las credenciales a otro servidor.
+- **El error no repite credenciales ni el cuerpo de la respuesta**: sólo el código o el tipo de
+  error.
+- **SMTP verifica el certificado** del servidor y no manda la contraseña por una conexión sin
+  cifrar.
+
+Los transportes están probados contra servidores de prueba locales. Ninguno se probó contra un
+proveedor real.
 
 ## Escribir un adaptador
 
@@ -132,5 +158,5 @@ Lo que las secuencias **no** pueden probar, y cada adaptador tiene que garantiza
 Un puerto no se da por estable hasta tener **dos adaptadores reales**. Con uno solo, el puerto
 termina teniendo la forma de ese adaptador y el segundo no entra.
 
-Los dos almacenes la cumplen en Python (en memoria y SQLite). El canal de entrega todavía no:
-está especificado y probado con canales de prueba, pero le faltan adaptadores reales.
+Los dos almacenes la cumplen en Python (en memoria y SQLite), y el transporte de email, en los dos
+lenguajes. El canal de entrega tiene hoy un solo canal real, el de email: le falta el segundo.

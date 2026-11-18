@@ -1,0 +1,343 @@
+{
+ "spec": "0",
+ "id": "email/mensaje",
+ "kind": "email-mensaje",
+ "cases": [
+  {
+   "note": "sólo título: el texto es el título",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Nuevo inicio de sesión",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "Nuevo inicio de sesión",
+    "text": "Nuevo inicio de sesión"
+   }
+  },
+  {
+   "note": "con cuerpo",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Ana comentó",
+    "body": "¿Va con IVA?",
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "Ana comentó",
+    "text": "¿Va con IVA?"
+   }
+  },
+  {
+   "note": "con enlace",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Ana comentó",
+    "body": null,
+    "action_url": "https://example.com/doc/7",
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "Ana comentó",
+    "text": "https://example.com/doc/7"
+   }
+  },
+  {
+   "note": "con cuerpo y enlace: separados por una línea en blanco",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Ana comentó",
+    "body": "¿Va con IVA?",
+    "action_url": "https://example.com/doc/7",
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "Ana comentó",
+    "text": "¿Va con IVA?\n\nhttps://example.com/doc/7"
+   }
+  },
+  {
+   "note": "un cuerpo vacío es como no tener cuerpo",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Ana comentó",
+    "body": "",
+    "action_url": "/doc/7",
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "Ana comentó",
+    "text": "/doc/7"
+   }
+  },
+  {
+   "note": "un cuerpo vacío y sin enlace: el texto es el título",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Ana comentó",
+    "body": "",
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "Ana comentó",
+    "text": "Ana comentó"
+   }
+  },
+  {
+   "note": "el cuerpo se copia tal cual, con sus saltos de línea",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Resumen",
+    "body": "Uno\nDos\r\n\tTres  ",
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "Resumen",
+    "text": "Uno\nDos\r\n\tTres  "
+   }
+  },
+  {
+   "note": "el enlace no se interpreta",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": "/relativo?x=1&y=2",
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "Aviso",
+    "text": "/relativo?x=1&y=2"
+   }
+  },
+  {
+   "note": "un salto de línea en el título pasa a ser un espacio",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Línea uno\nLínea dos",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "Línea uno Línea dos",
+    "text": "Línea uno\nLínea dos"
+   }
+  },
+  {
+   "note": "varios caracteres de control seguidos son un solo espacio",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "A\r\n\t B",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "A  B",
+    "text": "A\r\n\t B"
+   }
+  },
+  {
+   "note": "un intento de inyectar una cabecera queda en una línea",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Hola\r\nBcc: otro@example.com",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "Hola Bcc: otro@example.com",
+    "text": "Hola\r\nBcc: otro@example.com"
+   }
+  },
+  {
+   "note": "otros caracteres de control también",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "A\u0000B\u001fCD",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "A B C D",
+    "text": "A\u0000B\u001fCD"
+   }
+  },
+  {
+   "note": "control al principio y al final: queda el espacio",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "\nHola\n",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": " Hola ",
+    "text": "\nHola\n"
+   }
+  },
+  {
+   "note": "los espacios comunes no se tocan",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "  dos  espacios  ",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "  dos  espacios  ",
+    "text": "  dos  espacios  "
+   }
+  },
+  {
+   "note": "el texto no latino y fuera del plano básico pasa igual",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "🔔 Ñandú — 通知",
+    "body": "😀",
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "🔔 Ñandú — 通知",
+    "text": "😀"
+   }
+  },
+  {
+   "note": "si el texto es el título, va sin tocar",
+   "notification": {
+    "id": "n1",
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Uno\nDos",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null,
+    "created_at_ms": 1000,
+    "read_at_ms": null
+   },
+   "expect": {
+    "subject": "Uno Dos",
+    "text": "Uno\nDos"
+   }
+  }
+ ]
+}

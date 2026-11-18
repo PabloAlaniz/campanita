@@ -1,0 +1,164 @@
+{
+ "spec": "0",
+ "id": "email/direcciones",
+ "kind": "email-direcciones",
+ "cases": [
+  {
+   "note": "una dirección común",
+   "address": "ana@example.com",
+   "valid": true
+  },
+  {
+   "note": "con punto, guion y más",
+   "address": "ana.perez+avisos@mail-1.example.com",
+   "valid": true
+  },
+  {
+   "note": "lo más corto posible",
+   "address": "a@b",
+   "valid": true
+  },
+  {
+   "note": "con caracteres raros pero permitidos",
+   "address": "a!#$%&'*/=?^_`{|}~@example.com",
+   "valid": true
+  },
+  {
+   "note": "de 254 caracteres",
+   "address": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com",
+   "valid": true
+  },
+  {
+   "note": "de 255 caracteres",
+   "address": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com",
+   "valid": false
+  },
+  {
+   "note": "vacía",
+   "address": "",
+   "valid": false
+  },
+  {
+   "note": "sin arroba",
+   "address": "ana.example.com",
+   "valid": false
+  },
+  {
+   "note": "dos arrobas",
+   "address": "ana@uno@example.com",
+   "valid": false
+  },
+  {
+   "note": "sin parte local",
+   "address": "@example.com",
+   "valid": false
+  },
+  {
+   "note": "sin dominio",
+   "address": "ana@",
+   "valid": false
+  },
+  {
+   "note": "sólo la arroba",
+   "address": "@",
+   "valid": false
+  },
+  {
+   "note": "con espacio",
+   "address": "ana perez@example.com",
+   "valid": false
+  },
+  {
+   "note": "con espacio al final",
+   "address": "ana@example.com ",
+   "valid": false
+  },
+  {
+   "note": "con salto de línea",
+   "address": "ana@example.com\nBcc: otro@example.com",
+   "valid": false
+  },
+  {
+   "note": "con retorno de carro",
+   "address": "ana@example.com\r",
+   "valid": false
+  },
+  {
+   "note": "con tabulación",
+   "address": "ana\t@example.com",
+   "valid": false
+  },
+  {
+   "note": "con nulo",
+   "address": "ana\u0000@example.com",
+   "valid": false
+  },
+  {
+   "note": "con nombre y corchetes angulares",
+   "address": "Ana <ana@example.com>",
+   "valid": false
+  },
+  {
+   "note": "con corchetes angulares",
+   "address": "<ana@example.com>",
+   "valid": false
+  },
+  {
+   "note": "dos direcciones con coma",
+   "address": "ana@example.com,beto@example.com",
+   "valid": false
+  },
+  {
+   "note": "dos direcciones con punto y coma",
+   "address": "ana@example.com;beto@example.com",
+   "valid": false
+  },
+  {
+   "note": "con comillas",
+   "address": "\"ana\"@example.com",
+   "valid": false
+  },
+  {
+   "note": "con paréntesis",
+   "address": "ana(comentario)@example.com",
+   "valid": false
+  },
+  {
+   "note": "con dos puntos",
+   "address": "mailto:ana@example.com",
+   "valid": false
+  },
+  {
+   "note": "con barra invertida",
+   "address": "ana\\@example.com",
+   "valid": false
+  },
+  {
+   "note": "con letra no ASCII",
+   "address": "ñandú@example.com",
+   "valid": false
+  },
+  {
+   "note": "con dominio no ASCII",
+   "address": "ana@ñandú.example",
+   "valid": false
+  },
+  {
+   "note": "no es texto: nulo",
+   "address": null,
+   "valid": false
+  },
+  {
+   "note": "no es texto: número",
+   "address": 7,
+   "valid": false
+  },
+  {
+   "note": "no es texto: lista",
+   "address": [
+    "ana@example.com"
+   ],
+   "valid": false
+  }
+ ]
+}

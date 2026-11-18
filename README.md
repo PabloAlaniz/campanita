@@ -14,7 +14,7 @@ npm install campanita
 
 > **Versión temprana.** El núcleo decide por qué canales sale un aviso, qué puede cambiar la
 > persona y cómo se arma un aviso, y guarda la bandeja y las preferencias sobre cualquier base.
-> Los canales de entrega los escribe quien integra: todavía no hay adaptadores para proveedores.
+> El primer canal de entrega es email (SMTP, HTTP o Resend); los demás los escribe quien integra.
 > Hasta la 1.0 la API puede cambiar entre versiones menores. La [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene y el
 > [CHANGELOG](CHANGELOG.md), qué cambió.
 
@@ -64,7 +64,19 @@ notifier = Notifier(
     catalog=catalog,
     store=MemoryStore(),                    # cualquier base
     preferences=MemoryPreferenceStore(),    # cualquier base
-    channels=[],                            # cualquier canal: email, push…
+    channels=[email],                       # cualquier canal
+)
+```
+
+Un canal incluido es email, con el transporte que elijas:
+
+```python
+from campanita.channels import EmailChannel, SmtpTransport
+
+email = EmailChannel(
+    transport=SmtpTransport("smtp.example.com", username="avisos", password="…"),
+    sender="avisos@example.com",
+    resolve_address=buscar_direccion,       # tu función: de un destinatario a su dirección
 )
 ```
 

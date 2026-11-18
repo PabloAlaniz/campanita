@@ -16,7 +16,7 @@ from ._types import INBOX
 from .ports import DeliveryChannel, DeliveryResult, NotificationStore, PreferenceStore
 
 _ID = re.compile(r"[a-z][a-z0-9_-]{0,63}")
-_OUTCOMES = frozenset({"sent", "expired", "failed"})
+_OUTCOMES = frozenset({"sent", "expired", "failed", "skipped"})
 
 
 class InvalidChannels(ValueError):

@@ -5,7 +5,7 @@ Todo port de campanita tiene que comportarse como se describe acá. Los archivos
 `tools/gen_vectors.py`, una implementación independiente, para que ningún port se valide a sí
 mismo.
 
-La versión 0 es un borrador y puede cambiar sin aviso. Cubre cinco cosas:
+La versión 0 es un borrador y puede cambiar sin aviso. Cubre seis cosas:
 
 - **Por qué canales sale un aviso y qué puede cambiar el usuario**: la política, la resolución de
   canales, la matriz efectiva y el cambio de preferencias.
@@ -16,6 +16,7 @@ La versión 0 es un borrador y puede cambiar sin aviso. Cubre cinco cosas:
 - **Las preferencias guardadas**: dónde queda lo que cambió cada persona, sobre cualquier base.
 - **El recorrido completo**: de un evento a un aviso guardado y entregado por los canales que
   corresponden.
+- **El email**: qué mensaje sale de un aviso y qué direcciones se aceptan.
 
 Los reintentos de una entrega y su registro todavía no están especificados (ver
 `docs/hoja-de-ruta.md`).
@@ -429,15 +430,16 @@ avisos, un almacén de preferencias y una lista de canales de entrega.
 
 ### Canales de entrega
 
-Un canal recibe el aviso guardado y contesta uno de tres resultados:
+Un canal recibe el aviso guardado y contesta uno de cuatro resultados:
 
 | Resultado | Qué significa |
 |---|---|
 | `sent` | el proveedor aceptó el aviso |
 | `expired` | el destino ya no existe y el adaptador lo tiene que olvidar |
 | `failed` | no se pudo entregar |
+| `skipped` | no había a dónde entregar; reintentar no sirve |
 
-Un canal que lanza un error, o que contesta algo que no es uno de esos tres, cuenta como
+Un canal que lanza un error, o que contesta algo que no es uno de esos cuatro, cuenta como
 `failed`.
 
 Cada canal resuelve sus propios destinos a partir del destinatario: a qué dirección o a qué
@@ -446,6 +448,44 @@ dispositivos va un aviso no pasa por el núcleo.
 Los canales configurados son **válidos** cuando cada identificador cumple la forma de
 identificador, ninguno es `inapp` y ninguno se repite. Puede no haber ninguno: entonces los
 avisos se guardan y no se entregan.
+
+## Email
+
+El canal de email separa dos cosas: qué se le dice a la persona y con qué se manda. El spec cubre
+la primera, que es igual en todos los lenguajes; el transporte (SMTP, un servicio por HTTP) es
+asunto de cada adaptador.
+
+### La dirección
+
+El canal no guarda direcciones: le pregunta a quien integra cuál es la de un destinatario.
+
+Una dirección es **válida** cuando:
+
+1. Es texto, de 3 a 254 caracteres.
+2. Sólo tiene caracteres ASCII visibles (de `!` a `~`): sin espacios, sin caracteres de control
+   y sin letras fuera de ASCII.
+3. No tiene ninguno de `< > , ; : " ( ) [ ] \`.
+4. Tiene exactamente una `@`, con algo antes y algo después.
+
+La regla es más estricta que la del correo a propósito: una dirección que pasa no puede partir
+una cabecera ni esconder un segundo destinatario. Deja afuera las direcciones con letras no ASCII
+y las que llevan comillas.
+
+Si el destinatario no tiene dirección, o la que tiene no es válida, el canal contesta `skipped` y
+el transporte no se llama.
+
+### El mensaje
+
+`render_email(aviso)` arma el mensaje por omisión:
+
+- **Asunto**: el título, con cada tramo de caracteres de control (U+0000 a U+001F y U+007F)
+  convertido en un espacio. Un salto de línea en el título no puede terminar la cabecera.
+- **Texto**: el cuerpo y la `action_url`, separados por una línea en blanco, con los que haya. Un
+  cuerpo vacío es como no tener cuerpo. Si no hay ninguno de los dos, el texto es el título, sin
+  tocar.
+
+Quien integra puede reemplazar esta función. Aun así, el asunto que sale siempre pasa por la
+misma limpieza de caracteres de control.
 
 ## Vectores
 
@@ -465,6 +505,8 @@ casos.
 | `preferencias-guardadas` | las preferencias sobre un almacén | secuencia de pasos (ver abajo) |
 | `recorrido` | el recorrido completo | secuencia de pasos (ver abajo) |
 | `recorrido-canales` | validación de los canales configurados | `channels`, `valid` |
+| `email-mensaje` | el mensaje por omisión | `notification`, `expect` |
+| `email-direcciones` | validez de una dirección | `address`, `valid` |
 
 Los vectores de `canales`, `matriz`, `preferencias` y `catalogo` llevan la `policy` una vez por
 archivo; los de `aviso` llevan además el `catalog`.
@@ -477,7 +519,7 @@ que es lo que la operación devuelve, o `{"error": motivo}` cuando la rechaza.
 - En `preferencias-guardadas`, `op` es `save` (devuelve nulo) o `get`.
 - En `recorrido`, el vector trae la `policy`, el `catalog` y los `channels` configurados, y `op` es
   `notify` o `save` (guardar preferencias). Cada `notify` lleva `outcomes`: qué contesta cada
-  canal en ese paso (por omisión, `sent`). Además de los tres resultados, `throws` hace que el
+  canal en ese paso (por omisión, `sent`). Además de los cuatro resultados, `throws` hace que el
   canal lance un error; `garbage`, que conteste algo que no es un resultado; y `unknown`, que
   conteste un resultado con un valor que no existe. `expect` tiene `created`,
   `notification`, `attempted` (los canales intentados, en orden) y `deliveries`, o

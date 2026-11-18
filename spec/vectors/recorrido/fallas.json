@@ -289,6 +289,49 @@
    }
   },
   {
+   "note": "un canal que no tiene a dónde entregar lo informa como omitido",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "ana",
+    "payload": {
+     "device": "Firefox"
+    }
+   },
+   "id": "n4c",
+   "at_ms": 4700,
+   "outcomes": {
+    "sms": "skipped"
+   },
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n4c",
+     "recipient_id": "ana",
+     "type": "login.new",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 4700,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "email",
+     "sms"
+    ],
+    "deliveries": {
+     "email": "sent",
+     "sms": "skipped"
+    }
+   }
+  },
+  {
    "note": "todos fallan: el aviso queda guardado igual",
    "op": "notify",
    "event": {

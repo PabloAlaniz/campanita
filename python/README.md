@@ -159,8 +159,47 @@ result.deliveries  # {'email': DeliveryResult(outcome='sent', ...)}
 ```
 
 Primero se guarda y después se entrega: un canal que falla, o que lanza un error, no deshace el
-aviso ni impide intentar los demás. Todavía no hay adaptadores para proveedores reales; un canal
-es cualquier objeto con `id` y `send`.
+aviso ni impide intentar los demás. Un canal es cualquier objeto con `id` y `send`.
+
+## Email
+
+`EmailChannel` busca la dirección de la persona, arma el mensaje y se lo pasa a un transporte. El
+transporte se cambia sin tocar el resto:
+
+```python
+from campanita.channels import EmailChannel, HttpEmailTransport, ResendTransport, SmtpTransport
+
+
+async def buscar_direccion(recipient_id: str) -> str | None: ...  # de tu base de usuarios; None si no tiene
+
+
+email = EmailChannel(
+    transport=SmtpTransport("smtp.example.com", username="avisos", password="…"),
+    sender="avisos@example.com",
+    sender_name="Avisos",
+    resolve_address=buscar_direccion,
+)
+
+# El mismo canal, con otro transporte:
+ResendTransport("re_…")
+HttpEmailTransport(
+    "https://mail.example.com/v1/send",  # cualquier servicio de email con API HTTP
+    headers={"X-Api-Key": "…"},
+    build_body=lambda m: {"to": m.to, "subject": m.subject, "body": m.text},
+)
+```
+
+- **Sin dirección no es una falla.** Si la persona no tiene dirección, o no es válida, la entrega
+  queda como `skipped` y el aviso sigue en la bandeja.
+- **El mensaje por omisión** lleva el título como asunto, y el cuerpo y el enlace como texto. Se
+  cambia con `render=`; el asunto nunca sale con saltos de línea.
+- **`SmtpTransport`** usa `starttls` por omisión (`security="tls"` para TLS directo), verifica el
+  certificado y corre en un hilo aparte. No manda la contraseña por una conexión sin cifrar.
+- **Los transportes HTTP** no siguen redirecciones y no repiten credenciales en los errores.
+
+Los transportes están probados contra servidores de prueba locales, incluido SMTP con TLS.
+Ninguno se probó contra un proveedor real: conviene hacer un envío de prueba antes de confiar en
+la configuración.
 
 ## Desarrollo
 

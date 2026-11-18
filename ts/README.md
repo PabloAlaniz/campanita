@@ -144,8 +144,40 @@ result.deliveries; // Map { 'email' => { outcome: 'sent' } }
 ```
 
 Primero se guarda y después se entrega: un canal que falla, o que rechaza, no deshace el aviso ni
-impide intentar los demás. Todavía no hay adaptadores para proveedores reales; un canal es
-cualquier objeto con `id` y `send`.
+impide intentar los demás. Un canal es cualquier objeto con `id` y `send`.
+
+## Email
+
+`EmailChannel` busca la dirección de la persona, arma el mensaje y se lo pasa a un transporte. El
+transporte se cambia sin tocar el resto:
+
+```ts
+import { EmailChannel, HttpEmailTransport, ResendTransport } from 'campanita';
+
+const email = new EmailChannel({
+  transport: new ResendTransport('re_…'),
+  sender: 'avisos@example.com',
+  senderName: 'Avisos',
+  resolveAddress: async (recipientId) => buscarDireccion(recipientId), // null si no tiene
+});
+
+// El mismo canal, con cualquier servicio de email que tenga una API HTTP:
+new HttpEmailTransport('https://mail.example.com/v1/send', {
+  headers: { 'X-Api-Key': '…' },
+  buildBody: (m) => ({ to: m.to, subject: m.subject, body: m.text }),
+});
+```
+
+- **Sin dirección no es una falla.** Si la persona no tiene dirección, o no es válida, la entrega
+  queda como `skipped` y el aviso sigue en la bandeja.
+- **El mensaje por omisión** lleva el título como asunto, y el cuerpo y el enlace como texto. Se
+  cambia con `render`; el asunto nunca sale con saltos de línea.
+- **Los transportes usan `fetch`**, así que corren donde corra el paquete. No siguen
+  redirecciones y no repiten credenciales en los errores. Se les puede pasar otro `fetch`.
+- **SMTP todavía no está en TypeScript**; sí en el paquete de Python.
+
+Los transportes están probados con un `fetch` de prueba. Ninguno se probó contra un proveedor
+real: conviene hacer un envío de prueba antes de confiar en la configuración.
 
 ## Desarrollo
 

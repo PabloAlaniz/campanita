@@ -145,7 +145,8 @@ def test_aviso(vector: dict[str, Any], case: dict[str, Any]) -> None:
 
 def test_todos_los_tipos_de_vector_tienen_quien_los_corra() -> None:
     # Los de `bandeja` y `preferencias-guardadas` los corre tests/test_stores.py
-    # contra cada almacén, y los de `recorrido`, tests/test_notify.py.
+    # contra cada almacén; los de `recorrido`, tests/test_notify.py; y los de
+    # email, tests/test_email.py.
     corridos = {
         "politica",
         "canales",
@@ -158,5 +159,7 @@ def test_todos_los_tipos_de_vector_tienen_quien_los_corra() -> None:
         "preferencias-guardadas",
         "recorrido",
         "recorrido-canales",
+        "email-mensaje",
+        "email-direcciones",
     }
     assert {load(path)["kind"] for path in VECTORS} == corridos

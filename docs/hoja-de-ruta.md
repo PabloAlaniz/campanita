@@ -9,6 +9,7 @@
 - Las preferencias guardadas, especificadas de la misma forma.
 - El recorrido completo: una sola operación que arma el aviso, lo guarda y lo entrega por los
   canales que corresponden.
+- El canal de email, con transporte intercambiable: SMTP (Python), HTTP genérico y Resend.
 - Almacenes incluidos, para avisos y para preferencias: en memoria (Python y TypeScript) y SQLite
   (Python).
 - Vectores de conformidad, su generador independiente y un corredor de secuencias para quien
@@ -18,17 +19,18 @@
 
 ## Lo que sigue
 
-1. **Adaptadores de canal.** Email y web push; después, push nativo. Son los que van a terminar
-   de fijar el puerto de entrega.
+1. **Web push**, y después push nativo. Es el segundo canal, el que termina de fijar el puerto
+   de entrega.
 2. **Registro y reintento de entregas.** Guardar qué pasó con cada entrega y volver a intentar
    las que fallaron.
-3. **Más almacenes.** Uno sobre SQL en TypeScript y uno para una base con driver asíncrono.
-4. **La campanita.** Componentes para mostrar la bandeja y la pantalla de preferencias.
-5. **Un servicio listo para desplegar.** Una API HTTP armada con el núcleo y los adaptadores,
+3. **Más de email.** SMTP en TypeScript, mensajes en HTML y qué hacer con los rebotes.
+4. **Más almacenes.** Uno sobre SQL en TypeScript y uno para una base con driver asíncrono.
+5. **La campanita.** Componentes para mostrar la bandeja y la pantalla de preferencias.
+6. **Un servicio listo para desplegar.** Una API HTTP armada con el núcleo y los adaptadores,
    para quien no quiera embeber la librería.
-6. **Avisos en varios idiomas.** El payload ya se guarda entero para poder redactar de nuevo.
-7. **Vencimiento y borrado** de avisos viejos.
-8. **Restablecer preferencias**: volver una celda al valor de la política.
+7. **Avisos en varios idiomas.** El payload ya se guarda entero para poder redactar de nuevo.
+8. **Vencimiento y borrado** de avisos viejos.
+9. **Restablecer preferencias**: volver una celda al valor de la política.
 
 ## Fuera de alcance
 

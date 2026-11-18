@@ -29,7 +29,9 @@
         "bandeja",
         "preferencias-guardadas",
         "recorrido",
-        "recorrido-canales"
+        "recorrido-canales",
+        "email-mensaje",
+        "email-direcciones"
       ]
     },
     "policy": {
@@ -1108,6 +1110,7 @@
                             "sent",
                             "expired",
                             "failed",
+                            "skipped",
                             "throws",
                             "garbage",
                             "unknown"
@@ -1172,7 +1175,8 @@
                                   "enum": [
                                     "sent",
                                     "expired",
-                                    "failed"
+                                    "failed",
+                                    "skipped"
                                   ]
                                 }
                               }
@@ -1253,6 +1257,145 @@
                 },
                 "channels": {
                   "type": "array"
+                },
+                "valid": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "email-mensaje"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "cases"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "policy"
+              ]
+            },
+            {
+              "required": [
+                "catalog"
+              ]
+            },
+            {
+              "required": [
+                "steps"
+              ]
+            },
+            {
+              "required": [
+                "channels"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "cases": {
+            "items": {
+              "type": "object",
+              "required": [
+                "note",
+                "notification",
+                "expect"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "notification": {
+                  "$ref": "#/definitions/notification"
+                },
+                "expect": {
+                  "type": "object",
+                  "required": [
+                    "subject",
+                    "text"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "subject": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "email-direcciones"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "cases"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "policy"
+              ]
+            },
+            {
+              "required": [
+                "catalog"
+              ]
+            },
+            {
+              "required": [
+                "steps"
+              ]
+            },
+            {
+              "required": [
+                "channels"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "cases": {
+            "items": {
+              "type": "object",
+              "required": [
+                "note",
+                "address",
+                "valid"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "address": {
+                  "description": "Cualquier valor JSON."
                 },
                 "valid": {
                   "type": "boolean"

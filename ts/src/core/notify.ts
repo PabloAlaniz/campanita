@@ -6,7 +6,7 @@ import type { Notification } from './inbox.js';
 import { INBOX, type Catalog, type Policy } from './types.js';
 
 const ID = /^[a-z][a-z0-9_-]{0,63}$/;
-const OUTCOMES = new Set(['sent', 'expired', 'failed']);
+const OUTCOMES = new Set(['sent', 'expired', 'failed', 'skipped']);
 
 /** Los canales configurados no cumplen el spec. Se detecta al armar el `Notifier`. */
 export class InvalidChannelsError extends Error {

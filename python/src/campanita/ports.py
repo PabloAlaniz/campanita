@@ -7,7 +7,8 @@ El núcleo no conoce la base, el canal ni la superficie que muestra la bandeja.
   `spec/vectors/preferencias-guardadas/`, y `campanita.conformance` las corre
   contra cualquier adaptador.
 - `DeliveryChannel` se usa en el recorrido completo, que está especificado
-  (`spec/vectors/recorrido/`), pero todavía no tiene adaptadores reales.
+  (`spec/vectors/recorrido/`). El primer canal real es el de email
+  (`campanita.channels`).
 """
 
 from __future__ import annotations
@@ -81,8 +82,11 @@ class PreferenceStore(Protocol):
         ...
 
 
-#: `expired` = el destino ya no existe (una suscripción vencida) y hay que olvidarlo.
-DeliveryOutcome = Literal["sent", "expired", "failed"]
+#: - `sent`: el proveedor aceptó el aviso.
+#: - `expired`: el destino ya no existe y el adaptador lo tiene que olvidar.
+#: - `failed`: no se pudo entregar.
+#: - `skipped`: no había a dónde entregar. Reintentar no sirve.
+DeliveryOutcome = Literal["sent", "expired", "failed", "skipped"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,12 +103,12 @@ class DeliveryChannel(Protocol):
     Cada adaptador resuelve sus propios destinos a partir de `recipient_id`: a
     qué dirección o a qué dispositivos va un aviso es asunto suyo.
 
-    `send` no debería lanzar: un destino roto se informa como `failed`, y uno
-    que ya no existe, como `expired`. Si igual lanza, `Notifier` lo anota como
-    `failed` y sigue con los demás canales.
+    `send` no debería lanzar: informa uno de los resultados de
+    `DeliveryOutcome`. Si igual lanza, `Notifier` lo anota como `failed` y sigue
+    con los demás canales.
 
-    El recorrido está especificado (`spec/vectors/recorrido/`). Lo que todavía
-    no hay son adaptadores reales, así que el puerto puede ajustarse.
+    El recorrido está especificado (`spec/vectors/recorrido/`). Los canales
+    incluidos están en `campanita.channels`.
     """
 
     @property
