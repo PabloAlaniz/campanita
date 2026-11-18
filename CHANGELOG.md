@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.0](https://github.com/PabloAlaniz/campanita/compare/v0.1.0...v0.2.0) (2026-11-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* en el puerto PreferenceStore, que estaba marcado como borrador, el ámbito pasa a ser un argumento con nombre: `scope=` en Python y `{ scope }` en TypeScript.
+
+### Features
+
+* canal de email con transporte intercambiable ([04d3a6b](https://github.com/PabloAlaniz/campanita/commit/04d3a6bd3f39708fc2ab2175fc84ca9a9eac5910))
+* el recorrido completo, de un evento a un aviso entregado ([ffeb4d2](https://github.com/PabloAlaniz/campanita/commit/ffeb4d2c81227e5a894e591e6fe4b7815d221cbd))
+* las preferencias guardadas, sobre cualquier base ([dfb4430](https://github.com/PabloAlaniz/campanita/commit/dfb443077dceea4c152a06b825213e116e2b5176))
+* no molestar, un horario por persona en el que los canales no interrumpen ([fdd9571](https://github.com/PabloAlaniz/campanita/commit/fdd95716cb683d2bad9c194c0cf3e97b045c448e))
+* **ts:** almacenes para Cloudflare D1 ([760d485](https://github.com/PabloAlaniz/campanita/commit/760d48589fce8845503eee8a3c18e9f14e15716d))
+
 ## [0.1.0](https://github.com/PabloAlaniz/campanita/compare/v0.0.1...v0.1.0) (2026-11-18)
 
 
