@@ -53,3 +53,15 @@ borrador: ver [`docs/puertos.md`](docs/puertos.md) antes de escribir uno.
 El proyecto se escribe en español: documentación, spec, comentarios y mensajes de error. Los
 identificadores de código van en inglés, y los literales del contrato (`inapp`, `locked`,
 `unknown_channel`) no se traducen.
+
+## Versiones
+
+Los dos paquetes salen siempre con la misma versión, porque implementan el mismo spec. La maneja
+[release-please](https://github.com/googleapis/release-please) a partir de los mensajes de commit
+([Conventional Commits](https://www.conventionalcommits.org/)): `feat:` sube la versión menor,
+`fix:` la de parche, y un cambio incompatible (`feat!:`) también la menor mientras estemos en 0.x.
+
+En cada push a `main`, release-please actualiza un PR de versión con el CHANGELOG. Al mergearlo
+se crea el tag `vX.Y.Z` y se publican `campanita` en npm y en PyPI desde
+`.github/workflows/release.yml`, con trusted publishing: no hay tokens en el repo. Las versiones
+de `ts/package.json`, `python/pyproject.toml` y `python/uv.lock` no se tocan a mano.
