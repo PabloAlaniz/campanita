@@ -1,8 +1,8 @@
 # campanita (TypeScript)
 
 El núcleo de [campanita](https://github.com/PabloAlaniz/campanita) en TypeScript: decide por qué
-canales sale un aviso y qué puede cambiar el usuario. Sin dependencias; corre en Node 20+,
-Cloudflare Workers y navegadores.
+canales sale un aviso, qué puede cambiar el usuario y cómo se arma un aviso. Sin dependencias y
+sin APIs de Node, así que no está atado a un runtime; hoy se prueba en Node.
 
 > **Borrador.** Implementa la versión 0 del spec, que puede cambiar. Todavía no hay adaptadores
 > de base ni de canal.

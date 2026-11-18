@@ -1,7 +1,7 @@
 # campanita (Python)
 
 El núcleo de [campanita](https://github.com/PabloAlaniz/campanita) en Python: decide por qué
-canales sale un aviso y qué puede cambiar el usuario. Sin dependencias.
+canales sale un aviso, qué puede cambiar el usuario y cómo se arma un aviso. Sin dependencias.
 
 > **Borrador.** Implementa la versión 0 del spec, que puede cambiar. Todavía no hay adaptadores
 > de base ni de canal.
