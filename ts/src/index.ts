@@ -54,6 +54,8 @@ export type {
 } from './core/inbox.js';
 export { notificationToWire, runPreferenceVector, runStoreVector } from './conformance.js';
 export { MemoryPreferenceStore, MemoryStore } from './stores/memory.js';
+export { D1PreferenceStore, D1Store, d1Schema } from './stores/d1.js';
+export type { D1Like, D1StatementLike } from './stores/d1.js';
 export type {
   DeliveryChannel,
   DeliveryOutcome,

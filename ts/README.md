@@ -80,7 +80,8 @@ lo que hacen es igual en todos los lenguajes.
 
 ## La bandeja
 
-Un almacén guarda los avisos y contesta la bandeja. El paquete trae uno en memoria:
+Un almacén guarda los avisos y contesta la bandeja. El paquete trae uno en memoria y uno para
+Cloudflare D1:
 
 ```ts
 import { MemoryStore } from 'campanita';
@@ -99,7 +100,26 @@ await store.markRead(page.items[0]!.id, 'user-7', new Date());
 await store.markAllRead('user-7', { before: page.items[0]!.createdAt, readAt: new Date() });
 ```
 
-Para una base de verdad, escribí un adaptador que cumpla `NotificationStore` y probalo con
+### Cloudflare D1
+
+`D1Store` y `D1PreferenceStore` guardan en una base D1. Reciben el binding del Worker tal cual:
+
+```ts
+import { D1PreferenceStore, D1Store, d1Schema } from 'campanita';
+
+const store = new D1Store(env.DB);
+const preferences = new D1PreferenceStore(env.DB);
+```
+
+Las tablas se crean una vez. `d1Schema()` devuelve las sentencias para copiar a una migración, o
+`await store.createSchema()` las corre directamente. Los nombres de las tablas se pueden cambiar:
+`new D1Store(env.DB, { table: 'avisos' })`.
+
+Que dos pedidos simultáneos con la misma `dedupeKey` dejen un solo aviso lo garantiza un índice
+único y una sola sentencia de inserción. Los almacenes de D1 se prueban con las mismas secuencias
+del spec, contra la base D1 del runtime local de Workers.
+
+Para otra base, escribí un adaptador que cumpla `NotificationStore` y probalo con
 `runStoreVector`: ver [`docs/puertos.md`](../docs/puertos.md).
 
 ## Las preferencias guardadas

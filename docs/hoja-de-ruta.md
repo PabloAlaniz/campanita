@@ -10,8 +10,8 @@
 - El recorrido completo: una sola operación que arma el aviso, lo guarda y lo entrega por los
   canales que corresponden.
 - El canal de email, con transporte intercambiable: SMTP (Python), HTTP genérico y Resend.
-- Almacenes incluidos, para avisos y para preferencias: en memoria (Python y TypeScript) y SQLite
-  (Python).
+- Almacenes incluidos, para avisos y para preferencias: en memoria (Python y TypeScript), SQLite
+  (Python) y Cloudflare D1 (TypeScript).
 - Vectores de conformidad, su generador independiente y un corredor de secuencias para quien
   escriba un adaptador.
 - Núcleo en Python y en TypeScript, sin dependencias, pasando los mismos vectores.
@@ -24,7 +24,7 @@
 2. **Registro y reintento de entregas.** Guardar qué pasó con cada entrega y volver a intentar
    las que fallaron.
 3. **Más de email.** SMTP en TypeScript, mensajes en HTML y qué hacer con los rebotes.
-4. **Más almacenes.** Uno sobre SQL en TypeScript y uno para una base con driver asíncrono.
+4. **Más almacenes.** Postgres, en los dos lenguajes.
 5. **La campanita.** Componentes para mostrar la bandeja y la pantalla de preferencias.
 6. **Un servicio listo para desplegar.** Una API HTTP armada con el núcleo y los adaptadores,
    para quien no quiera embeber la librería.

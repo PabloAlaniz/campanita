@@ -25,6 +25,7 @@ Adaptadores incluidos:
 |---|---|---|
 | En memoria | `campanita.stores.MemoryStore` | `MemoryStore` |
 | SQLite | `campanita.stores.SqliteStore` | todavía no |
+| Cloudflare D1 | no aplica | `D1Store` |
 
 ## El almacén de preferencias
 
@@ -35,6 +36,7 @@ Su comportamiento está en la sección "Las preferencias guardadas" del spec y e
 |---|---|---|
 | En memoria | `campanita.stores.MemoryPreferenceStore` | `MemoryPreferenceStore` |
 | SQLite | `campanita.stores.SqlitePreferenceStore` | todavía no |
+| Cloudflare D1 | no aplica | `D1PreferenceStore` |
 
 Las dos tablas pueden vivir en la misma base o en bases distintas: los puertos son independientes.
 
@@ -158,5 +160,5 @@ Lo que las secuencias **no** pueden probar, y cada adaptador tiene que garantiza
 Un puerto no se da por estable hasta tener **dos adaptadores reales**. Con uno solo, el puerto
 termina teniendo la forma de ese adaptador y el segundo no entra.
 
-Los dos almacenes la cumplen en Python (en memoria y SQLite), y el transporte de email, en los dos
-lenguajes. El canal de entrega tiene hoy un solo canal real, el de email: le falta el segundo.
+Los dos almacenes la cumplen en los dos lenguajes (en memoria y SQLite en Python; en memoria y D1
+en TypeScript), y el transporte de email también. El canal de entrega tiene hoy un solo canal real, el de email: le falta el segundo.

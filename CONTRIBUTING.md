@@ -13,6 +13,7 @@ pnpm typecheck
 pnpm build
 pnpm check:package  # publint y arethetypeswrong
 pnpm check:spec     # los vectores del repo coinciden con el generador
+pnpm test:d1        # los almacenes de D1, contra el runtime local de Workers
 ```
 
 ```bash

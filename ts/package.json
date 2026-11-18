@@ -49,14 +49,16 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --exclude test/d1",
     "check:package": "pnpm build && publint --strict && attw --pack . --profile node16",
     "prepack": "cp ../LICENSE ./LICENSE && pnpm build",
-    "postpack": "rm -f LICENSE"
+    "postpack": "rm -f LICENSE",
+    "test:d1": "vitest run test/d1"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@types/node": "^24.0.0",
+    "miniflare": "^4.20260730.0",
     "publint": "^0.3.25",
     "tsup": "^9.0.0",
     "typescript": "^5.9.0",
