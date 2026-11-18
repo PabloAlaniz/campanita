@@ -2,10 +2,21 @@
 
 Notificaciones con las mismas reglas en cualquier stack.
 
-> **Borrador.** Hoy existe el núcleo en Python y TypeScript: decide por qué canales sale un
-> aviso, qué puede cambiar la persona y cómo se arma un aviso, y guarda la bandeja y las
-> preferencias sobre cualquier base. Todavía no hay adaptadores de canal. La
-> [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene.
+[![CI](https://github.com/PabloAlaniz/campanita/actions/workflows/ci.yml/badge.svg)](https://github.com/PabloAlaniz/campanita/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/campanita)](https://www.npmjs.com/package/campanita)
+[![PyPI](https://img.shields.io/pypi/v/campanita)](https://pypi.org/project/campanita/)
+[![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-yellow.svg)](LICENSE)
+
+```bash
+pip install campanita
+npm install campanita
+```
+
+> **Versión temprana.** El núcleo decide por qué canales sale un aviso, qué puede cambiar la
+> persona y cómo se arma un aviso, y guarda la bandeja y las preferencias sobre cualquier base.
+> Todavía no hay adaptadores de canal, y hasta la 1.0 la API puede cambiar entre versiones
+> menores. La [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene y el
+> [CHANGELOG](CHANGELOG.md), qué cambió.
 
 Casi todo producto termina con una campanita: una bandeja de avisos, una pantalla de preferencias
 y uno o dos canales para avisar afuera. Y casi siempre se escribe de nuevo, atado a una base y a

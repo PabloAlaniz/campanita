@@ -3,8 +3,13 @@
 El núcleo de [campanita](https://github.com/PabloAlaniz/campanita) en Python: decide por qué
 canales sale un aviso, qué puede cambiar el usuario y cómo se arma un aviso. Sin dependencias.
 
-> **Borrador.** Implementa la versión 0 del spec, que puede cambiar. Todavía no hay adaptadores
-> de base ni de canal.
+```bash
+pip install campanita
+```
+
+> **Versión temprana.** Implementa la versión 0 del spec. Hasta la 1.0, la API puede cambiar
+> entre versiones menores; el [CHANGELOG](https://github.com/PabloAlaniz/campanita/blob/main/CHANGELOG.md)
+> dice qué cambió.
 
 ```python
 from campanita import parse_policy, resolve_channels, effective_matrix, validate_patch
