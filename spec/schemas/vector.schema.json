@@ -3,86 +3,79 @@
   "$id": "https://github.com/PabloAlaniz/campanita/spec/schemas/vector.schema.json",
   "title": "Vector de conformidad de campanita",
   "type": "object",
-  "required": ["spec", "id", "kind", "cases"],
+  "required": [
+    "spec",
+    "id",
+    "kind",
+    "cases"
+  ],
   "additionalProperties": false,
   "properties": {
-    "spec": { "const": "0" },
-    "id": { "type": "string", "minLength": 1 },
-    "kind": { "enum": ["politica", "canales", "matriz", "preferencias"] },
-    "policy": { "$ref": "#/definitions/policy" },
-    "cases": { "type": "array", "minItems": 1 }
+    "spec": {
+      "const": "0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "enum": [
+        "politica",
+        "canales",
+        "matriz",
+        "preferencias",
+        "plantilla",
+        "catalogo",
+        "aviso"
+      ]
+    },
+    "policy": {
+      "$ref": "#/definitions/policy"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1
+    },
+    "catalog": {
+      "type": "object",
+      "description": "El catálogo de tipos de los vectores de `aviso`."
+    }
   },
   "allOf": [
     {
-      "if": { "properties": { "kind": { "const": "politica" } } },
-      "then": {
-        "not": { "required": ["policy"] },
+      "if": {
         "properties": {
-          "cases": {
-            "items": {
-              "type": "object",
-              "required": ["note", "policy", "valid"],
-              "additionalProperties": false,
-              "properties": {
-                "note": { "type": "string", "minLength": 1 },
-                "policy": { "description": "Cualquier valor JSON: los casos inválidos no cumplen la forma." },
-                "valid": { "type": "boolean" }
-              }
-            }
+          "kind": {
+            "const": "politica"
           }
         }
-      }
-    },
-    {
-      "if": { "properties": { "kind": { "const": "canales" } } },
+      },
       "then": {
-        "required": ["policy"],
+        "not": {
+          "required": [
+            "policy"
+          ]
+        },
         "properties": {
           "cases": {
             "items": {
               "type": "object",
-              "required": ["category", "overrides", "available", "expect"],
+              "required": [
+                "note",
+                "policy",
+                "valid"
+              ],
               "additionalProperties": false,
               "properties": {
-                "note": { "type": "string", "minLength": 1 },
-                "category": { "type": "string" },
-                "overrides": { "$ref": "#/definitions/overrides" },
-                "available": { "$ref": "#/definitions/channels" },
-                "expect": { "$ref": "#/definitions/channels" }
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "if": { "properties": { "kind": { "const": "matriz" } } },
-      "then": {
-        "required": ["policy"],
-        "properties": {
-          "cases": {
-            "items": {
-              "type": "object",
-              "required": ["overrides", "available", "expect"],
-              "additionalProperties": false,
-              "properties": {
-                "note": { "type": "string", "minLength": 1 },
-                "overrides": { "$ref": "#/definitions/overrides" },
-                "available": { "$ref": "#/definitions/channels" },
-                "expect": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "object",
-                      "required": ["enabled", "locked"],
-                      "additionalProperties": false,
-                      "properties": {
-                        "enabled": { "type": "boolean" },
-                        "locked": { "type": "boolean" }
-                      }
-                    }
-                  }
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "policy": {
+                  "description": "Cualquier valor JSON: los casos inválidos no cumplen la forma."
+                },
+                "valid": {
+                  "type": "boolean"
                 }
               }
             }
@@ -91,41 +84,192 @@
       }
     },
     {
-      "if": { "properties": { "kind": { "const": "preferencias" } } },
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "canales"
+          }
+        }
+      },
       "then": {
-        "required": ["policy"],
+        "required": [
+          "policy"
+        ],
         "properties": {
           "cases": {
             "items": {
               "type": "object",
-              "required": ["patch", "available", "expect"],
+              "required": [
+                "category",
+                "overrides",
+                "available",
+                "expect"
+              ],
               "additionalProperties": false,
               "properties": {
-                "note": { "type": "string", "minLength": 1 },
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "category": {
+                  "type": "string"
+                },
+                "overrides": {
+                  "$ref": "#/definitions/overrides"
+                },
+                "available": {
+                  "$ref": "#/definitions/channels"
+                },
+                "expect": {
+                  "$ref": "#/definitions/channels"
+                }
+              }
+            }
+          }
+        },
+        "not": {
+          "required": [
+            "catalog"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "matriz"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "policy"
+        ],
+        "properties": {
+          "cases": {
+            "items": {
+              "type": "object",
+              "required": [
+                "overrides",
+                "available",
+                "expect"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "overrides": {
+                  "$ref": "#/definitions/overrides"
+                },
+                "available": {
+                  "$ref": "#/definitions/channels"
+                },
+                "expect": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "object",
+                      "required": [
+                        "enabled",
+                        "locked"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "locked": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "not": {
+          "required": [
+            "catalog"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "preferencias"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "policy"
+        ],
+        "properties": {
+          "cases": {
+            "items": {
+              "type": "object",
+              "required": [
+                "patch",
+                "available",
+                "expect"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
                 "patch": {
                   "type": "object",
                   "description": "Los valores pueden no ser booleanos: es lo que prueba `invalid_value`.",
-                  "additionalProperties": { "type": "object" }
+                  "additionalProperties": {
+                    "type": "object"
+                  }
                 },
-                "available": { "$ref": "#/definitions/channels" },
+                "available": {
+                  "$ref": "#/definitions/channels"
+                },
                 "expect": {
                   "oneOf": [
                     {
                       "type": "object",
-                      "required": ["ok", "changes"],
+                      "required": [
+                        "ok",
+                        "changes"
+                      ],
                       "additionalProperties": false,
                       "properties": {
-                        "ok": { "const": true },
+                        "ok": {
+                          "const": true
+                        },
                         "changes": {
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "required": ["category", "channel", "enabled"],
+                            "required": [
+                              "category",
+                              "channel",
+                              "enabled"
+                            ],
                             "additionalProperties": false,
                             "properties": {
-                              "category": { "type": "string" },
-                              "channel": { "type": "string" },
-                              "enabled": { "type": "boolean" }
+                              "category": {
+                                "type": "string"
+                              },
+                              "channel": {
+                                "type": "string"
+                              },
+                              "enabled": {
+                                "type": "boolean"
+                              }
                             }
                           }
                         }
@@ -133,17 +277,33 @@
                     },
                     {
                       "type": "object",
-                      "required": ["ok", "error"],
+                      "required": [
+                        "ok",
+                        "error"
+                      ],
                       "additionalProperties": false,
                       "properties": {
-                        "ok": { "const": false },
+                        "ok": {
+                          "const": false
+                        },
                         "error": {
                           "type": "object",
-                          "required": ["category", "channel", "reason"],
+                          "required": [
+                            "category",
+                            "channel",
+                            "reason"
+                          ],
                           "additionalProperties": false,
                           "properties": {
-                            "category": { "type": "string" },
-                            "channel": { "type": ["string", "null"] },
+                            "category": {
+                              "type": "string"
+                            },
+                            "channel": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
                             "reason": {
                               "enum": [
                                 "unknown_category",
@@ -162,39 +322,362 @@
               }
             }
           }
+        },
+        "not": {
+          "required": [
+            "catalog"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "plantilla"
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "policy"
+              ]
+            },
+            {
+              "required": [
+                "catalog"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "cases": {
+            "items": {
+              "type": "object",
+              "required": [
+                "note",
+                "template",
+                "payload",
+                "expect"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "template": {
+                  "type": "string"
+                },
+                "payload": {
+                  "type": "object"
+                },
+                "expect": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "ok",
+                        "text"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "ok": {
+                          "const": true
+                        },
+                        "text": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "ok",
+                        "error"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "ok": {
+                          "const": false
+                        },
+                        "error": {
+                          "type": "object",
+                          "required": [
+                            "reason",
+                            "detail"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "invalid_template",
+                                "missing_variable",
+                                "invalid_variable"
+                              ]
+                            },
+                            "detail": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "catalogo"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "policy"
+        ],
+        "not": {
+          "required": [
+            "catalog"
+          ]
+        },
+        "properties": {
+          "cases": {
+            "items": {
+              "type": "object",
+              "required": [
+                "note",
+                "catalog",
+                "valid"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "catalog": {
+                  "description": "Cualquier valor JSON: los casos inválidos no cumplen la forma."
+                },
+                "valid": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "aviso"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "policy",
+          "catalog"
+        ],
+        "properties": {
+          "cases": {
+            "items": {
+              "type": "object",
+              "required": [
+                "note",
+                "event",
+                "expect"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "event": {
+                  "type": "object"
+                },
+                "expect": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "ok",
+                        "draft"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "ok": {
+                          "const": true
+                        },
+                        "draft": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "recipient_id",
+                            "type",
+                            "category",
+                            "title",
+                            "body",
+                            "action_url",
+                            "payload",
+                            "scope",
+                            "dedupe_key"
+                          ],
+                          "properties": {
+                            "recipient_id": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            },
+                            "category": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "body": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "action_url": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "payload": {
+                              "type": "object"
+                            },
+                            "scope": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "dedupe_key": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "ok",
+                        "error"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "ok": {
+                          "const": false
+                        },
+                        "error": {
+                          "type": "object",
+                          "required": [
+                            "reason",
+                            "detail"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "unknown_type",
+                                "invalid_field",
+                                "missing_variable",
+                                "invalid_variable",
+                                "empty_title"
+                              ]
+                            },
+                            "detail": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
         }
       }
     }
   ],
   "definitions": {
-    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
     "channels": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "uniqueItems": true
     },
     "overrides": {
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "additionalProperties": { "type": "boolean" }
+        "additionalProperties": {
+          "type": "boolean"
+        }
       }
     },
     "policy": {
       "type": "object",
       "minProperties": 1,
-      "propertyNames": { "$ref": "#/definitions/id" },
+      "propertyNames": {
+        "$ref": "#/definitions/id"
+      },
       "additionalProperties": {
         "type": "object",
-        "required": ["inapp"],
-        "propertyNames": { "$ref": "#/definitions/id" },
+        "required": [
+          "inapp"
+        ],
+        "propertyNames": {
+          "$ref": "#/definitions/id"
+        },
         "additionalProperties": {
           "type": "object",
-          "required": ["default"],
+          "required": [
+            "default"
+          ],
           "additionalProperties": false,
           "properties": {
-            "default": { "type": "boolean" },
-            "locked": { "type": "boolean" }
+            "default": {
+              "type": "boolean"
+            },
+            "locked": {
+              "type": "boolean"
+            }
           }
         }
       }

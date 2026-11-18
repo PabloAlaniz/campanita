@@ -45,7 +45,8 @@ class Notification:
 @dataclass(frozen=True, slots=True)
 class FeedQuery:
     recipient_id: str
-    limit: int = 20
+    #: Cuántos avisos como máximo. Lo decide quien muestra la bandeja.
+    limit: int
     #: `(created_at, id)` del último aviso de la página anterior.
     cursor: tuple[datetime, str] | None = None
     unread_only: bool = False
@@ -72,8 +73,11 @@ class NotificationStore(Protocol):
 
     async def list_feed(self, query: FeedQuery) -> FeedPage: ...
 
-    async def count_unread(self, recipient_id: str, *, scope: str | None = None, cap: int = 100) -> int:
-        """Cuántos sin leer, cortando en `cap`: la campanita muestra "99+"."""
+    async def count_unread(
+        self, recipient_id: str, *, scope: str | None = None, cap: int | None = None
+    ) -> int:
+        """Cuántos sin leer. Con `cap`, deja de contar al llegar a ese número:
+        una interfaz que muestra "99+" no necesita el total exacto."""
         ...
 
     async def mark_read(self, notification_id: str, recipient_id: str, read_at: datetime) -> bool:

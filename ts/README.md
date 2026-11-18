@@ -4,7 +4,8 @@ El núcleo de [campanita](https://github.com/PabloAlaniz/campanita) en TypeScrip
 canales sale un aviso y qué puede cambiar el usuario. Sin dependencias; corre en Node 20+,
 Cloudflare Workers y navegadores.
 
-> **Borrador.** Implementa la versión 0 del spec. Todavía no hay adaptadores de base ni de canal.
+> **Borrador.** Implementa la versión 0 del spec, que puede cambiar. Todavía no hay adaptadores
+> de base ni de canal.
 
 ```ts
 import { parsePolicy, resolveChannels, effectiveMatrix, validatePatch } from 'campanita';
@@ -37,8 +38,43 @@ validatePatch(policy, { security: { email: false } }, disponibles);
 // PatchRejectedError: cambio de preferencias rechazado en security.email: la celda está bloqueada
 ```
 
+Para armar un aviso a partir de un evento:
+
+```ts
+import { parseCatalog, buildNotification } from 'campanita';
+
+const catalog = parseCatalog(
+  {
+    'comments.new': {
+      category: 'activity',
+      title: '{author} comentó en {document}',
+      body: '{excerpt}',
+    },
+  },
+  policy,
+);
+
+const draft = buildNotification(catalog, {
+  type: 'comments.new',
+  recipient_id: 'user-7',
+  payload: { author: 'Ana', document: 'Presupuesto', excerpt: '¿Va con IVA?' },
+  dedupe_key: 'comment-381',
+});
+draft.title; // 'Ana comentó en Presupuesto'
+draft.category; // 'activity'
+
+buildNotification(catalog, { type: 'comments.new', recipient_id: 'user-7', payload: {} });
+// EventRejectedError: evento rechazado: falta una variable (author)
+```
+
+El evento usa los nombres que viajan (`recipient_id`, `dedupe_key`), porque suele llegar de otro
+servicio; el aviso armado usa los de TypeScript (`recipientId`, `dedupeKey`).
+
+Las plantillas sólo reemplazan `{variables}` por texto o enteros. No hay formatos ni expresiones:
+lo que hacen es igual en todos los lenguajes.
+
 Los puertos (`NotificationStore`, `PreferenceStore`, `DeliveryChannel`) son un borrador: fijan la
-forma que van a tener la base, los canales de entrega y las preferencias, pero el spec v0 todavía
+forma que van a tener la base, los canales de entrega y las preferencias, pero el spec todavía
 no los cubre.
 
 ## Desarrollo

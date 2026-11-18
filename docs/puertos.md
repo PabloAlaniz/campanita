@@ -4,8 +4,8 @@ El núcleo de campanita decide; no guarda, no envía y no dibuja. Todo eso entra
 Están declarados en [`python/src/campanita/ports.py`](../python/src/campanita/ports.py) y en
 [`ts/src/ports.ts`](../ts/src/ports.ts).
 
-> **Son un borrador.** El spec v0 cubre sólo la política, la resolución de canales y las
-> preferencias. Los puertos fijan la forma, pero pueden cambiar hasta que el spec v1 los cubra.
+> **Son un borrador.** El spec todavía no cubre guardar avisos, la bandeja ni las entregas. Los
+> puertos fijan la forma, pero pueden cambiar hasta que el spec los cubra.
 
 ## Los tres puertos
 

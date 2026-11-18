@@ -1,11 +1,9 @@
 name: CI
 
-# Sólo a mano mientras el repo sea privado, para no gastar minutos de Actions.
-# Al abrirlo, reemplazar por:
-#   on:
-#     push:
-#       branches: [main]
-#     pull_request:
+# Se dispara a mano. Para correrlo en cada cambio, sumar:
+#   push:
+#     branches: [main]
+#   pull_request:
 on:
   workflow_dispatch:
 

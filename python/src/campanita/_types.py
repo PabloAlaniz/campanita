@@ -68,3 +68,48 @@ _MOTIVOS: dict[RejectionReason, str] = {
     "locked": "la celda está bloqueada",
     "unavailable": "el canal no está disponible",
 }
+
+
+class InvalidTemplate(ValueError):
+    """La plantilla está mal escrita: una llave suelta o un nombre de variable inválido."""
+
+
+#: Por qué no se pudo armar un texto.
+TemplateReason = Literal["missing_variable", "invalid_variable"]
+
+
+class TemplateError(ValueError):
+    """Falta una variable o su valor no se puede mostrar."""
+
+    def __init__(self, reason: TemplateReason, name: str) -> None:
+        motivo = "falta la variable" if reason == "missing_variable" else "no se puede mostrar el valor de"
+        super().__init__(f"{motivo} `{name}`")
+        self.reason: TemplateReason = reason
+        self.name = name
+
+
+class InvalidCatalog(ValueError):
+    """El catálogo no cumple el spec. Se detecta al cargarlo."""
+
+
+#: Por qué se rechazó un evento. Son los literales del spec.
+EventReason = Literal["unknown_type", "invalid_field", "missing_variable", "invalid_variable", "empty_title"]
+
+_MOTIVOS_EVENTO: dict[EventReason, str] = {
+    "unknown_type": "el tipo no está en el catálogo",
+    "invalid_field": "campo inválido o desconocido",
+    "missing_variable": "falta una variable",
+    "invalid_variable": "el valor de una variable no se puede mostrar",
+    "empty_title": "el título queda vacío",
+}
+
+
+class EventRejected(ValueError):
+    """El evento no se puede convertir en un aviso. No hay que guardar nada."""
+
+    def __init__(self, reason: EventReason, detail: str | None) -> None:
+        text = _MOTIVOS_EVENTO[reason]
+        super().__init__(f"evento rechazado: {text}" + (f" ({detail})" if detail is not None else ""))
+        self.reason: EventReason = reason
+        #: El tipo, el campo o la variable del problema, según el motivo.
+        self.detail = detail

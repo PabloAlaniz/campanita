@@ -3,7 +3,8 @@
 El núcleo de [campanita](https://github.com/PabloAlaniz/campanita) en Python: decide por qué
 canales sale un aviso y qué puede cambiar el usuario. Sin dependencias.
 
-> **Borrador.** Implementa la versión 0 del spec. Todavía no hay adaptadores de base ni de canal.
+> **Borrador.** Implementa la versión 0 del spec, que puede cambiar. Todavía no hay adaptadores
+> de base ni de canal.
 
 ```python
 from campanita import parse_policy, resolve_channels, effective_matrix, validate_patch
@@ -38,8 +39,43 @@ validate_patch(policy, {"security": {"email": False}}, disponibles)
 # PatchRejected: cambio de preferencias rechazado en security.email: la celda está bloqueada
 ```
 
+Para armar un aviso a partir de un evento:
+
+```python
+from campanita import parse_catalog, build_notification, EventRejected
+
+catalog = parse_catalog(
+    {
+        "comments.new": {
+            "category": "activity",
+            "title": "{author} comentó en {document}",
+            "body": "{excerpt}",
+        },
+    },
+    policy,
+)
+
+draft = build_notification(
+    catalog,
+    {
+        "type": "comments.new",
+        "recipient_id": "user-7",
+        "payload": {"author": "Ana", "document": "Presupuesto", "excerpt": "¿Va con IVA?"},
+        "dedupe_key": "comment-381",
+    },
+)
+draft.title  # 'Ana comentó en Presupuesto'
+draft.category  # 'activity'
+
+build_notification(catalog, {"type": "comments.new", "recipient_id": "user-7", "payload": {}})
+# EventRejected: evento rechazado: falta una variable (author)
+```
+
+Las plantillas sólo reemplazan `{variables}` por texto o enteros. No hay formatos ni expresiones:
+lo que hacen es igual en todos los lenguajes.
+
 Los puertos (`campanita.ports`) son un borrador: fijan la forma que van a tener la base, los
-canales de entrega y las preferencias, pero el spec v0 todavía no los cubre.
+canales de entrega y las preferencias, pero el spec todavía no los cubre.
 
 ## Desarrollo
 

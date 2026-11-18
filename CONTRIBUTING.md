@@ -23,6 +23,11 @@ uv run mypy
 uv run ruff check . ../tools && uv run ruff format --check . ../tools
 ```
 
+## Antes de proponer un cambio
+
+Leé [`docs/principios.md`](docs/principios.md). El más importante: el núcleo no nombra productos,
+proveedores ni bases, y lo que es particular de un caso entra como dato o como adaptador.
+
 ## Cambiar el comportamiento
 
 El comportamiento vive en `spec/`, y los paquetes lo siguen. El orden es siempre el mismo:

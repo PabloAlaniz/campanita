@@ -1,0 +1,971 @@
+{
+ "spec": "0",
+ "id": "aviso/armado",
+ "kind": "aviso",
+ "policy": {
+  "security": {
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "push": {
+    "default": true,
+    "locked": true
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "invitations": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "digest": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "catalog": {
+  "invitations.received": {
+   "category": "invitations",
+   "title": "Te invitaron a {project}",
+   "body": "{inviter} te invitó al proyecto {project}."
+  },
+  "security.new-login": {
+   "category": "security",
+   "title": "Nuevo inicio de sesión desde {device}"
+  },
+  "activity.comment": {
+   "category": "activity",
+   "title": "{title}",
+   "body": "{body}"
+  },
+  "digest.weekly": {
+   "category": "digest",
+   "title": "Tu resumen: {count} novedades"
+  },
+  "constructor": {
+   "category": "activity",
+   "title": "Un tipo llamado constructor"
+  }
+ },
+ "cases": [
+  {
+   "note": "lo mínimo",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": true,
+    "draft": {
+     "recipient_id": "u1",
+     "type": "invitations.received",
+     "category": "invitations",
+     "title": "Te invitaron a Atlas",
+     "body": "Ana te invitó al proyecto Atlas.",
+     "action_url": null,
+     "payload": {
+      "project": "Atlas",
+      "inviter": "Ana"
+     },
+     "scope": null,
+     "dedupe_key": null
+    }
+   }
+  },
+  {
+   "note": "con todos los campos",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    },
+    "action_url": "/projects/atlas",
+    "scope": "org-7",
+    "dedupe_key": "inv-42"
+   },
+   "expect": {
+    "ok": true,
+    "draft": {
+     "recipient_id": "u1",
+     "type": "invitations.received",
+     "category": "invitations",
+     "title": "Te invitaron a Atlas",
+     "body": "Ana te invitó al proyecto Atlas.",
+     "action_url": "/projects/atlas",
+     "payload": {
+      "project": "Atlas",
+      "inviter": "Ana"
+     },
+     "scope": "org-7",
+     "dedupe_key": "inv-42"
+    }
+   }
+  },
+  {
+   "note": "los opcionales en nulo son lo mismo que ausentes",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    },
+    "action_url": null,
+    "scope": null,
+    "dedupe_key": null
+   },
+   "expect": {
+    "ok": true,
+    "draft": {
+     "recipient_id": "u1",
+     "type": "invitations.received",
+     "category": "invitations",
+     "title": "Te invitaron a Atlas",
+     "body": "Ana te invitó al proyecto Atlas.",
+     "action_url": null,
+     "payload": {
+      "project": "Atlas",
+      "inviter": "Ana"
+     },
+     "scope": null,
+     "dedupe_key": null
+    }
+   }
+  },
+  {
+   "note": "un tipo sin cuerpo deja el cuerpo en nulo",
+   "event": {
+    "type": "security.new-login",
+    "recipient_id": "u1",
+    "payload": {
+     "device": "Firefox"
+    }
+   },
+   "expect": {
+    "ok": true,
+    "draft": {
+     "recipient_id": "u1",
+     "type": "security.new-login",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": null
+    }
+   }
+  },
+  {
+   "note": "el payload se guarda entero, también lo que no se usa",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana",
+     "extra": [
+      1,
+      {
+       "a": null
+      }
+     ]
+    }
+   },
+   "expect": {
+    "ok": true,
+    "draft": {
+     "recipient_id": "u1",
+     "type": "invitations.received",
+     "category": "invitations",
+     "title": "Te invitaron a Atlas",
+     "body": "Ana te invitó al proyecto Atlas.",
+     "action_url": null,
+     "payload": {
+      "project": "Atlas",
+      "inviter": "Ana",
+      "extra": [
+       1,
+       {
+        "a": null
+       }
+      ]
+     },
+     "scope": null,
+     "dedupe_key": null
+    }
+   }
+  },
+  {
+   "note": "variable entera",
+   "event": {
+    "type": "digest.weekly",
+    "recipient_id": "u1",
+    "payload": {
+     "count": 12
+    }
+   },
+   "expect": {
+    "ok": true,
+    "draft": {
+     "recipient_id": "u1",
+     "type": "digest.weekly",
+     "category": "digest",
+     "title": "Tu resumen: 12 novedades",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "count": 12
+     },
+     "scope": null,
+     "dedupe_key": null
+    }
+   }
+  },
+  {
+   "note": "título y cuerpo que vienen ya redactados",
+   "event": {
+    "type": "activity.comment",
+    "recipient_id": "u1",
+    "payload": {
+     "title": "Ana comentó",
+     "body": "«Listo»"
+    }
+   },
+   "expect": {
+    "ok": true,
+    "draft": {
+     "recipient_id": "u1",
+     "type": "activity.comment",
+     "category": "activity",
+     "title": "Ana comentó",
+     "body": "«Listo»",
+     "action_url": null,
+     "payload": {
+      "title": "Ana comentó",
+      "body": "«Listo»"
+     },
+     "scope": null,
+     "dedupe_key": null
+    }
+   }
+  },
+  {
+   "note": "el cuerpo puede quedar vacío",
+   "event": {
+    "type": "activity.comment",
+    "recipient_id": "u1",
+    "payload": {
+     "title": "Ana comentó",
+     "body": ""
+    }
+   },
+   "expect": {
+    "ok": true,
+    "draft": {
+     "recipient_id": "u1",
+     "type": "activity.comment",
+     "category": "activity",
+     "title": "Ana comentó",
+     "body": "",
+     "action_url": null,
+     "payload": {
+      "title": "Ana comentó",
+      "body": ""
+     },
+     "scope": null,
+     "dedupe_key": null
+    }
+   }
+  },
+  {
+   "note": "un tipo sin variables no necesita payload",
+   "event": {
+    "type": "constructor",
+    "recipient_id": "u1"
+   },
+   "expect": {
+    "ok": true,
+    "draft": {
+     "recipient_id": "u1",
+     "type": "constructor",
+     "category": "activity",
+     "title": "Un tipo llamado constructor",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null
+    }
+   }
+  },
+  {
+   "note": "la `action_url` no se interpreta",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    },
+    "action_url": "javascript:alert(1)"
+   },
+   "expect": {
+    "ok": true,
+    "draft": {
+     "recipient_id": "u1",
+     "type": "invitations.received",
+     "category": "invitations",
+     "title": "Te invitaron a Atlas",
+     "body": "Ana te invitó al proyecto Atlas.",
+     "action_url": "javascript:alert(1)",
+     "payload": {
+      "project": "Atlas",
+      "inviter": "Ana"
+     },
+     "scope": null,
+     "dedupe_key": null
+    }
+   }
+  },
+  {
+   "note": "el destinatario es opaco",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": " 7 ",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": true,
+    "draft": {
+     "recipient_id": " 7 ",
+     "type": "invitations.received",
+     "category": "invitations",
+     "title": "Te invitaron a Atlas",
+     "body": "Ana te invitó al proyecto Atlas.",
+     "action_url": null,
+     "payload": {
+      "project": "Atlas",
+      "inviter": "Ana"
+     },
+     "scope": null,
+     "dedupe_key": null
+    }
+   }
+  },
+  {
+   "note": "tipo que no está en el catálogo",
+   "event": {
+    "type": "invitations.accepted",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "unknown_type",
+     "detail": "invitations.accepted"
+    }
+   }
+  },
+  {
+   "note": "`toString` no es un tipo",
+   "event": {
+    "type": "toString",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "unknown_type",
+     "detail": "toString"
+    }
+   }
+  },
+  {
+   "note": "`__proto__` no es un tipo",
+   "event": {
+    "type": "__proto__",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "unknown_type",
+     "detail": "__proto__"
+    }
+   }
+  },
+  {
+   "note": "falta el tipo",
+   "event": {
+    "recipient_id": "u1"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "unknown_type",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "el tipo no es texto",
+   "event": {
+    "type": 7,
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "unknown_type",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "el tipo es nulo",
+   "event": {
+    "type": null,
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "unknown_type",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "falta el destinatario",
+   "event": {
+    "type": "invitations.received",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "recipient_id"
+    }
+   }
+  },
+  {
+   "note": "destinatario vacío",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "recipient_id"
+    }
+   }
+  },
+  {
+   "note": "el destinatario no es texto",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": 7,
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "recipient_id"
+    }
+   }
+  },
+  {
+   "note": "el destinatario es nulo",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": null,
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "recipient_id"
+    }
+   }
+  },
+  {
+   "note": "el payload es nulo",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": null
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "payload"
+    }
+   }
+  },
+  {
+   "note": "el payload es una lista",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": []
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "payload"
+    }
+   }
+  },
+  {
+   "note": "el payload es texto",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": "x"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "payload"
+    }
+   }
+  },
+  {
+   "note": "`action_url` vacía",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    },
+    "action_url": ""
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "action_url"
+    }
+   }
+  },
+  {
+   "note": "`action_url` no es texto",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    },
+    "action_url": 1
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "action_url"
+    }
+   }
+  },
+  {
+   "note": "`scope` vacío",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    },
+    "scope": ""
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "scope"
+    }
+   }
+  },
+  {
+   "note": "`scope` no es texto",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    },
+    "scope": 7
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "scope"
+    }
+   }
+  },
+  {
+   "note": "`dedupe_key` vacía",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    },
+    "dedupe_key": ""
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "dedupe_key"
+    }
+   }
+  },
+  {
+   "note": "`dedupe_key` no es texto",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    },
+    "dedupe_key": 42
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "dedupe_key"
+    }
+   }
+  },
+  {
+   "note": "campo desconocido",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    },
+    "dedup_key": "inv-42"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "dedup_key"
+    }
+   }
+  },
+  {
+   "note": "dos campos desconocidos: se informa el primero en orden",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    },
+    "zeta": 1,
+    "alfa": 2
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "alfa"
+    }
+   }
+  },
+  {
+   "note": "falta una variable del título",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "missing_variable",
+     "detail": "project"
+    }
+   }
+  },
+  {
+   "note": "falta una variable del cuerpo",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "missing_variable",
+     "detail": "inviter"
+    }
+   }
+  },
+  {
+   "note": "una variable con un valor que no se puede mostrar",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": [
+      "Atlas"
+     ],
+     "inviter": "Ana"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_variable",
+     "detail": "project"
+    }
+   }
+  },
+  {
+   "note": "título vacío",
+   "event": {
+    "type": "activity.comment",
+    "recipient_id": "u1",
+    "payload": {
+     "title": "",
+     "body": "x"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "empty_title",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "título sólo con espacios",
+   "event": {
+    "type": "activity.comment",
+    "recipient_id": "u1",
+    "payload": {
+     "title": " \t\n\r",
+     "body": "x"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "empty_title",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "un espacio de no separación cuenta como texto",
+   "event": {
+    "type": "activity.comment",
+    "recipient_id": "u1",
+    "payload": {
+     "title": " ",
+     "body": "x"
+    }
+   },
+   "expect": {
+    "ok": true,
+    "draft": {
+     "recipient_id": "u1",
+     "type": "activity.comment",
+     "category": "activity",
+     "title": " ",
+     "body": "x",
+     "action_url": null,
+     "payload": {
+      "title": " ",
+      "body": "x"
+     },
+     "scope": null,
+     "dedupe_key": null
+    }
+   }
+  },
+  {
+   "note": "orden: el tipo antes que los campos",
+   "event": {
+    "type": "nope",
+    "recipient_id": ""
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "unknown_type",
+     "detail": "nope"
+    }
+   }
+  },
+  {
+   "note": "orden: el destinatario antes que el payload",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "",
+    "payload": null
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "recipient_id"
+    }
+   }
+  },
+  {
+   "note": "orden: los campos conocidos antes que los desconocidos",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {
+     "project": "Atlas",
+     "inviter": "Ana"
+    },
+    "scope": "",
+    "alfa": 1
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "scope"
+    }
+   }
+  },
+  {
+   "note": "orden: los campos antes que las variables",
+   "event": {
+    "type": "invitations.received",
+    "recipient_id": "u1",
+    "payload": {},
+    "dedupe_key": ""
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_field",
+     "detail": "dedupe_key"
+    }
+   }
+  },
+  {
+   "note": "orden: el título vacío antes que el cuerpo",
+   "event": {
+    "type": "activity.comment",
+    "recipient_id": "u1",
+    "payload": {
+     "title": " "
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "empty_title",
+     "detail": null
+    }
+   }
+  }
+ ]
+}

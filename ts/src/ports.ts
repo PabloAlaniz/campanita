@@ -41,7 +41,8 @@ export interface FeedCursor {
 
 export interface FeedQuery {
   readonly recipientId: string;
-  readonly limit?: number;
+  /** Cuántos avisos como máximo. Lo decide quien muestra la bandeja. */
+  readonly limit: number;
   /** El último aviso de la página anterior. */
   readonly cursor?: FeedCursor | null;
   readonly unreadOnly?: boolean;
@@ -64,7 +65,10 @@ export interface NotificationStore {
   addMany(notifications: readonly Notification[]): Promise<readonly Notification[]>;
   findByDedupeKey(recipientId: string, dedupeKey: string): Promise<Notification | null>;
   listFeed(query: FeedQuery): Promise<FeedPage>;
-  /** Cuántos sin leer, cortando en `cap`: la campanita muestra "99+". */
+  /**
+   * Cuántos sin leer. Con `cap`, deja de contar al llegar a ese número: una
+   * interfaz que muestra "99+" no necesita el total exacto.
+   */
   countUnread(recipientId: string, options?: { scope?: string | null; cap?: number }): Promise<number>;
   /** `true` sólo si hubo transición. Marcar dos veces no mueve la hora. */
   markRead(notificationId: string, recipientId: string, readAt: Date): Promise<boolean>;

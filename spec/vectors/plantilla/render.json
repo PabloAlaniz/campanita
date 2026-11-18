@@ -1,0 +1,620 @@
+{
+ "spec": "0",
+ "id": "plantilla/render",
+ "kind": "plantilla",
+ "cases": [
+  {
+   "note": "sin variables",
+   "template": "Hola",
+   "payload": {},
+   "expect": {
+    "ok": true,
+    "text": "Hola"
+   }
+  },
+  {
+   "note": "texto vacío",
+   "template": "",
+   "payload": {},
+   "expect": {
+    "ok": true,
+    "text": ""
+   }
+  },
+  {
+   "note": "una variable",
+   "template": "Hola {name}",
+   "payload": {
+    "name": "Ana"
+   },
+   "expect": {
+    "ok": true,
+    "text": "Hola Ana"
+   }
+  },
+  {
+   "note": "la misma variable dos veces",
+   "template": "{a} y {a}",
+   "payload": {
+    "a": "x"
+   },
+   "expect": {
+    "ok": true,
+    "text": "x y x"
+   }
+  },
+  {
+   "note": "dos variables pegadas",
+   "template": "{a}{b}",
+   "payload": {
+    "a": "1",
+    "b": "2"
+   },
+   "expect": {
+    "ok": true,
+    "text": "12"
+   }
+  },
+  {
+   "note": "sólo una variable",
+   "template": "{a}",
+   "payload": {
+    "a": "todo"
+   },
+   "expect": {
+    "ok": true,
+    "text": "todo"
+   }
+  },
+  {
+   "note": "sobran claves en el payload",
+   "template": "{a}",
+   "payload": {
+    "a": "x",
+    "b": "no se usa"
+   },
+   "expect": {
+    "ok": true,
+    "text": "x"
+   }
+  },
+  {
+   "note": "llaves literales",
+   "template": "{{así}}",
+   "payload": {},
+   "expect": {
+    "ok": true,
+    "text": "{así}"
+   }
+  },
+  {
+   "note": "llave literal y variable",
+   "template": "{{{a}}}",
+   "payload": {
+    "a": "x"
+   },
+   "expect": {
+    "ok": true,
+    "text": "{x}"
+   }
+  },
+  {
+   "note": "llaves literales sueltas",
+   "template": "a }} b {{ c",
+   "payload": {},
+   "expect": {
+    "ok": true,
+    "text": "a } b { c"
+   }
+  },
+  {
+   "note": "el valor no se vuelve a interpretar",
+   "template": "{a}",
+   "payload": {
+    "a": "{b}"
+   },
+   "expect": {
+    "ok": true,
+    "text": "{b}"
+   }
+  },
+  {
+   "note": "un valor con llaves dobles queda igual",
+   "template": "{a}",
+   "payload": {
+    "a": "{{x}}"
+   },
+   "expect": {
+    "ok": true,
+    "text": "{{x}}"
+   }
+  },
+  {
+   "note": "valor vacío",
+   "template": "[{a}]",
+   "payload": {
+    "a": ""
+   },
+   "expect": {
+    "ok": true,
+    "text": "[]"
+   }
+  },
+  {
+   "note": "texto fuera del plano básico",
+   "template": "🔔 {a} ñandú",
+   "payload": {
+    "a": "😀"
+   },
+   "expect": {
+    "ok": true,
+    "text": "🔔 😀 ñandú"
+   }
+  },
+  {
+   "note": "nombre con guion bajo y dígitos",
+   "template": "{user_2}",
+   "payload": {
+    "user_2": "ok"
+   },
+   "expect": {
+    "ok": true,
+    "text": "ok"
+   }
+  },
+  {
+   "note": "nombre de 64 caracteres",
+   "template": "{aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}",
+   "payload": {
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "ok"
+   },
+   "expect": {
+    "ok": true,
+    "text": "ok"
+   }
+  },
+  {
+   "note": "entero",
+   "template": "{n} avisos",
+   "payload": {
+    "n": 3
+   },
+   "expect": {
+    "ok": true,
+    "text": "3 avisos"
+   }
+  },
+  {
+   "note": "cero",
+   "template": "{n}",
+   "payload": {
+    "n": 0
+   },
+   "expect": {
+    "ok": true,
+    "text": "0"
+   }
+  },
+  {
+   "note": "entero negativo",
+   "template": "{n}",
+   "payload": {
+    "n": -12
+   },
+   "expect": {
+    "ok": true,
+    "text": "-12"
+   }
+  },
+  {
+   "note": "el mayor entero seguro",
+   "template": "{n}",
+   "payload": {
+    "n": 9007199254740991
+   },
+   "expect": {
+    "ok": true,
+    "text": "9007199254740991"
+   }
+  },
+  {
+   "note": "el menor entero seguro",
+   "template": "{n}",
+   "payload": {
+    "n": -9007199254740991
+   },
+   "expect": {
+    "ok": true,
+    "text": "-9007199254740991"
+   }
+  },
+  {
+   "note": "un decimal sin parte fraccionaria es un entero",
+   "template": "{n}",
+   "payload": {
+    "n": 3.0
+   },
+   "expect": {
+    "ok": true,
+    "text": "3"
+   }
+  },
+  {
+   "note": "cero negativo",
+   "template": "{n}",
+   "payload": {
+    "n": -0.0
+   },
+   "expect": {
+    "ok": true,
+    "text": "0"
+   }
+  },
+  {
+   "note": "entero fuera del rango seguro",
+   "template": "{n}",
+   "payload": {
+    "n": 9007199254740992
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_variable",
+     "detail": "n"
+    }
+   }
+  },
+  {
+   "note": "decimal",
+   "template": "{n}",
+   "payload": {
+    "n": 1.5
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_variable",
+     "detail": "n"
+    }
+   }
+  },
+  {
+   "note": "booleano",
+   "template": "{a}",
+   "payload": {
+    "a": true
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_variable",
+     "detail": "a"
+    }
+   }
+  },
+  {
+   "note": "nulo",
+   "template": "{a}",
+   "payload": {
+    "a": null
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_variable",
+     "detail": "a"
+    }
+   }
+  },
+  {
+   "note": "lista",
+   "template": "{a}",
+   "payload": {
+    "a": [
+     "x"
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_variable",
+     "detail": "a"
+    }
+   }
+  },
+  {
+   "note": "objeto",
+   "template": "{a}",
+   "payload": {
+    "a": {
+     "b": "x"
+    }
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_variable",
+     "detail": "a"
+    }
+   }
+  },
+  {
+   "note": "falta la variable",
+   "template": "Hola {name}",
+   "payload": {},
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "missing_variable",
+     "detail": "name"
+    }
+   }
+  },
+  {
+   "note": "faltan dos: se informa la primera que aparece",
+   "template": "{b} {a}",
+   "payload": {},
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "missing_variable",
+     "detail": "b"
+    }
+   }
+  },
+  {
+   "note": "la primera está mal y la segunda falta",
+   "template": "{a} {b}",
+   "payload": {
+    "a": null
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_variable",
+     "detail": "a"
+    }
+   }
+  },
+  {
+   "note": "`constructor` no está en el payload",
+   "template": "{constructor}",
+   "payload": {},
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "missing_variable",
+     "detail": "constructor"
+    }
+   }
+  },
+  {
+   "note": "`constructor` sí está en el payload",
+   "template": "{constructor}",
+   "payload": {
+    "constructor": "x"
+   },
+   "expect": {
+    "ok": true,
+    "text": "x"
+   }
+  },
+  {
+   "note": "`valueof` no está en el payload",
+   "template": "{valueof}",
+   "payload": {
+    "a": "x"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "missing_variable",
+     "detail": "valueof"
+    }
+   }
+  },
+  {
+   "note": "llave que abre sin cerrar",
+   "template": "Hola {name",
+   "payload": {
+    "name": "x"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "llave que cierra sola",
+   "template": "Hola name}",
+   "payload": {
+    "name": "x"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "llave que abre sola al final",
+   "template": "Hola {",
+   "payload": {},
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "nombre vacío",
+   "template": "{}",
+   "payload": {},
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "nombre con espacios",
+   "template": "{ name }",
+   "payload": {
+    "name": "x"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "nombre con mayúscula",
+   "template": "{Name}",
+   "payload": {
+    "Name": "x"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "nombre con punto",
+   "template": "{a.b}",
+   "payload": {
+    "a.b": "x"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "nombre con guion",
+   "template": "{a-b}",
+   "payload": {
+    "a-b": "x"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "nombre que empieza con dígito",
+   "template": "{1a}",
+   "payload": {
+    "1a": "x"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "nombre que empieza con guion bajo",
+   "template": "{_a}",
+   "payload": {
+    "_a": "x"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "nombre de 65 caracteres",
+   "template": "{aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}",
+   "payload": {
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "x"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "nombre con formato",
+   "template": "{n:>5}",
+   "payload": {
+    "n": 1
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "llaves anidadas",
+   "template": "{a{b}}",
+   "payload": {
+    "a": "x",
+    "b": "y"
+   },
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "tres llaves que abren",
+   "template": "{{{",
+   "payload": {},
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  },
+  {
+   "note": "la plantilla inválida gana aunque antes falte una variable",
+   "template": "{a} {",
+   "payload": {},
+   "expect": {
+    "ok": false,
+    "error": {
+     "reason": "invalid_template",
+     "detail": null
+    }
+   }
+  }
+ ]
+}

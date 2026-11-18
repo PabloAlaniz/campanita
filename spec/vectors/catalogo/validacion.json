@@ -1,0 +1,429 @@
+{
+ "spec": "0",
+ "id": "catalogo/validacion",
+ "kind": "catalogo",
+ "policy": {
+  "security": {
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "push": {
+    "default": true,
+    "locked": true
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "invitations": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "digest": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "cases": [
+  {
+   "note": "el catálogo de ejemplo",
+   "catalog": {
+    "invitations.received": {
+     "category": "invitations",
+     "title": "Te invitaron a {project}",
+     "body": "{inviter} te invitó al proyecto {project}."
+    },
+    "security.new-login": {
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde {device}"
+    },
+    "activity.comment": {
+     "category": "activity",
+     "title": "{title}",
+     "body": "{body}"
+    },
+    "digest.weekly": {
+     "category": "digest",
+     "title": "Tu resumen: {count} novedades"
+    },
+    "constructor": {
+     "category": "activity",
+     "title": "Un tipo llamado constructor"
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "catálogo vacío",
+   "catalog": {},
+   "valid": true
+  },
+  {
+   "note": "tipo de un solo segmento",
+   "catalog": {
+    "aviso": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "tipo con varios segmentos, guiones y dígitos",
+   "catalog": {
+    "a-1.b_2.c": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "tipo de 128 caracteres",
+   "catalog": {
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "con cuerpo",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "body": "Chau {name}"
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "cuerpo vacío",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "body": ""
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "dos tipos de la misma categoría",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola"
+    },
+    "b": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "no es un objeto: lista",
+   "catalog": [],
+   "valid": false
+  },
+  {
+   "note": "no es un objeto: nulo",
+   "catalog": null,
+   "valid": false
+  },
+  {
+   "note": "no es un objeto: texto",
+   "catalog": "a",
+   "valid": false
+  },
+  {
+   "note": "la entrada no es un objeto: texto",
+   "catalog": {
+    "a": "Hola"
+   },
+   "valid": false
+  },
+  {
+   "note": "la entrada no es un objeto: nulo",
+   "catalog": {
+    "a": null
+   },
+   "valid": false
+  },
+  {
+   "note": "la entrada no es un objeto: lista",
+   "catalog": {
+    "a": []
+   },
+   "valid": false
+  },
+  {
+   "note": "falta `category`",
+   "catalog": {
+    "a": {
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "falta `title`",
+   "catalog": {
+    "a": {
+     "category": "activity"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "clave de más",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "email_template": "x"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "la categoría no está en la política",
+   "catalog": {
+    "a": {
+     "category": "marketing",
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "la categoría no es texto",
+   "catalog": {
+    "a": {
+     "category": 1,
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "la categoría es `constructor`, que la política no tiene",
+   "catalog": {
+    "a": {
+     "category": "constructor",
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "título vacío",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": ""
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "el título no es texto",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": 3
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "el título es nulo",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": null
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "título con plantilla inválida",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola {"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "cuerpo con plantilla inválida",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "body": "{Name}"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "el cuerpo no es texto",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "body": 3
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "el cuerpo es nulo",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "body": null
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "tipo vacío",
+   "catalog": {
+    "": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "tipo con mayúscula",
+   "catalog": {
+    "Aviso": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "tipo que empieza con punto",
+   "catalog": {
+    ".a": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "tipo que termina con punto",
+   "catalog": {
+    "a.": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "tipo con dos puntos seguidos",
+   "catalog": {
+    "a..b": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "segmento que empieza con dígito",
+   "catalog": {
+    "a.1b": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "tipo con espacio",
+   "catalog": {
+    "a b": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "tipo con salto de línea al final",
+   "catalog": {
+    "a\n": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "tipo de 129 caracteres",
+   "catalog": {
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+     "category": "activity",
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "uno bueno y uno malo",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola"
+    },
+    "b": {
+     "title": "Hola"
+    }
+   },
+   "valid": false
+  }
+ ]
+}

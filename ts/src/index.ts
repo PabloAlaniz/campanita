@@ -5,17 +5,32 @@
  * usuario. No conoce la base, el canal ni la superficie que muestra la
  * bandeja: eso son puertos.
  */
+export { buildNotification, parseCatalog } from './core/catalog.js';
 export { effectiveMatrix, resolveChannels, validatePatch } from './core/channels.js';
 export { parsePolicy } from './core/policy.js';
-export { INBOX, InvalidPolicyError, PatchRejectedError } from './core/types.js';
+export { renderTemplate } from './core/templates.js';
+export {
+  EventRejectedError,
+  INBOX,
+  InvalidCatalogError,
+  InvalidPolicyError,
+  InvalidTemplateError,
+  PatchRejectedError,
+  TemplateError,
+} from './core/types.js';
 export type {
+  Catalog,
   Cell,
   Change,
+  Draft,
+  EventReason,
   Matrix,
   MatrixCell,
   Overrides,
   Policy,
   RejectionReason,
+  TemplateReason,
+  TypeSpec,
 } from './core/types.js';
 export type {
   DeliveryChannel,

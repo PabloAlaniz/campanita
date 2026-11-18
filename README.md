@@ -2,9 +2,9 @@
 
 Notificaciones con las mismas reglas en cualquier stack.
 
-> **Borrador.** Hoy existe el spec v0 y el núcleo en Python y TypeScript. Todavía no hay
-> adaptadores de base ni de canal, y nada está publicado en npm ni en PyPI. La
-> [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene.
+> **Borrador.** Hoy existe el núcleo en Python y TypeScript: decide por qué canales sale un
+> aviso, qué puede cambiar la persona y cómo se arma un aviso a partir de un evento. Todavía no
+> hay adaptadores de base ni de canal. La [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene.
 
 Casi todo producto termina con una campanita: una bandeja de avisos, una pantalla de preferencias
 y uno o dos canales para avisar afuera. Y casi siempre se escribe de nuevo, atado a una base y a
@@ -67,6 +67,25 @@ validatePatch(policy, { security: { email: false } }, ['email']);
 // PatchRejectedError: cambio de preferencias rechazado en security.email: la celda está bloqueada
 ```
 
+Quien emite un aviso manda un tipo y sus datos. La categoría y el texto salen del catálogo:
+
+```python
+from campanita import parse_catalog, build_notification
+
+catalog = parse_catalog({
+    "comments.new": {"category": "activity", "title": "{author} comentó en {document}"},
+}, policy)
+
+build_notification(catalog, {
+    "type": "comments.new",
+    "recipient_id": "user-7",
+    "payload": {"author": "Ana", "document": "Presupuesto"},
+    "dedupe_key": "comment-381",
+})
+# Draft(recipient_id='user-7', type='comments.new', category='activity',
+#       title='Ana comentó en Presupuesto', body=None, ...)
+```
+
 Más detalle en [`python/README.md`](python/README.md) y [`ts/README.md`](ts/README.md).
 
 ## Qué hay en el repo
@@ -77,7 +96,7 @@ Más detalle en [`python/README.md`](python/README.md) y [`ts/README.md`](ts/REA
 | [`python/`](python/README.md) | El núcleo en Python, sin dependencias |
 | [`ts/`](ts/README.md) | El núcleo en TypeScript, sin dependencias |
 | [`tools/`](tools/gen_vectors.py) | El generador de vectores, una implementación independiente |
-| [`docs/`](docs/puertos.md) | Los puertos y la hoja de ruta |
+| [`docs/`](docs/principios.md) | Los principios, los puertos y la hoja de ruta |
 
 ## Qué no es
 

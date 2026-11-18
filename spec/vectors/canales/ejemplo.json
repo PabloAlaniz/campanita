@@ -1,6 +1,6 @@
 {
  "spec": "0",
- "id": "canales/referencia",
+ "id": "canales/ejemplo",
  "kind": "canales",
  "policy": {
   "security": {

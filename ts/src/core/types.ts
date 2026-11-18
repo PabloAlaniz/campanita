@@ -81,3 +81,90 @@ export class PatchRejectedError extends Error {
     super(`cambio de preferencias rechazado en ${where}: ${MOTIVOS[reason]}`);
   }
 }
+
+/** La plantilla está mal escrita: una llave suelta o un nombre de variable inválido. */
+export class InvalidTemplateError extends Error {
+  override readonly name = 'InvalidTemplateError';
+}
+
+/** Por qué no se pudo armar un texto. */
+export type TemplateReason = 'missing_variable' | 'invalid_variable';
+
+/** Falta una variable o su valor no se puede mostrar. */
+export class TemplateError extends Error {
+  override readonly name = 'TemplateError';
+
+  constructor(
+    readonly reason: TemplateReason,
+    readonly variable: string,
+  ) {
+    const motivo = reason === 'missing_variable' ? 'falta la variable' : 'no se puede mostrar el valor de';
+    super(`${motivo} \`${variable}\``);
+  }
+}
+
+/** El catálogo no cumple el spec. Se detecta al cargarlo. */
+export class InvalidCatalogError extends Error {
+  override readonly name = 'InvalidCatalogError';
+}
+
+/** Por qué se rechazó un evento. Son los literales del spec. */
+export type EventReason =
+  | 'unknown_type'
+  | 'invalid_field'
+  | 'missing_variable'
+  | 'invalid_variable'
+  | 'empty_title';
+
+const MOTIVOS_EVENTO: Record<EventReason, string> = {
+  unknown_type: 'el tipo no está en el catálogo',
+  invalid_field: 'campo inválido o desconocido',
+  missing_variable: 'falta una variable',
+  invalid_variable: 'el valor de una variable no se puede mostrar',
+  empty_title: 'el título queda vacío',
+};
+
+/** El evento no se puede convertir en un aviso. No hay que guardar nada. */
+export class EventRejectedError extends Error {
+  override readonly name = 'EventRejectedError';
+
+  constructor(
+    readonly reason: EventReason,
+    /** El tipo, el campo o la variable del problema, según el motivo. */
+    readonly detail: string | null,
+  ) {
+    super(`evento rechazado: ${MOTIVOS_EVENTO[reason]}${detail === null ? '' : ` (${detail})`}`);
+  }
+}
+
+/** Un tipo de aviso: a qué categoría pertenece y cómo se redacta. */
+export interface TypeSpec {
+  readonly category: string;
+  readonly title: string;
+  readonly body: string | null;
+}
+
+/**
+ * Un catálogo ya validado contra una política. Se obtiene con `parseCatalog`.
+ * Igual que la política, no tiene prototipo ni hereda propiedades.
+ */
+export type Catalog = Readonly<Record<string, TypeSpec>> & {
+  readonly [validated]: true;
+};
+
+/**
+ * Un aviso armado y validado, antes de guardarse.
+ *
+ * No tiene `id` ni fecha: los pone quien guarda.
+ */
+export interface Draft {
+  readonly recipientId: string;
+  readonly type: string;
+  readonly category: string;
+  readonly title: string;
+  readonly body: string | null;
+  readonly actionUrl: string | null;
+  readonly payload: Readonly<Record<string, unknown>>;
+  readonly scope: string | null;
+  readonly dedupeKey: string | null;
+}

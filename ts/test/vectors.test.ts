@@ -8,12 +8,19 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
+  buildNotification,
   effectiveMatrix,
+  EventRejectedError,
+  InvalidCatalogError,
   InvalidPolicyError,
+  InvalidTemplateError,
+  parseCatalog,
   parsePolicy,
   PatchRejectedError,
+  renderTemplate,
   resolveChannels,
   SPEC_VERSION,
+  TemplateError,
   validatePatch,
   type Overrides,
 } from '../src/index.js';
@@ -24,8 +31,9 @@ const VECTORS = join(SPEC, 'vectors');
 interface Vector {
   spec: string;
   id: string;
-  kind: 'politica' | 'canales' | 'matriz' | 'preferencias';
+  kind: 'politica' | 'canales' | 'matriz' | 'preferencias' | 'plantilla' | 'catalogo' | 'aviso';
   policy?: unknown;
+  catalog?: unknown;
   cases: Array<Record<string, unknown>>;
 }
 
@@ -37,6 +45,15 @@ function load(): Vector[] {
 }
 
 const vectors = load();
+
+function caught(run: () => unknown): unknown {
+  try {
+    run();
+  } catch (error) {
+    return error;
+  }
+  return undefined;
+}
 const label = (index: number, test: Record<string, unknown>): string =>
   `[${index}] ${typeof test['note'] === 'string' ? test['note'] : ''}`.trim();
 
@@ -48,7 +65,15 @@ it('hay vectores y son de la versión del spec que implementa el paquete', () =>
 
 it('todos los tipos de vector tienen quien los corra', () => {
   const kinds = new Set(vectors.map((vector) => vector.kind));
-  expect([...kinds].sort()).toEqual(['canales', 'matriz', 'politica', 'preferencias']);
+  expect([...kinds].sort()).toEqual([
+    'aviso',
+    'canales',
+    'catalogo',
+    'matriz',
+    'plantilla',
+    'politica',
+    'preferencias',
+  ]);
 });
 
 for (const vector of vectors) {
@@ -112,6 +137,68 @@ for (const vector of vectors) {
               channel: rejected.channel,
               reason: rejected.reason,
             }).toEqual(expected.error);
+            return;
+          }
+
+          case 'plantilla': {
+            const run = (): string =>
+              renderTemplate(test['template'] as string, test['payload'] as Record<string, unknown>);
+            const expected = test['expect'] as
+              | { ok: true; text: string }
+              | { ok: false; error: { reason: string; detail: string | null } };
+            if (expected.ok) {
+              expect(run()).toBe(expected.text);
+              return;
+            }
+            const thrown = caught(run);
+            const got =
+              thrown instanceof TemplateError
+                ? { reason: thrown.reason, detail: thrown.variable }
+                : thrown instanceof InvalidTemplateError
+                  ? { reason: 'invalid_template', detail: null }
+                  : thrown;
+            expect(got).toEqual(expected.error);
+            return;
+          }
+
+          case 'catalogo': {
+            const policy = parsePolicy(vector.policy);
+            if (test['valid']) {
+              expect(() => parseCatalog(test['catalog'], policy)).not.toThrow();
+            } else {
+              expect(() => parseCatalog(test['catalog'], policy)).toThrow(InvalidCatalogError);
+            }
+            return;
+          }
+
+          case 'aviso': {
+            const catalog = parseCatalog(vector.catalog, parsePolicy(vector.policy));
+            const run = (): unknown => {
+              const draft = buildNotification(catalog, test['event'] as Record<string, unknown>);
+              // Los vectores usan los nombres que viajan; el paquete, los de TypeScript.
+              return {
+                recipient_id: draft.recipientId,
+                type: draft.type,
+                category: draft.category,
+                title: draft.title,
+                body: draft.body,
+                action_url: draft.actionUrl,
+                payload: draft.payload,
+                scope: draft.scope,
+                dedupe_key: draft.dedupeKey,
+              };
+            };
+            const expected = test['expect'] as
+              | { ok: true; draft: unknown }
+              | { ok: false; error: { reason: string; detail: string | null } };
+            if (expected.ok) {
+              expect(run()).toEqual(expected.draft);
+              return;
+            }
+            const thrown = caught(run);
+            expect(thrown).toBeInstanceOf(EventRejectedError);
+            const rejected = thrown as EventRejectedError;
+            expect({ reason: rejected.reason, detail: rejected.detail }).toEqual(expected.error);
             return;
           }
         }
