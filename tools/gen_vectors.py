@@ -1433,6 +1433,339 @@ def guardadas_aislamiento() -> dict:
     return vector("preferencias-guardadas/aislamiento", "preferencias-guardadas", g.steps)
 
 
+# ---------------------------------------------------------------------------
+# El recorrido completo: armar, guardar y entregar.
+#
+# Junta las piezas de arriba tal cual: el armado, el modelo de la bandeja, las
+# preferencias guardadas y la resolución de canales.
+# ---------------------------------------------------------------------------
+
+OUTCOMES = ("sent", "expired", "failed")
+
+
+def valid_channels(channels: object) -> bool:
+    if type(channels) is not list:
+        return False
+    if any(type(c) is not str or not ID.fullmatch(c) or c == INBOX for c in channels):
+        return False
+    return len(set(channels)) == len(channels)
+
+
+class Recorrido:
+    def __init__(self, policy: dict, catalog: dict, channels: list[str]) -> None:
+        assert is_valid_policy(policy) and is_valid_catalog(catalog, policy) and valid_channels(channels)
+        self.policy, self.catalog, self.channels = policy, catalog, channels
+        self.store, self.prefs, self.steps = Modelo(), Ajustes(), []
+
+    def save(self, note: str, changes: list[tuple[str, str, bool]], recipient="ana", scope=None) -> None:
+        self.prefs.save(note, changes, recipient, scope)
+        self.steps.append(self.prefs.steps.pop())
+
+    def notify(self, note: str, event: dict, new_id: str, at_ms: int, **outcomes: str) -> dict:
+        """`outcomes` dice qué contesta cada canal en este paso; por omisión, `sent`.
+        Además de los tres resultados válidos: `throws` (el canal falla con una
+        excepción), `garbage` (devuelve algo que no es un resultado) y `unknown`
+        (devuelve un resultado bien formado con un valor que no existe)."""
+        expect = self._notify(event, new_id, at_ms, outcomes)
+        self.steps.append(
+            {
+                "note": note,
+                "op": "notify",
+                "event": event,
+                "id": new_id,
+                "at_ms": at_ms,
+                "outcomes": outcomes,
+                "expect": expect,
+            }
+        )
+        return expect
+
+    def _notify(self, event: dict, new_id: str, at_ms: int, outcomes: dict) -> dict:
+        try:
+            draft = build_draft(self.catalog, event)
+        except Fallo as fallo:
+            return {"error": {"reason": fallo.reason, "detail": fallo.detail}}
+        added = self.store.add(draft, new_id, at_ms)
+        if "error" in added:
+            return {"error": {"reason": added["error"], "detail": None}}
+        if not added["created"]:
+            return {**added, "attempted": [], "deliveries": {}}
+        saved: dict = {}
+        for (who, where, category, channel), enabled in self.prefs.cells.items():
+            if who == draft["recipient_id"] and where == draft["scope"]:
+                saved.setdefault(category, {})[channel] = enabled
+        targets = channels_for(self.policy, draft["category"], saved, self.channels)
+        deliveries = {}
+        for channel in targets:
+            answer = outcomes.get(channel, "sent")
+            deliveries[channel] = answer if answer in OUTCOMES else "failed"
+        return {**added, "attempted": targets, "deliveries": deliveries}
+
+
+RECORRIDO_POLITICA = {
+    "security": {
+        "inapp": BANDEJA,
+        "email": {"default": True, "locked": True},
+        "sms": {"default": True, "locked": True},
+    },
+    "activity": {
+        "inapp": BANDEJA,
+        "email": {"default": False},
+        "push": {"default": True},
+        "sms": {"default": False},
+    },
+    "digest": {"inapp": BANDEJA, "email": {"default": True}},
+    "quiet": {"inapp": BANDEJA},
+}
+RECORRIDO_CATALOGO = {
+    "login.new": {"category": "security", "title": "Nuevo inicio de sesión desde {device}"},
+    "comment.new": {"category": "activity", "title": "{author} comentó", "body": "{excerpt}"},
+    "digest.weekly": {"category": "digest", "title": "Tu resumen de la semana"},
+    "note.saved": {"category": "quiet", "title": "Nota guardada"},
+}
+
+
+def recorrido_basico() -> dict:
+    r = Recorrido(RECORRIDO_POLITICA, RECORRIDO_CATALOGO, ["email", "push", "sms"])
+    comment = {"type": "comment.new", "recipient_id": "ana", "payload": {"author": "Beto", "excerpt": "Hola"}}
+    first = r.notify(
+        "un aviso sale por los canales que la política enciende por defecto", comment, "n1", 1000
+    )
+    assert first["created"] and first["deliveries"] == {"push": "sent"}
+    login = {"type": "login.new", "recipient_id": "ana", "payload": {"device": "Firefox"}}
+    assert r.notify("una categoría con dos canales: se intentan en orden", login, "n2", 2000)[
+        "attempted"
+    ] == ["email", "sms"]
+    assert (
+        r.notify(
+            "una categoría que sólo tiene bandeja no entrega nada",
+            {"type": "note.saved", "recipient_id": "ana"},
+            "n3",
+            3000,
+        )["deliveries"]
+        == {}
+    )
+    r.save(
+        "ana pide email para la actividad y apaga el push",
+        [("activity", "email", True), ("activity", "push", False)],
+    )
+    assert r.notify("el siguiente aviso respeta lo guardado", comment, "n4", 4000)["attempted"] == ["email"]
+    assert r.notify(
+        "lo guardado es de ana: beto sigue con los valores por defecto",
+        {**comment, "recipient_id": "beto"},
+        "n5",
+        5000,
+    )["attempted"] == ["push"]
+    r.save(
+        "ana intenta apagar seguridad (el almacén lo guarda, la política lo ignora)",
+        [("security", "email", False)],
+    )
+    assert r.notify("un canal bloqueado sale igual", login, "n6", 6000)["attempted"] == ["email", "sms"]
+    r.save("ana enciende todo en la actividad", [("activity", "push", True), ("activity", "sms", True)])
+    assert r.notify("tres canales, en orden por punto de código", comment, "n7", 7000)["attempted"] == [
+        "email",
+        "push",
+        "sms",
+    ]
+    return recorrido_vector("recorrido/basico", r)
+
+
+def recorrido_fallas() -> dict:
+    r = Recorrido(RECORRIDO_POLITICA, RECORRIDO_CATALOGO, ["email", "push", "sms"])
+    login = {"type": "login.new", "recipient_id": "ana", "payload": {"device": "Firefox"}}
+    a = r.notify("un canal falla: el otro se intenta igual", login, "n1", 1000, email="failed")
+    assert a["created"] and a["deliveries"] == {"email": "failed", "sms": "sent"}
+    assert r.notify("un destino vencido", login, "n2", 2000, sms="expired")["deliveries"] == {
+        "email": "sent",
+        "sms": "expired",
+    }
+    assert r.notify(
+        "un canal que lanza una excepción cuenta como fallido, y el resto sigue",
+        login,
+        "n3",
+        3000,
+        email="throws",
+    )["deliveries"] == {"email": "failed", "sms": "sent"}
+    assert r.notify(
+        "un canal que devuelve algo que no es un resultado cuenta como fallido",
+        login,
+        "n4",
+        4000,
+        sms="garbage",
+    )["deliveries"] == {"email": "sent", "sms": "failed"}
+    assert r.notify(
+        "un canal que devuelve un resultado con un valor que no existe cuenta como fallido",
+        login,
+        "n4b",
+        4500,
+        email="unknown",
+    )["deliveries"] == {"email": "failed", "sms": "sent"}
+    b = r.notify(
+        "todos fallan: el aviso queda guardado igual", login, "n5", 5000, email="throws", sms="failed"
+    )
+    assert b["created"] and b["notification"]["id"] == "n5"
+    assert r.notify(
+        "lo que contesta un canal que no se intenta no importa", login, "n6", 6000, push="throws"
+    )["deliveries"] == {"email": "sent", "sms": "sent"}
+    return recorrido_vector("recorrido/fallas", r)
+
+
+def recorrido_duplicados() -> dict:
+    r = Recorrido(RECORRIDO_POLITICA, RECORRIDO_CATALOGO, ["email", "push", "sms"])
+    login = {
+        "type": "login.new",
+        "recipient_id": "ana",
+        "payload": {"device": "Firefox"},
+        "dedupe_key": "login-1",
+    }
+    assert r.notify("la primera vez se guarda y se entrega", login, "n1", 1000)["attempted"] == [
+        "email",
+        "sms",
+    ]
+    again = r.notify("repetir la clave no guarda ni vuelve a entregar", login, "n2", 2000)
+    assert again == {
+        "created": False,
+        "notification": again["notification"],
+        "attempted": [],
+        "deliveries": {},
+    }
+    assert again["notification"]["id"] == "n1"
+    assert r.notify("la misma clave para otra persona sí", {**login, "recipient_id": "beto"}, "n3", 3000)[
+        "created"
+    ]
+    c = r.notify(
+        "si la primera entrega falló, repetir la clave tampoco reintenta",
+        {**login, "dedupe_key": "login-2"},
+        "n4",
+        4000,
+        email="failed",
+        sms="failed",
+    )
+    assert c["deliveries"] == {"email": "failed", "sms": "failed"}
+    assert (
+        r.notify("el reintento es de quien llama", {**login, "dedupe_key": "login-2"}, "n5", 5000)[
+            "attempted"
+        ]
+        == []
+    )
+    assert r.notify(
+        "un identificador repetido se rechaza y no entrega", {**login, "dedupe_key": None}, "n1", 6000
+    ) == {"error": {"reason": "duplicate_id", "detail": None}}
+    return recorrido_vector("recorrido/duplicados", r)
+
+
+def recorrido_rechazos() -> dict:
+    r = Recorrido(RECORRIDO_POLITICA, RECORRIDO_CATALOGO, ["email", "push", "sms"])
+    assert (
+        r.notify("un tipo que no está en el catálogo", {"type": "nope", "recipient_id": "ana"}, "n1", 1000)[
+            "error"
+        ]["reason"]
+        == "unknown_type"
+    )
+    assert r.notify("falta una variable", {"type": "login.new", "recipient_id": "ana"}, "n2", 2000)[
+        "error"
+    ] == {"reason": "missing_variable", "detail": "device"}
+    assert (
+        r.notify(
+            "un campo desconocido", {"type": "note.saved", "recipient_id": "ana", "urgente": True}, "n3", 3000
+        )["error"]["detail"]
+        == "urgente"
+    )
+    ok = r.notify(
+        "un evento rechazado no guardó nada: el identificador sigue libre",
+        {"type": "note.saved", "recipient_id": "ana"},
+        "n1",
+        4000,
+    )
+    assert ok["created"] and ok["notification"]["id"] == "n1"
+    return recorrido_vector("recorrido/rechazos", r)
+
+
+def recorrido_ambitos() -> dict:
+    r = Recorrido(RECORRIDO_POLITICA, RECORRIDO_CATALOGO, ["email", "push", "sms"])
+    comment = {"type": "comment.new", "recipient_id": "ana", "payload": {"author": "Beto", "excerpt": "Hola"}}
+    r.save("ana, sin ámbito: quiere email", [("activity", "email", True)])
+    r.save("ana, en el ámbito x: no quiere push", [("activity", "push", False)], scope="x")
+    assert r.notify("un aviso sin ámbito usa lo guardado sin ámbito", comment, "n1", 1000)["attempted"] == [
+        "email",
+        "push",
+    ]
+    assert (
+        r.notify("un aviso del ámbito x usa sólo lo guardado en x", {**comment, "scope": "x"}, "n2", 2000)[
+            "attempted"
+        ]
+        == []
+    )
+    assert r.notify(
+        "un aviso de un ámbito sin nada guardado usa los valores de la política",
+        {**comment, "scope": "y"},
+        "n3",
+        3000,
+    )["attempted"] == ["push"]
+    return recorrido_vector("recorrido/ambitos", r)
+
+
+def recorrido_disponibles() -> dict:
+    r = Recorrido(RECORRIDO_POLITICA, RECORRIDO_CATALOGO, ["push", "telegram"])
+    login = {"type": "login.new", "recipient_id": "ana", "payload": {"device": "Firefox"}}
+    comment = {"type": "comment.new", "recipient_id": "ana", "payload": {"author": "Beto", "excerpt": "Hola"}}
+    assert (
+        r.notify(
+            "los canales de la política que no están configurados no se intentan, aunque estén bloqueados",
+            login,
+            "n1",
+            1000,
+        )["attempted"]
+        == []
+    )
+    assert r.notify("los configurados sí", comment, "n2", 2000)["attempted"] == ["push"]
+    r.save("pedir un canal que no está configurado", [("activity", "email", True)])
+    assert r.notify("no lo hace aparecer", comment, "n3", 3000)["attempted"] == ["push"]
+    return recorrido_vector("recorrido/disponibles", r)
+
+
+def recorrido_sin_canales() -> dict:
+    r = Recorrido(RECORRIDO_POLITICA, RECORRIDO_CATALOGO, [])
+    login = {"type": "login.new", "recipient_id": "ana", "payload": {"device": "Firefox"}}
+    a = r.notify("sin ningún canal configurado, el aviso se guarda y no se entrega", login, "n1", 1000)
+    assert a["created"] and a["attempted"] == [] and a["deliveries"] == {}
+    return recorrido_vector("recorrido/sin-canales", r)
+
+
+def recorrido_vector(vector_id: str, r: Recorrido) -> dict:
+    return {
+        "spec": SPEC,
+        "id": vector_id,
+        "kind": "recorrido",
+        "policy": r.policy,
+        "catalog": r.catalog,
+        "channels": r.channels,
+        "steps": r.steps,
+    }
+
+
+def canales_configurados() -> dict:
+    casos = [
+        ("ninguno", [], True),
+        ("uno", ["email"], True),
+        ("varios", ["email", "push", "sms"], True),
+        ("con guion, guion bajo y dígitos", ["web-push", "sms_2"], True),
+        ("uno que ninguna política nombra", ["telegram"], True),
+        ("llamado `constructor`", ["constructor"], True),
+        ("repetido", ["email", "push", "email"], False),
+        ("`inapp` no es un canal de entrega", ["email", "inapp"], False),
+        ("con mayúscula", ["Email"], False),
+        ("vacío", [""], False),
+        ("con espacio", ["web push"], False),
+        ("que empieza con dígito", ["2fa"], False),
+    ]
+    cases = []
+    for note, channels, valid in casos:
+        assert valid_channels(channels) is valid, note
+        cases.append({"note": note, "channels": channels, "valid": valid})
+    return {"spec": SPEC, "id": "recorrido-canales/validacion", "kind": "recorrido-canales", "cases": cases}
+
+
 def vector(vector_id: str, kind: str, cases: list, policy: dict | None = None) -> dict:
     out: dict = {"spec": SPEC, "id": vector_id, "kind": kind}
     if policy is not None:
@@ -1464,6 +1797,14 @@ ALL = [
     bandeja_personas,
     guardadas_basico,
     guardadas_aislamiento,
+    recorrido_basico,
+    recorrido_fallas,
+    recorrido_duplicados,
+    recorrido_rechazos,
+    recorrido_ambitos,
+    recorrido_disponibles,
+    recorrido_sin_canales,
+    canales_configurados,
 ]
 
 

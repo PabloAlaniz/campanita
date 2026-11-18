@@ -6,7 +6,8 @@ El núcleo no conoce la base, el canal ni la superficie que muestra la bandeja.
   comportamiento es el de las secuencias de `spec/vectors/bandeja/` y
   `spec/vectors/preferencias-guardadas/`, y `campanita.conformance` las corre
   contra cualquier adaptador.
-- `DeliveryChannel` es un BORRADOR: el spec todavía no lo cubre y puede cambiar.
+- `DeliveryChannel` se usa en el recorrido completo, que está especificado
+  (`spec/vectors/recorrido/`), pero todavía no tiene adaptadores reales.
 """
 
 from __future__ import annotations
@@ -93,10 +94,17 @@ class DeliveryResult:
 
 
 class DeliveryChannel(Protocol):
-    """BORRADOR. Cualquier canal de entrega.
+    """Cualquier canal de entrega fuera de la bandeja.
 
-    Cada adaptador resuelve sus propios destinos a partir de `recipient_id`.
-    `send` NUNCA lanza: un destino roto no puede impedir avisarle al resto.
+    Cada adaptador resuelve sus propios destinos a partir de `recipient_id`: a
+    qué dirección o a qué dispositivos va un aviso es asunto suyo.
+
+    `send` no debería lanzar: un destino roto se informa como `failed`, y uno
+    que ya no existe, como `expired`. Si igual lanza, `Notifier` lo anota como
+    `failed` y sigue con los demás canales.
+
+    El recorrido está especificado (`spec/vectors/recorrido/`). Lo que todavía
+    no hay son adaptadores reales, así que el puerto puede ajustarse.
     """
 
     @property

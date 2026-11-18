@@ -1,0 +1,95 @@
+{
+ "spec": "0",
+ "id": "recorrido-canales/validacion",
+ "kind": "recorrido-canales",
+ "cases": [
+  {
+   "note": "ninguno",
+   "channels": [],
+   "valid": true
+  },
+  {
+   "note": "uno",
+   "channels": [
+    "email"
+   ],
+   "valid": true
+  },
+  {
+   "note": "varios",
+   "channels": [
+    "email",
+    "push",
+    "sms"
+   ],
+   "valid": true
+  },
+  {
+   "note": "con guion, guion bajo y dígitos",
+   "channels": [
+    "web-push",
+    "sms_2"
+   ],
+   "valid": true
+  },
+  {
+   "note": "uno que ninguna política nombra",
+   "channels": [
+    "telegram"
+   ],
+   "valid": true
+  },
+  {
+   "note": "llamado `constructor`",
+   "channels": [
+    "constructor"
+   ],
+   "valid": true
+  },
+  {
+   "note": "repetido",
+   "channels": [
+    "email",
+    "push",
+    "email"
+   ],
+   "valid": false
+  },
+  {
+   "note": "`inapp` no es un canal de entrega",
+   "channels": [
+    "email",
+    "inapp"
+   ],
+   "valid": false
+  },
+  {
+   "note": "con mayúscula",
+   "channels": [
+    "Email"
+   ],
+   "valid": false
+  },
+  {
+   "note": "vacío",
+   "channels": [
+    ""
+   ],
+   "valid": false
+  },
+  {
+   "note": "con espacio",
+   "channels": [
+    "web push"
+   ],
+   "valid": false
+  },
+  {
+   "note": "que empieza con dígito",
+   "channels": [
+    "2fa"
+   ],
+   "valid": false
+  }
+ ]
+}

@@ -1,0 +1,207 @@
+{
+ "spec": "0",
+ "id": "recorrido/disponibles",
+ "kind": "recorrido",
+ "policy": {
+  "security": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "sms": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": true
+   },
+   "sms": {
+    "default": false
+   }
+  },
+  "digest": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   }
+  },
+  "quiet": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "catalog": {
+  "login.new": {
+   "category": "security",
+   "title": "Nuevo inicio de sesión desde {device}"
+  },
+  "comment.new": {
+   "category": "activity",
+   "title": "{author} comentó",
+   "body": "{excerpt}"
+  },
+  "digest.weekly": {
+   "category": "digest",
+   "title": "Tu resumen de la semana"
+  },
+  "note.saved": {
+   "category": "quiet",
+   "title": "Nota guardada"
+  }
+ },
+ "channels": [
+  "push",
+  "telegram"
+ ],
+ "steps": [
+  {
+   "note": "los canales de la política que no están configurados no se intentan, aunque estén bloqueados",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "ana",
+    "payload": {
+     "device": "Firefox"
+    }
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "login.new",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    },
+    "attempted": [],
+    "deliveries": {}
+   }
+  },
+  {
+   "note": "los configurados sí",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n2",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 2000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "push": "sent"
+    }
+   }
+  },
+  {
+   "note": "pedir un canal que no está configurado",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "email",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "no lo hace aparecer",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "push": "sent"
+    }
+   }
+  }
+ ]
+}

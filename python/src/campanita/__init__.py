@@ -8,6 +8,7 @@ puertos (`campanita.ports`).
 from ._catalog import Catalog, Draft, TypeSpec, build_notification, parse_catalog
 from ._channels import effective_matrix, resolve_channels, validate_patch
 from ._inbox import AddResult, Cursor, FeedPage, FeedQuery, Notification, StoreError, StoreReason
+from ._notify import InvalidChannels, Notifier, NotifyResult
 from ._policy import Policy, parse_policy
 from ._templates import render_template
 from ._types import (
@@ -44,10 +45,13 @@ __all__ = [
     "FeedPage",
     "FeedQuery",
     "InvalidCatalog",
+    "InvalidChannels",
     "InvalidPolicy",
     "InvalidTemplate",
     "MatrixCell",
     "Notification",
+    "Notifier",
+    "NotifyResult",
     "Overrides",
     "PatchRejected",
     "Policy",

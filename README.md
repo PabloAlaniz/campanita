@@ -14,8 +14,8 @@ npm install campanita
 
 > **Versión temprana.** El núcleo decide por qué canales sale un aviso, qué puede cambiar la
 > persona y cómo se arma un aviso, y guarda la bandeja y las preferencias sobre cualquier base.
-> Todavía no hay adaptadores de canal, y hasta la 1.0 la API puede cambiar entre versiones
-> menores. La [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene y el
+> Los canales de entrega los escribe quien integra: todavía no hay adaptadores para proveedores.
+> Hasta la 1.0 la API puede cambiar entre versiones menores. La [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene y el
 > [CHANGELOG](CHANGELOG.md), qué cambió.
 
 Casi todo producto termina con una campanita: una bandeja de avisos, una pantalla de preferencias
@@ -38,80 +38,78 @@ un proveedor. `campanita` separa las reglas de todo lo demás:
 
 ## Cómo se usa
 
-Una política, con la forma del spec:
-
-```json
-{
-  "security": {
-    "inapp": { "default": true, "locked": true },
-    "email": { "default": true, "locked": true }
-  },
-  "activity": {
-    "inapp": { "default": true, "locked": true },
-    "email": { "default": false },
-    "push": { "default": false }
-  }
-}
-```
-
-En Python:
+Dos datos describen una instalación. La **política** dice qué sale por dónde y qué se puede
+apagar; el **catálogo**, qué tipos de aviso hay y cómo se redactan:
 
 ```python
-from campanita import parse_policy, resolve_channels, validate_patch
+from campanita import Notifier, parse_catalog, parse_policy
+from campanita.stores import MemoryPreferenceStore, MemoryStore
 
-policy = parse_policy(raw)
-disponibles = {"email"}                      # lo que esta instalación puede entregar
-overrides = {"activity": {"email": True}}    # lo que cambió la persona
-
-resolve_channels(policy, "activity", overrides, disponibles)   # frozenset({'email'})
-validate_patch(policy, {"security": {"email": False}}, disponibles)
-# PatchRejected: cambio de preferencias rechazado en security.email: la celda está bloqueada
-```
-
-En TypeScript:
-
-```ts
-import { parsePolicy, resolveChannels, validatePatch } from 'campanita';
-
-const policy = parsePolicy(raw);
-resolveChannels(policy, 'activity', { activity: { email: true } }, ['email']); // ['email']
-validatePatch(policy, { security: { email: false } }, ['email']);
-// PatchRejectedError: cambio de preferencias rechazado en security.email: la celda está bloqueada
-```
-
-Quien emite un aviso manda un tipo y sus datos. La categoría y el texto salen del catálogo:
-
-```python
-from campanita import parse_catalog, build_notification
-
+policy = parse_policy({
+    "security": {
+        "inapp": {"default": True, "locked": True},
+        "email": {"default": True, "locked": True},
+    },
+    "activity": {
+        "inapp": {"default": True, "locked": True},
+        "email": {"default": False},
+    },
+})
 catalog = parse_catalog({
     "comments.new": {"category": "activity", "title": "{author} comentó en {document}"},
 }, policy)
 
-build_notification(catalog, {
+notifier = Notifier(
+    policy=policy,
+    catalog=catalog,
+    store=MemoryStore(),                    # cualquier base
+    preferences=MemoryPreferenceStore(),    # cualquier base
+    channels=[],                            # cualquier canal: email, push…
+)
+```
+
+Avisar es mandar un tipo y sus datos. La categoría, el texto y los canales los decide campanita:
+
+```python
+result = await notifier.notify({
     "type": "comments.new",
     "recipient_id": "user-7",
     "payload": {"author": "Ana", "document": "Presupuesto"},
-    "dedupe_key": "comment-381",
+    "dedupe_key": "comment-381",            # repetir el evento no duplica el aviso
 })
-# Draft(recipient_id='user-7', type='comments.new', category='activity',
-#       title='Ana comentó en Presupuesto', body=None, ...)
+result.notification.title     # 'Ana comentó en Presupuesto'
+result.deliveries             # qué pasó en cada canal
 ```
 
-El aviso se guarda en un almacén, que puede ser cualquier base. La bandeja se lee de ahí:
+La bandeja se lee del almacén, y las preferencias se cambian pasando por la política:
 
 ```python
-from datetime import UTC, datetime
-from uuid import uuid4
-from campanita import FeedQuery
-from campanita.stores import MemoryStore
-
-store = MemoryStore()
-await store.add(draft, id=str(uuid4()), created_at=datetime.now(UTC))
+from campanita import FeedQuery, validate_patch
 
 page = await store.list_feed(FeedQuery("user-7", limit=20))
 await store.count_unread("user-7", cap=100)
-await store.mark_read(page.items[0].id, "user-7", datetime.now(UTC))
+
+changes = validate_patch(policy, {"security": {"email": False}}, available=["email"])
+# PatchRejected: cambio de preferencias rechazado en security.email: la celda está bloqueada
+```
+
+En TypeScript es lo mismo, con los nombres del lenguaje:
+
+```ts
+import { MemoryPreferenceStore, MemoryStore, Notifier, parseCatalog, parsePolicy } from 'campanita';
+
+const notifier = new Notifier({
+  policy,
+  catalog,
+  store: new MemoryStore(),
+  preferences: new MemoryPreferenceStore(),
+  channels: [],
+});
+const result = await notifier.notify({
+  type: 'comments.new',
+  recipient_id: 'user-7',
+  payload: { author: 'Ana', document: 'Presupuesto' },
+});
 ```
 
 Más detalle en [`python/README.md`](python/README.md) y [`ts/README.md`](ts/README.md).

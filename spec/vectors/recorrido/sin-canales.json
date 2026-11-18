@@ -1,0 +1,108 @@
+{
+ "spec": "0",
+ "id": "recorrido/sin-canales",
+ "kind": "recorrido",
+ "policy": {
+  "security": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "sms": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": true
+   },
+   "sms": {
+    "default": false
+   }
+  },
+  "digest": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   }
+  },
+  "quiet": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "catalog": {
+  "login.new": {
+   "category": "security",
+   "title": "Nuevo inicio de sesión desde {device}"
+  },
+  "comment.new": {
+   "category": "activity",
+   "title": "{author} comentó",
+   "body": "{excerpt}"
+  },
+  "digest.weekly": {
+   "category": "digest",
+   "title": "Tu resumen de la semana"
+  },
+  "note.saved": {
+   "category": "quiet",
+   "title": "Nota guardada"
+  }
+ },
+ "channels": [],
+ "steps": [
+  {
+   "note": "sin ningún canal configurado, el aviso se guarda y no se entrega",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "ana",
+    "payload": {
+     "device": "Firefox"
+    }
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "login.new",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    },
+    "attempted": [],
+    "deliveries": {}
+   }
+  }
+ ]
+}

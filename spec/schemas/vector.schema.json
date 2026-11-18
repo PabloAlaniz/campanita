@@ -27,7 +27,9 @@
         "catalogo",
         "aviso",
         "bandeja",
-        "preferencias-guardadas"
+        "preferencias-guardadas",
+        "recorrido",
+        "recorrido-canales"
       ]
     },
     "policy": {
@@ -44,6 +46,13 @@
     "steps": {
       "type": "array",
       "minItems": 1
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
     }
   },
   "allOf": [
@@ -1017,6 +1026,238 @@
                   }
                 }
               ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "recorrido"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "policy",
+          "catalog",
+          "channels",
+          "steps"
+        ],
+        "not": {
+          "required": [
+            "cases"
+          ]
+        },
+        "properties": {
+          "steps": {
+            "items": {
+              "type": "object",
+              "required": [
+                "note",
+                "op",
+                "expect"
+              ],
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "op": {
+                  "enum": [
+                    "notify",
+                    "save"
+                  ]
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "notify"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "event",
+                      "id",
+                      "at_ms",
+                      "outcomes"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "note": {},
+                      "op": {},
+                      "event": {
+                        "type": "object"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "at_ms": {
+                        "type": "integer"
+                      },
+                      "outcomes": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "enum": [
+                            "sent",
+                            "expired",
+                            "failed",
+                            "throws",
+                            "garbage",
+                            "unknown"
+                          ]
+                        }
+                      },
+                      "expect": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "error"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "error": {
+                                "type": "object",
+                                "required": [
+                                  "reason",
+                                  "detail"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "reason": {
+                                    "type": "string"
+                                  },
+                                  "detail": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "created",
+                              "notification",
+                              "attempted",
+                              "deliveries"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "created": {
+                                "type": "boolean"
+                              },
+                              "notification": {
+                                "$ref": "#/definitions/notification"
+                              },
+                              "attempted": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "deliveries": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "enum": [
+                                    "sent",
+                                    "expired",
+                                    "failed"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "save"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "recipient_id",
+                      "scope",
+                      "changes"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "recorrido-canales"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "cases"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "policy"
+              ]
+            },
+            {
+              "required": [
+                "catalog"
+              ]
+            },
+            {
+              "required": [
+                "steps"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "cases": {
+            "items": {
+              "type": "object",
+              "required": [
+                "note",
+                "channels",
+                "valid"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "channels": {
+                  "type": "array"
+                },
+                "valid": {
+                  "type": "boolean"
+                }
+              }
             }
           }
         }

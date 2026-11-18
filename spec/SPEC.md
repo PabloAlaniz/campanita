@@ -5,7 +5,7 @@ Todo port de campanita tiene que comportarse como se describe acá. Los archivos
 `tools/gen_vectors.py`, una implementación independiente, para que ningún port se valide a sí
 mismo.
 
-La versión 0 es un borrador y puede cambiar sin aviso. Cubre cuatro cosas:
+La versión 0 es un borrador y puede cambiar sin aviso. Cubre cinco cosas:
 
 - **Por qué canales sale un aviso y qué puede cambiar el usuario**: la política, la resolución de
   canales, la matriz efectiva y el cambio de preferencias.
@@ -14,8 +14,10 @@ La versión 0 es un borrador y puede cambiar sin aviso. Cubre cuatro cosas:
 - **La bandeja**: guardar un aviso sin duplicarlo, listarlo por páginas, contar los no leídos y
   marcarlos como leídos, sobre cualquier base.
 - **Las preferencias guardadas**: dónde queda lo que cambió cada persona, sobre cualquier base.
+- **El recorrido completo**: de un evento a un aviso guardado y entregado por los canales que
+  corresponden.
 
-Las entregas por canales fuera de la bandeja todavía no están especificadas (ver
+Los reintentos de una entrega y su registro todavía no están especificados (ver
 `docs/hoja-de-ruta.md`).
 
 El spec no nombra categorías, canales ni tipos propios. Los que aparecen en los ejemplos y en los
@@ -397,6 +399,54 @@ Reglas:
 Para resolver los canales de un aviso, se le pasa a `resolve_channels` lo que devuelve
 `get_overrides` para el destinatario y el ámbito del aviso.
 
+## El recorrido completo
+
+`notify(evento, id, created_at)` es la operación que usa quien quiere avisarle algo a alguien.
+Trabaja con lo que una instalación tiene configurado: una política, un catálogo, un almacén de
+avisos, un almacén de preferencias y una lista de canales de entrega.
+
+```text
+1. aviso = build_notification(catálogo, evento)        si se rechaza, termina: no se guardó nada
+2. guardado = almacén.add(aviso, id, created_at)       si se rechaza, termina
+3. si no se creó (la clave ya existía):
+       devolver el aviso que había, sin entregas
+4. overrides = preferencias.get_overrides(recipient_id, ámbito del aviso)
+5. canales = resolve_channels(política, categoría, overrides, canales configurados)
+6. para cada canal, en orden por punto de código:
+       intentar la entrega y anotar el resultado
+7. devolver el aviso, que se creó, y el resultado de cada canal
+```
+
+- **Primero se guarda, después se entrega.** La bandeja es la fuente de verdad: una entrega que
+  falla nunca deshace el aviso.
+- **Un repetido no se vuelve a entregar**, ni siquiera si la primera entrega falló. Reintentar es
+  decisión de quien llama.
+- **Las preferencias que valen son las del ámbito del aviso.** Un aviso sin ámbito usa lo
+  guardado sin ámbito.
+- **Los canales disponibles son los configurados.** Un canal que la política nombra pero la
+  instalación no tiene no se intenta, aunque esté bloqueado en encendido.
+- **Cada canal se intenta por separado.** Que uno falle no impide intentar los demás.
+
+### Canales de entrega
+
+Un canal recibe el aviso guardado y contesta uno de tres resultados:
+
+| Resultado | Qué significa |
+|---|---|
+| `sent` | el proveedor aceptó el aviso |
+| `expired` | el destino ya no existe y el adaptador lo tiene que olvidar |
+| `failed` | no se pudo entregar |
+
+Un canal que lanza un error, o que contesta algo que no es uno de esos tres, cuenta como
+`failed`.
+
+Cada canal resuelve sus propios destinos a partir del destinatario: a qué dirección o a qué
+dispositivos va un aviso no pasa por el núcleo.
+
+Los canales configurados son **válidos** cuando cada identificador cumple la forma de
+identificador, ninguno es `inapp` y ninguno se repite. Puede no haber ninguno: entonces los
+avisos se guardan y no se entregan.
+
 ## Vectores
 
 Cada archivo de `vectors/` cumple `schemas/vector.schema.json` y tiene `spec`, `id`, `kind` y sus
@@ -413,6 +463,8 @@ casos.
 | `aviso` | armado del aviso | `event`, `expect` |
 | `bandeja` | la bandeja sobre un almacén | secuencia de pasos (ver abajo) |
 | `preferencias-guardadas` | las preferencias sobre un almacén | secuencia de pasos (ver abajo) |
+| `recorrido` | el recorrido completo | secuencia de pasos (ver abajo) |
+| `recorrido-canales` | validación de los canales configurados | `channels`, `valid` |
 
 Los vectores de `canales`, `matriz`, `preferencias` y `catalogo` llevan la `policy` una vez por
 archivo; los de `aviso` llevan además el `catalog`.
@@ -423,6 +475,13 @@ que es lo que la operación devuelve, o `{"error": motivo}` cuando la rechaza.
 
 - En `bandeja`, `op` es `add`, `list`, `count_unread`, `mark_read` o `mark_all_read`.
 - En `preferencias-guardadas`, `op` es `save` (devuelve nulo) o `get`.
+- En `recorrido`, el vector trae la `policy`, el `catalog` y los `channels` configurados, y `op` es
+  `notify` o `save` (guardar preferencias). Cada `notify` lleva `outcomes`: qué contesta cada
+  canal en ese paso (por omisión, `sent`). Además de los tres resultados, `throws` hace que el
+  canal lance un error; `garbage`, que conteste algo que no es un resultado; y `unknown`, que
+  conteste un resultado con un valor que no existe. `expect` tiene `created`,
+  `notification`, `attempted` (los canales intentados, en orden) y `deliveries`, o
+  `{"error": {"reason", "detail"}}`.
 
 `python3 tools/gen_vectors.py` los regenera; con `--check` falla si los archivos del repo no
 coinciden con lo generado.

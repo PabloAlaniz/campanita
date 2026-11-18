@@ -120,7 +120,32 @@ effectiveMatrix(policy, saved, disponibles); // lo que muestra la pantalla
 resolveChannels(policy, 'activity', saved, disponibles); // por dónde sale el próximo aviso
 ```
 
-El puerto de canales de entrega (`DeliveryChannel`) es un borrador: el spec todavía no lo cubre.
+## El recorrido completo
+
+`Notifier` junta todo: arma el aviso, lo guarda, lee las preferencias de esa persona y lo entrega
+por los canales que corresponden.
+
+```ts
+import { Notifier, type DeliveryChannel } from 'campanita';
+
+const consola: DeliveryChannel = {
+  id: 'email', // el identificador que usa la política
+  async send(notification) {
+    console.log(`[${notification.recipientId}] ${notification.title}`);
+    return { outcome: 'sent' }; // o 'expired', o 'failed'
+  },
+};
+
+const notifier = new Notifier({ policy, catalog, store, preferences, channels: [consola] });
+
+const result = await notifier.notify({ type: 'comments.new', recipient_id: 'user-7', payload: {} });
+result.created; // false si la dedupe_key ya existía: no se vuelve a entregar
+result.deliveries; // Map { 'email' => { outcome: 'sent' } }
+```
+
+Primero se guarda y después se entrega: un canal que falla, o que rechaza, no deshace el aviso ni
+impide intentar los demás. Todavía no hay adaptadores para proveedores reales; un canal es
+cualquier objeto con `id` y `send`.
 
 ## Desarrollo
 

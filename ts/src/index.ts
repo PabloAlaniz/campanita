@@ -32,6 +32,8 @@ export type {
   TemplateReason,
   TypeSpec,
 } from './core/types.js';
+export { InvalidChannelsError, Notifier } from './core/notify.js';
+export type { NotifierOptions, NotifyResult } from './core/notify.js';
 export { StoreError } from './core/inbox.js';
 export type {
   AddResult,

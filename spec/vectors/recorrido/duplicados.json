@@ -1,0 +1,299 @@
+{
+ "spec": "0",
+ "id": "recorrido/duplicados",
+ "kind": "recorrido",
+ "policy": {
+  "security": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "sms": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": true
+   },
+   "sms": {
+    "default": false
+   }
+  },
+  "digest": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   }
+  },
+  "quiet": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "catalog": {
+  "login.new": {
+   "category": "security",
+   "title": "Nuevo inicio de sesión desde {device}"
+  },
+  "comment.new": {
+   "category": "activity",
+   "title": "{author} comentó",
+   "body": "{excerpt}"
+  },
+  "digest.weekly": {
+   "category": "digest",
+   "title": "Tu resumen de la semana"
+  },
+  "note.saved": {
+   "category": "quiet",
+   "title": "Nota guardada"
+  }
+ },
+ "channels": [
+  "email",
+  "push",
+  "sms"
+ ],
+ "steps": [
+  {
+   "note": "la primera vez se guarda y se entrega",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "ana",
+    "payload": {
+     "device": "Firefox"
+    },
+    "dedupe_key": "login-1"
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "login.new",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": "login-1",
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "email",
+     "sms"
+    ],
+    "deliveries": {
+     "email": "sent",
+     "sms": "sent"
+    }
+   }
+  },
+  {
+   "note": "repetir la clave no guarda ni vuelve a entregar",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "ana",
+    "payload": {
+     "device": "Firefox"
+    },
+    "dedupe_key": "login-1"
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "outcomes": {},
+   "expect": {
+    "created": false,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "login.new",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": "login-1",
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    },
+    "attempted": [],
+    "deliveries": {}
+   }
+  },
+  {
+   "note": "la misma clave para otra persona sí",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "beto",
+    "payload": {
+     "device": "Firefox"
+    },
+    "dedupe_key": "login-1"
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "beto",
+     "type": "login.new",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": "login-1",
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "email",
+     "sms"
+    ],
+    "deliveries": {
+     "email": "sent",
+     "sms": "sent"
+    }
+   }
+  },
+  {
+   "note": "si la primera entrega falló, repetir la clave tampoco reintenta",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "ana",
+    "payload": {
+     "device": "Firefox"
+    },
+    "dedupe_key": "login-2"
+   },
+   "id": "n4",
+   "at_ms": 4000,
+   "outcomes": {
+    "email": "failed",
+    "sms": "failed"
+   },
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "ana",
+     "type": "login.new",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": "login-2",
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "email",
+     "sms"
+    ],
+    "deliveries": {
+     "email": "failed",
+     "sms": "failed"
+    }
+   }
+  },
+  {
+   "note": "el reintento es de quien llama",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "ana",
+    "payload": {
+     "device": "Firefox"
+    },
+    "dedupe_key": "login-2"
+   },
+   "id": "n5",
+   "at_ms": 5000,
+   "outcomes": {},
+   "expect": {
+    "created": false,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "ana",
+     "type": "login.new",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": "login-2",
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    },
+    "attempted": [],
+    "deliveries": {}
+   }
+  },
+  {
+   "note": "un identificador repetido se rechaza y no entrega",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "ana",
+    "payload": {
+     "device": "Firefox"
+    },
+    "dedupe_key": null
+   },
+   "id": "n1",
+   "at_ms": 6000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "duplicate_id",
+     "detail": null
+    }
+   }
+  }
+ ]
+}

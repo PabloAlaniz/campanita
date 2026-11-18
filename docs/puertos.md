@@ -8,7 +8,7 @@ Están declarados en [`python/src/campanita/ports.py`](../python/src/campanita/p
 |---|---|---|
 | `NotificationStore` | Guardar avisos y leer la bandeja | Especificado, con secuencias de conformidad |
 | `PreferenceStore` | Guardar lo que cambió cada persona | Especificado, con secuencias de conformidad |
-| `DeliveryChannel` | Entregar un aviso fuera de la bandeja | Borrador |
+| `DeliveryChannel` | Entregar un aviso fuera de la bandeja | Especificado dentro del recorrido; sin adaptadores reales todavía |
 
 La **bandeja** no es un puerto: es lo que se lee del `NotificationStore`. Cualquier superficie
 que la muestre (un panel web, una app, un bot) es un cliente de esa lectura.
@@ -37,6 +37,42 @@ Su comportamiento está en la sección "Las preferencias guardadas" del spec y e
 | SQLite | `campanita.stores.SqlitePreferenceStore` | todavía no |
 
 Las dos tablas pueden vivir en la misma base o en bases distintas: los puertos son independientes.
+
+## El canal de entrega
+
+Un canal tiene un identificador (el mismo que usa la política) y una operación: recibe un aviso
+guardado y contesta `sent`, `expired` o `failed`. Lo usa el recorrido completo (`Notifier`), que
+está en la sección "El recorrido completo" del spec y en
+[`spec/vectors/recorrido/`](../spec/vectors/recorrido).
+
+Un canal mínimo:
+
+```python
+from campanita import Notification
+from campanita.ports import DeliveryResult
+
+class Consola:
+    id = "console"
+
+    async def send(self, notification: Notification) -> DeliveryResult:
+        print(f"[{notification.recipient_id}] {notification.title}")
+        return DeliveryResult("sent")
+```
+
+```ts
+import type { DeliveryChannel, DeliveryResult, Notification } from 'campanita';
+
+const consola: DeliveryChannel = {
+  id: 'console',
+  async send(notification: Notification): Promise<DeliveryResult> {
+    console.log(`[${notification.recipientId}] ${notification.title}`);
+    return { outcome: 'sent' };
+  },
+};
+```
+
+Todavía no hay adaptadores para proveedores reales, así que este puerto es el que más puede
+cambiar.
 
 ## Escribir un adaptador
 
@@ -96,5 +132,5 @@ Lo que las secuencias **no** pueden probar, y cada adaptador tiene que garantiza
 Un puerto no se da por estable hasta tener **dos adaptadores reales**. Con uno solo, el puerto
 termina teniendo la forma de ese adaptador y el segundo no entra.
 
-Los dos almacenes la cumplen en Python (en memoria y SQLite). El canal de entrega sigue en
-borrador hasta tener los suyos.
+Los dos almacenes la cumplen en Python (en memoria y SQLite). El canal de entrega todavía no:
+está especificado y probado con canales de prueba, pero le faltan adaptadores reales.

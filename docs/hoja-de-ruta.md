@@ -7,6 +7,8 @@
 - La bandeja: guardar sin duplicar, paginar por cursor, contar los no leídos y marcarlos como
   leídos, especificada como secuencias que cualquier base tiene que reproducir.
 - Las preferencias guardadas, especificadas de la misma forma.
+- El recorrido completo: una sola operación que arma el aviso, lo guarda y lo entrega por los
+  canales que corresponden.
 - Almacenes incluidos, para avisos y para preferencias: en memoria (Python y TypeScript) y SQLite
   (Python).
 - Vectores de conformidad, su generador independiente y un corredor de secuencias para quien
@@ -16,17 +18,17 @@
 
 ## Lo que sigue
 
-1. **Las entregas.** Estados de una entrega, reintentos y qué hacer con un destino vencido.
-2. **Adaptadores de canal.** Email y web push; después, push nativo.
-3. **El recorrido completo.** Una sola operación que arma el aviso, lo guarda y lo entrega por
-   los canales que corresponden.
-4. **Más almacenes.** Uno sobre SQL en TypeScript y uno para una base con driver asíncrono.
-5. **La campanita.** Componentes para mostrar la bandeja y la pantalla de preferencias.
-6. **Un servicio listo para desplegar.** Una API HTTP armada con el núcleo y los adaptadores,
+1. **Adaptadores de canal.** Email y web push; después, push nativo. Son los que van a terminar
+   de fijar el puerto de entrega.
+2. **Registro y reintento de entregas.** Guardar qué pasó con cada entrega y volver a intentar
+   las que fallaron.
+3. **Más almacenes.** Uno sobre SQL en TypeScript y uno para una base con driver asíncrono.
+4. **La campanita.** Componentes para mostrar la bandeja y la pantalla de preferencias.
+5. **Un servicio listo para desplegar.** Una API HTTP armada con el núcleo y los adaptadores,
    para quien no quiera embeber la librería.
-7. **Avisos en varios idiomas.** El payload ya se guarda entero para poder redactar de nuevo.
-8. **Vencimiento y borrado** de avisos viejos.
-9. **Restablecer preferencias**: volver una celda al valor de la política.
+6. **Avisos en varios idiomas.** El payload ya se guarda entero para poder redactar de nuevo.
+7. **Vencimiento y borrado** de avisos viejos.
+8. **Restablecer preferencias**: volver una celda al valor de la política.
 
 ## Fuera de alcance
 

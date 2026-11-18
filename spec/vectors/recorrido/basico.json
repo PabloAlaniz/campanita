@@ -1,0 +1,409 @@
+{
+ "spec": "0",
+ "id": "recorrido/basico",
+ "kind": "recorrido",
+ "policy": {
+  "security": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "sms": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": true
+   },
+   "sms": {
+    "default": false
+   }
+  },
+  "digest": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   }
+  },
+  "quiet": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "catalog": {
+  "login.new": {
+   "category": "security",
+   "title": "Nuevo inicio de sesión desde {device}"
+  },
+  "comment.new": {
+   "category": "activity",
+   "title": "{author} comentó",
+   "body": "{excerpt}"
+  },
+  "digest.weekly": {
+   "category": "digest",
+   "title": "Tu resumen de la semana"
+  },
+  "note.saved": {
+   "category": "quiet",
+   "title": "Nota guardada"
+  }
+ },
+ "channels": [
+  "email",
+  "push",
+  "sms"
+ ],
+ "steps": [
+  {
+   "note": "un aviso sale por los canales que la política enciende por defecto",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "push": "sent"
+    }
+   }
+  },
+  {
+   "note": "una categoría con dos canales: se intentan en orden",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "ana",
+    "payload": {
+     "device": "Firefox"
+    }
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n2",
+     "recipient_id": "ana",
+     "type": "login.new",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 2000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "email",
+     "sms"
+    ],
+    "deliveries": {
+     "email": "sent",
+     "sms": "sent"
+    }
+   }
+  },
+  {
+   "note": "una categoría que sólo tiene bandeja no entrega nada",
+   "op": "notify",
+   "event": {
+    "type": "note.saved",
+    "recipient_id": "ana"
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "ana",
+     "type": "note.saved",
+     "category": "quiet",
+     "title": "Nota guardada",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    },
+    "attempted": [],
+    "deliveries": {}
+   }
+  },
+  {
+   "note": "ana pide email para la actividad y apaga el push",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "email",
+     "enabled": true
+    },
+    {
+     "category": "activity",
+     "channel": "push",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "el siguiente aviso respeta lo guardado",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n4",
+   "at_ms": 4000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "email"
+    ],
+    "deliveries": {
+     "email": "sent"
+    }
+   }
+  },
+  {
+   "note": "lo guardado es de ana: beto sigue con los valores por defecto",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "beto",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n5",
+   "at_ms": 5000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n5",
+     "recipient_id": "beto",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 5000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "push": "sent"
+    }
+   }
+  },
+  {
+   "note": "ana intenta apagar seguridad (el almacén lo guarda, la política lo ignora)",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "security",
+     "channel": "email",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "un canal bloqueado sale igual",
+   "op": "notify",
+   "event": {
+    "type": "login.new",
+    "recipient_id": "ana",
+    "payload": {
+     "device": "Firefox"
+    }
+   },
+   "id": "n6",
+   "at_ms": 6000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n6",
+     "recipient_id": "ana",
+     "type": "login.new",
+     "category": "security",
+     "title": "Nuevo inicio de sesión desde Firefox",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "device": "Firefox"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 6000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "email",
+     "sms"
+    ],
+    "deliveries": {
+     "email": "sent",
+     "sms": "sent"
+    }
+   }
+  },
+  {
+   "note": "ana enciende todo en la actividad",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "push",
+     "enabled": true
+    },
+    {
+     "category": "activity",
+     "channel": "sms",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "tres canales, en orden por punto de código",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n7",
+   "at_ms": 7000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n7",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 7000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "email",
+     "push",
+     "sms"
+    ],
+    "deliveries": {
+     "email": "sent",
+     "push": "sent",
+     "sms": "sent"
+    }
+   }
+  }
+ ]
+}

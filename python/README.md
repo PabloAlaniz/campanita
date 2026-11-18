@@ -131,8 +131,36 @@ effective_matrix(policy, overrides, disponibles)  # lo que muestra la pantalla
 resolve_channels(policy, "activity", overrides, disponibles)  # por dónde sale el próximo aviso
 ```
 
-El puerto de canales de entrega (`campanita.ports.DeliveryChannel`) es un borrador: el spec
-todavía no lo cubre.
+## El recorrido completo
+
+`Notifier` junta todo: arma el aviso, lo guarda, lee las preferencias de esa persona y lo entrega
+por los canales que corresponden.
+
+```python
+from campanita import Notification, Notifier
+from campanita.ports import DeliveryResult
+
+
+class Consola:
+    id = "email"  # el identificador que usa la política
+
+    async def send(self, notification: Notification) -> DeliveryResult:
+        print(f"[{notification.recipient_id}] {notification.title}")
+        return DeliveryResult("sent")  # o "expired", o "failed"
+
+
+notifier = Notifier(
+    policy=policy, catalog=catalog, store=store, preferences=preferences, channels=[Consola()]
+)
+
+result = await notifier.notify({"type": "comments.new", "recipient_id": "user-7", "payload": {...}})
+result.created  # False si la dedupe_key ya existía: no se vuelve a entregar
+result.deliveries  # {'email': DeliveryResult(outcome='sent', ...)}
+```
+
+Primero se guarda y después se entrega: un canal que falla, o que lanza un error, no deshace el
+aviso ni impide intentar los demás. Todavía no hay adaptadores para proveedores reales; un canal
+es cualquier objeto con `id` y `send`.
 
 ## Desarrollo
 

@@ -7,7 +7,8 @@
  *   comportamiento es el de las secuencias de `spec/vectors/bandeja/` y
  *   `spec/vectors/preferencias-guardadas/`, y `runStoreVector` y
  *   `runPreferenceVector` las corren contra cualquier adaptador.
- * - `DeliveryChannel` es un BORRADOR: el spec todavía no lo cubre y puede cambiar.
+ * - `DeliveryChannel` se usa en el recorrido completo, que está especificado
+ *   (`spec/vectors/recorrido/`), pero todavía no tiene adaptadores reales.
  */
 import type { AddResult, FeedPage, FeedQuery, Notification } from './core/inbox.js';
 import type { Change, Draft, Overrides } from './core/types.js';
@@ -65,10 +66,17 @@ export interface DeliveryResult {
 }
 
 /**
- * BORRADOR. Cualquier canal de entrega.
+ * Cualquier canal de entrega fuera de la bandeja.
  *
- * Cada adaptador resuelve sus propios destinos a partir de `recipientId`.
- * `send` NUNCA lanza: un destino roto no puede impedir avisarle al resto.
+ * Cada adaptador resuelve sus propios destinos a partir de `recipientId`: a qué
+ * dirección o a qué dispositivos va un aviso es asunto suyo.
+ *
+ * `send` no debería rechazar: un destino roto se informa como `failed`, y uno
+ * que ya no existe, como `expired`. Si igual rechaza, `Notifier` lo anota como
+ * `failed` y sigue con los demás canales.
+ *
+ * El recorrido está especificado (`spec/vectors/recorrido/`). Lo que todavía no
+ * hay son adaptadores reales, así que el puerto puede ajustarse.
  */
 export interface DeliveryChannel {
   /** El identificador del canal en la política. */

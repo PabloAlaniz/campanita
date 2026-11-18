@@ -1,0 +1,228 @@
+{
+ "spec": "0",
+ "id": "recorrido/ambitos",
+ "kind": "recorrido",
+ "policy": {
+  "security": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "sms": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": true
+   },
+   "sms": {
+    "default": false
+   }
+  },
+  "digest": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   }
+  },
+  "quiet": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "catalog": {
+  "login.new": {
+   "category": "security",
+   "title": "Nuevo inicio de sesión desde {device}"
+  },
+  "comment.new": {
+   "category": "activity",
+   "title": "{author} comentó",
+   "body": "{excerpt}"
+  },
+  "digest.weekly": {
+   "category": "digest",
+   "title": "Tu resumen de la semana"
+  },
+  "note.saved": {
+   "category": "quiet",
+   "title": "Nota guardada"
+  }
+ },
+ "channels": [
+  "email",
+  "push",
+  "sms"
+ ],
+ "steps": [
+  {
+   "note": "ana, sin ámbito: quiere email",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "email",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "ana, en el ámbito x: no quiere push",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": "x",
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "push",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "un aviso sin ámbito usa lo guardado sin ámbito",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    }
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "email",
+     "push"
+    ],
+    "deliveries": {
+     "email": "sent",
+     "push": "sent"
+    }
+   }
+  },
+  {
+   "note": "un aviso del ámbito x usa sólo lo guardado en x",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    },
+    "scope": "x"
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n2",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": "x",
+     "dedupe_key": null,
+     "created_at_ms": 2000,
+     "read_at_ms": null
+    },
+    "attempted": [],
+    "deliveries": {}
+   }
+  },
+  {
+   "note": "un aviso de un ámbito sin nada guardado usa los valores de la política",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    },
+    "scope": "y"
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": "y",
+     "dedupe_key": null,
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    },
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "push": "sent"
+    }
+   }
+  }
+ ]
+}
