@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/PabloAlaniz/campanita/compare/v0.2.0...v0.3.0) (2026-11-18)
+
+
+### Features
+
+* canal de Slack, que cada persona conecta con OAuth ([4438347](https://github.com/PabloAlaniz/campanita/commit/44383470d0d66a326837643120014c0d289fea1d))
+
 ## [0.2.0](https://github.com/PabloAlaniz/campanita/compare/v0.1.0...v0.2.0) (2026-11-18)
 
 
