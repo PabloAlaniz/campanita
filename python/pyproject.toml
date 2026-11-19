@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "campanita"
-version = "0.3.0"
+version = "0.4.0"
 description = "Notificaciones con las mismas reglas en cualquier stack: una política, cualquier base, cualquier canal, cualquier bandeja."
 readme = "README.md"
 license = "MIT"

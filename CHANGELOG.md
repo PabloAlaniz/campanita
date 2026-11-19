@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/PabloAlaniz/campanita/compare/v0.3.0...v0.4.0) (2026-11-19)
+
+
+### Features
+
+* el transporte HTTP lee el resultado del cuerpo de la respuesta ([#4](https://github.com/PabloAlaniz/campanita/issues/4)) ([c423876](https://github.com/PabloAlaniz/campanita/commit/c42387656a71b0d73db497134329c2f4af944bb0))
+
 ## [0.3.0](https://github.com/PabloAlaniz/campanita/compare/v0.2.0...v0.3.0) (2026-11-18)
 
 
