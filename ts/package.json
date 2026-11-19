@@ -1,6 +1,6 @@
 {
   "name": "campanita",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Notificaciones con las mismas reglas en cualquier stack: una política, cualquier base, cualquier canal, cualquier bandeja.",
   "license": "MIT",
   "author": "Pablo Alaniz",

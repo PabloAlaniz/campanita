@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/PabloAlaniz/campanita/compare/v0.4.0...v0.5.0) (2026-11-19)
+
+
+### Features
+
+* avisos para un grupo y destinos por ámbito ([#6](https://github.com/PabloAlaniz/campanita/issues/6)) ([8486ef9](https://github.com/PabloAlaniz/campanita/commit/8486ef939652430f0a3453d12386953ecd230a45))
+
 ## [0.4.0](https://github.com/PabloAlaniz/campanita/compare/v0.3.0...v0.4.0) (2026-11-19)
 
 
