@@ -1,0 +1,459 @@
+{
+ "spec": "0",
+ "id": "recorrido/miembros",
+ "kind": "recorrido",
+ "policy": {
+  "security": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "sms": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": true
+   },
+   "sms": {
+    "default": false
+   }
+  },
+  "digest": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   }
+  },
+  "quiet": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "catalog": {
+  "login.new": {
+   "category": "security",
+   "title": "Nuevo inicio de sesión desde {device}"
+  },
+  "comment.new": {
+   "category": "activity",
+   "title": "{author} comentó",
+   "body": "{excerpt}"
+  },
+  "digest.weekly": {
+   "category": "digest",
+   "title": "Tu resumen de la semana"
+  },
+  "note.saved": {
+   "category": "quiet",
+   "title": "Nota guardada"
+  },
+  "report.ready": {
+   "category": "digest",
+   "title": "Informe listo: {name}",
+   "audience": "group"
+  },
+  "report.mine": {
+   "category": "digest",
+   "title": "Tu informe está listo: {name}",
+   "audience": "person"
+  }
+ },
+ "channels": [
+  "email",
+  "push",
+  "sms"
+ ],
+ "steps": [
+  {
+   "note": "un tipo de persona no lleva miembros",
+   "op": "notify",
+   "event": {
+    "type": "report.mine",
+    "recipient_id": "ana",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x1",
+   "at_ms": 1000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "invalid_field",
+     "detail": "members"
+    }
+   },
+   "members": [
+    {
+     "recipient_id": "ana",
+     "id": "c-ana"
+    }
+   ]
+  },
+  {
+   "note": "los miembros no son una lista",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x2",
+   "at_ms": 2000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "invalid_field",
+     "detail": "members"
+    }
+   },
+   "members": {
+    "ana": "c-ana"
+   }
+  },
+  {
+   "note": "un miembro no es un objeto",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x3",
+   "at_ms": 3000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "invalid_field",
+     "detail": "members"
+    }
+   },
+   "members": [
+    "ana"
+   ]
+  },
+  {
+   "note": "a un miembro le falta el id",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x4",
+   "at_ms": 4000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "invalid_field",
+     "detail": "members"
+    }
+   },
+   "members": [
+    {
+     "recipient_id": "ana"
+    }
+   ]
+  },
+  {
+   "note": "un miembro con una clave de más",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x5",
+   "at_ms": 5000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "invalid_field",
+     "detail": "members"
+    }
+   },
+   "members": [
+    {
+     "recipient_id": "ana",
+     "id": "c-ana",
+     "scope": "x"
+    }
+   ]
+  },
+  {
+   "note": "un miembro con destinatario vacío",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x6",
+   "at_ms": 6000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "invalid_field",
+     "detail": "members"
+    }
+   },
+   "members": [
+    {
+     "recipient_id": "",
+     "id": "c1"
+    }
+   ]
+  },
+  {
+   "note": "un miembro con id vacío",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x7",
+   "at_ms": 7000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "invalid_field",
+     "detail": "members"
+    }
+   },
+   "members": [
+    {
+     "recipient_id": "ana",
+     "id": ""
+    }
+   ]
+  },
+  {
+   "note": "un miembro con id que no es texto",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x8",
+   "at_ms": 8000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "invalid_field",
+     "detail": "members"
+    }
+   },
+   "members": [
+    {
+     "recipient_id": "ana",
+     "id": 1
+    }
+   ]
+  },
+  {
+   "note": "dos veces la misma persona",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x9",
+   "at_ms": 9000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "invalid_field",
+     "detail": "members"
+    }
+   },
+   "members": [
+    {
+     "recipient_id": "ana",
+     "id": "c-ana"
+    },
+    {
+     "recipient_id": "ana",
+     "id": "c2"
+    }
+   ]
+  },
+  {
+   "note": "dos veces el mismo id",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x10",
+   "at_ms": 10000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "invalid_field",
+     "detail": "members"
+    }
+   },
+   "members": [
+    {
+     "recipient_id": "ana",
+     "id": "c-ana"
+    },
+    {
+     "recipient_id": "beto",
+     "id": "c-ana"
+    }
+   ]
+  },
+  {
+   "note": "el tipo se revisa antes que los miembros",
+   "op": "notify",
+   "event": {
+    "type": "nope",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x98",
+   "at_ms": 98000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "unknown_type",
+     "detail": "nope"
+    }
+   },
+   "members": [
+    "ana"
+   ]
+  },
+  {
+   "note": "un tipo de persona con la lista vacía vale, y lo rechazado no guardó nada",
+   "op": "notify",
+   "event": {
+    "type": "report.mine",
+    "recipient_id": "ana",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x1",
+   "at_ms": 99000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "x1",
+     "recipient_id": "ana",
+     "type": "report.mine",
+     "category": "digest",
+     "title": "Tu informe está listo: Marzo",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "name": "Marzo"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 99000,
+     "read_at_ms": null
+    },
+    "copies": [],
+    "attempted": [
+     "email"
+    ],
+    "deliveries": {
+     "email": "sent"
+    }
+   },
+   "members": []
+  },
+  {
+   "note": "el id de una copia ocupado",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x100",
+   "at_ms": 100000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "duplicate_id",
+     "detail": null
+    }
+   },
+   "members": [
+    {
+     "recipient_id": "beto",
+     "id": "x1"
+    }
+   ]
+  },
+  {
+   "note": "lo guardado antes de la copia rechazada queda: el id del grupo ya está ocupado",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "x100",
+   "at_ms": 101000,
+   "outcomes": {},
+   "expect": {
+    "error": {
+     "reason": "duplicate_id",
+     "detail": null
+    }
+   }
+  }
+ ]
+}

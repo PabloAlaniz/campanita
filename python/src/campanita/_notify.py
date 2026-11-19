@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import re
 import uuid
-from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 
 from ._catalog import Catalog, build_notification
 from ._channels import resolve_channels
-from ._inbox import Notification
+from ._inbox import AddResult, Notification
 from ._policy import Policy
 from ._quiet import is_quiet, local_minute
-from ._types import INBOX
+from ._types import INBOX, EventRejected
 from .ports import DeliveryChannel, DeliveryResult, NotificationStore, PreferenceStore, QuietHoursStore
 
 _ID = re.compile(r"[a-z][a-z0-9_-]{0,63}")
@@ -29,6 +29,9 @@ class NotifyResult:
     notification: Notification
     #: `False` cuando la clave ya existía: no se guardó nada nuevo ni se entregó.
     created: bool
+    #: Las copias de un aviso de grupo, una por miembro y en su orden. `created`
+    #: es `False` cuando el miembro ya tenía un aviso con esa clave.
+    copies: Sequence[AddResult]
     #: Qué pasó en cada canal por el que el aviso iba a salir, en orden. Incluye
     #: los que no se intentaron por no molestar (`silenced`).
     deliveries: Mapping[str, DeliveryResult]
@@ -72,23 +75,30 @@ class Notifier:
         *,
         id: str | None = None,
         created_at: datetime | None = None,
+        members: Sequence[Mapping[str, object]] | None = None,
     ) -> NotifyResult:
         """Arma el aviso del evento, lo guarda y lo entrega.
 
-        Lanza `EventRejected` si el evento no se puede convertir en un aviso (y
-        entonces no se guardó nada) y `StoreError` si el almacén lo rechaza.
-        Una entrega que falla nunca lanza: queda anotada en `deliveries`.
+        `members` sólo vale para un tipo de audiencia `group`: a cada uno,
+        `{"recipient_id": ..., "id": ...}`, le queda una copia en su bandeja con
+        ese `id`. Las copias no se entregan: el aviso sale una vez, para el grupo.
+
+        Lanza `EventRejected` si el evento o los miembros no sirven (y entonces
+        no se guardó nada) y `StoreError` si el almacén rechaza el aviso o una
+        copia. Una entrega que falla nunca lanza: queda anotada en `deliveries`.
         """
         draft = build_notification(self._catalog, event)
-        added = await self._store.add(
-            draft,
-            id=self._new_id() if id is None else id,
-            created_at=self._clock() if created_at is None else created_at,
-        )
+        copies_to = _check_members(members, group=self._catalog[draft.type].audience == "group")
+        at = self._clock() if created_at is None else created_at
+        added = await self._store.add(draft, id=self._new_id() if id is None else id, created_at=at)
         if not added.created:
-            # El aviso ya existía: no se vuelve a entregar. Reintentar una
-            # entrega fallida es decisión de quien llama.
-            return NotifyResult(added.notification, created=False, deliveries={})
+            # El aviso ya existía: no se copia ni se vuelve a entregar.
+            # Reintentar una entrega fallida es decisión de quien llama.
+            return NotifyResult(added.notification, created=False, copies=(), deliveries={})
+        copies = [
+            await self._store.add(replace(draft, recipient_id=recipient_id), id=copy_id, created_at=at)
+            for recipient_id, copy_id in copies_to
+        ]
 
         overrides = await self._preferences.get_overrides(draft.recipient_id, scope=draft.scope)
         targets = resolve_channels(self._policy, draft.category, overrides, self._channels.keys())
@@ -101,7 +111,7 @@ class Notifier:
                 deliveries[channel_id] = DeliveryResult("silenced")
                 continue
             deliveries[channel_id] = await _deliver(self._channels[channel_id], added.notification)
-        return NotifyResult(added.notification, created=True, deliveries=deliveries)
+        return NotifyResult(added.notification, created=True, copies=copies, deliveries=deliveries)
 
     async def _is_quiet(self, notification: Notification) -> bool:
         """Si el destinatario está en su horario de no molestar cuando se creó el aviso."""
@@ -113,6 +123,32 @@ class Notifier:
         minute = self._local_minute(quiet_hours.timezone, notification.created_at)
         # Zona desconocida: ante la duda, se entrega.
         return minute is not None and is_quiet(quiet_hours, minute)
+
+
+def _check_members(members: Sequence[Mapping[str, object]] | None, *, group: bool) -> list[tuple[str, str]]:
+    """Los miembros como `(recipient_id, id)`, o `EventRejected` con `members` de detalle."""
+    if members is None:
+        return []
+    if isinstance(members, (str, bytes)) or not isinstance(members, Sequence):
+        raise EventRejected("invalid_field", "members")
+    if members and not group:
+        raise EventRejected("invalid_field", "members")
+    out: list[tuple[str, str]] = []
+    for member in members:
+        if not isinstance(member, Mapping) or set(member.keys()) != {"recipient_id", "id"}:
+            raise EventRejected("invalid_field", "members")
+        recipient_id, copy_id = member["recipient_id"], member["id"]
+        if (
+            not isinstance(recipient_id, str)
+            or not recipient_id
+            or not isinstance(copy_id, str)
+            or not copy_id
+        ):
+            raise EventRejected("invalid_field", "members")
+        out.append((recipient_id, copy_id))
+    if len({r for r, _ in out}) != len(out) or len({i for _, i in out}) != len(out):
+        raise EventRejected("invalid_field", "members")
+    return out
 
 
 def check_channels(channels: Iterable[DeliveryChannel]) -> dict[str, DeliveryChannel]:

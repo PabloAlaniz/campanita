@@ -2,9 +2,9 @@
 import type { DeliveryChannel, DeliveryResult, NotificationStore, PreferenceStore, QuietHoursStore } from '../ports.js';
 import { buildNotification } from './catalog.js';
 import { resolveChannels } from './channels.js';
-import type { Notification } from './inbox.js';
+import type { AddResult, Notification } from './inbox.js';
 import { isQuiet, localMinute } from './quiet.js';
-import { INBOX, type Catalog, type Policy } from './types.js';
+import { EventRejectedError, INBOX, type Catalog, type Policy } from './types.js';
 
 const ID = /^[a-z][a-z0-9_-]{0,63}$/;
 const OUTCOMES = new Set(['sent', 'expired', 'failed', 'skipped']);
@@ -19,10 +19,21 @@ export interface NotifyResult {
   /** `false` cuando la clave ya existía: no se guardó nada nuevo ni se entregó. */
   readonly created: boolean;
   /**
+   * Las copias de un aviso de grupo, una por miembro y en su orden. `created`
+   * es `false` cuando el miembro ya tenía un aviso con esa clave.
+   */
+  readonly copies: readonly AddResult[];
+  /**
    * Qué pasó en cada canal por el que el aviso iba a salir, en orden. Incluye
    * los que no se intentaron por no molestar (`silenced`).
    */
   readonly deliveries: ReadonlyMap<string, DeliveryResult>;
+}
+
+/** Un miembro de un grupo: a quién le queda la copia y con qué `id`. */
+export interface Member {
+  readonly recipient_id: string;
+  readonly id: string;
 }
 
 export interface NotifierOptions {
@@ -67,18 +78,26 @@ export class Notifier {
    */
   async notify(
     event: Readonly<Record<string, unknown>>,
-    options: { id?: string; createdAt?: Date } = {},
+    options: { id?: string; createdAt?: Date; members?: readonly Member[] } = {},
   ): Promise<NotifyResult> {
     const { policy, catalog, store, preferences } = this.#options;
     const draft = buildNotification(catalog, event);
+    const members = checkMembers(options.members, catalog[draft.type]!.audience === 'group');
+    const createdAt = options.createdAt ?? (this.#options.clock ?? (() => new Date()))();
     const added = await store.add(draft, {
       id: options.id ?? (this.#options.newId ?? (() => crypto.randomUUID()))(),
-      createdAt: options.createdAt ?? (this.#options.clock ?? (() => new Date()))(),
+      createdAt,
     });
     const deliveries = new Map<string, DeliveryResult>();
-    // El aviso ya existía: no se vuelve a entregar. Reintentar una entrega
-    // fallida es decisión de quien llama.
-    if (!added.created) return { notification: added.notification, created: false, deliveries };
+    // El aviso ya existía: no se copia ni se vuelve a entregar. Reintentar una
+    // entrega fallida es decisión de quien llama.
+    if (!added.created) return { notification: added.notification, created: false, copies: [], deliveries };
+    // Las copias van a la bandeja de cada miembro y no se entregan: el aviso
+    // sale una sola vez, por los canales del grupo.
+    const copies: AddResult[] = [];
+    for (const member of members) {
+      copies.push(await store.add({ ...draft, recipientId: member.recipient_id }, { id: member.id, createdAt }));
+    }
 
     const overrides = await preferences.getOverrides(draft.recipientId, { scope: draft.scope });
     // `resolveChannels` ya los devuelve ordenados por punto de código.
@@ -91,7 +110,7 @@ export class Notifier {
       }
       deliveries.set(channelId, await deliver(this.#channels.get(channelId)!, added.notification));
     }
-    return { notification: added.notification, created: true, deliveries };
+    return { notification: added.notification, created: true, copies, deliveries };
   }
 
   /** Si el destinatario está en su horario de no molestar cuando se creó el aviso. */
@@ -104,6 +123,27 @@ export class Notifier {
     // Zona desconocida: ante la duda, se entrega.
     return minute !== null && isQuiet(quietHours, minute);
   }
+}
+
+/** Los miembros de un `notify`, o `EventRejectedError` con `members` de detalle. */
+function checkMembers(members: unknown, group: boolean): Member[] {
+  if (members === undefined || members === null) return [];
+  const reject = () => new EventRejectedError('invalid_field', 'members');
+  if (!Array.isArray(members)) throw reject();
+  if (members.length > 0 && !group) throw reject();
+  const recipients = new Set<string>();
+  const ids = new Set<string>();
+  for (const member of members as unknown[]) {
+    if (typeof member !== 'object' || member === null || Array.isArray(member)) throw reject();
+    const keys = Object.keys(member);
+    const { recipient_id: recipientId, id } = member as Record<string, unknown>;
+    if (keys.length !== 2 || !Object.hasOwn(member, 'recipient_id') || !Object.hasOwn(member, 'id')) throw reject();
+    if (typeof recipientId !== 'string' || recipientId === '' || typeof id !== 'string' || id === '') throw reject();
+    recipients.add(recipientId);
+    ids.add(id);
+  }
+  if (recipients.size !== members.length || ids.size !== members.length) throw reject();
+  return members as Member[];
 }
 
 function checkChannels(channels: Iterable<DeliveryChannel>): Map<string, DeliveryChannel> {

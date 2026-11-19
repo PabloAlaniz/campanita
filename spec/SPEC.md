@@ -230,11 +230,31 @@ Un catálogo es **válido** contra una política cuando:
 1. Es un objeto. Puede estar vacío.
 2. Cada clave es un **identificador de tipo**: segmentos separados por puntos, cada uno con la
    forma `[a-z][a-z0-9_-]*`, y hasta 128 caracteres en total.
-3. Cada entrada es un objeto que sólo tiene `category`, `title` y, opcionalmente, `body`.
+3. Cada entrada es un objeto que sólo tiene `category`, `title` y, opcionalmente, `body` y
+   `audience`.
 4. `category` es una categoría de la política.
 5. `title` es una plantilla válida y no vacía. `body`, si está, es una plantilla válida.
+6. `audience`, si está, es `person` o `group`.
 
 Un port rechaza un catálogo inválido al cargarlo, antes de armar ningún aviso.
+
+### Audiencia
+
+`audience` dice a quién le habla un tipo:
+
+- **`person`** (o sin `audience`): a una persona. El aviso sale por los canales que esa persona
+  eligió, a sus destinos.
+- **`group`**: a un grupo, como un equipo o un proyecto. El `recipient_id` es el del grupo y el
+  aviso sale **una sola vez**, por los canales y a los destinos del grupo, no por los de cada
+  miembro. A los miembros les queda una copia en su bandeja (ver
+  [el recorrido completo](#el-recorrido-completo)).
+
+Qué es un grupo y quiénes lo forman lo decide quien integra: campanita no guarda grupos ni
+miembros. Las preferencias y el horario de no molestar de un grupo son los guardados con su
+`recipient_id`, igual que los de una persona.
+
+Un mismo hecho puede interesarle a una persona y a un grupo: son dos tipos, uno de cada
+audiencia, y quien emite elige cuál manda o manda los dos.
 
 ## Armado del aviso
 
@@ -405,26 +425,54 @@ Para resolver los canales de un aviso, se le pasa a `resolve_channels` lo que de
 
 ## El recorrido completo
 
-`notify(evento, id, created_at)` es la operación que usa quien quiere avisarle algo a alguien.
-Trabaja con lo que una instalación tiene configurado: una política, un catálogo, un almacén de
-avisos, un almacén de preferencias y una lista de canales de entrega.
+`notify(evento, id, created_at, miembros)` es la operación que usa quien quiere avisarle algo a
+alguien. Trabaja con lo que una instalación tiene configurado: una política, un catálogo, un
+almacén de avisos, un almacén de preferencias y una lista de canales de entrega.
+
+`miembros` sólo tiene sentido para un tipo de audiencia `group`: es la lista de quienes reciben
+una copia en su bandeja, cada uno con el `id` que va a tener su copia. Puede faltar o estar
+vacía.
 
 ```text
 1. aviso = build_notification(catálogo, evento)        si se rechaza, termina: no se guardó nada
-2. guardado = almacén.add(aviso, id, created_at)       si se rechaza, termina
-3. si no se creó (la clave ya existía):
-       devolver el aviso que había, sin entregas
-4. overrides = preferencias.get_overrides(recipient_id, ámbito del aviso)
-5. canales = resolve_channels(política, categoría, overrides, canales configurados)
-6. en_silencio = la persona está ahora en su horario de no molestar
-7. para cada canal, en orden por punto de código:
+2. revisar los miembros                                si se rechaza, termina: no se guardó nada
+3. guardado = almacén.add(aviso, id, created_at)       si se rechaza, termina
+4. si no se creó (la clave ya existía):
+       devolver el aviso que había, sin copias ni entregas
+5. para cada miembro, en el orden en que vienen:
+       copia = el aviso, con el recipient_id del miembro
+       almacén.add(copia, id del miembro, created_at)  si se rechaza, termina
+6. overrides = preferencias.get_overrides(recipient_id, ámbito del aviso)
+7. canales = resolve_channels(política, categoría, overrides, canales configurados)
+8. en_silencio = el destinatario está ahora en su horario de no molestar
+9. para cada canal, en orden por punto de código:
        si en_silencio y la celda no es `urgent`: anotar `silenced`, sin intentar la entrega
        si no: intentar la entrega y anotar el resultado
-8. devolver el aviso, que se creó, y el resultado de cada canal
+10. devolver el aviso, que se creó, las copias y el resultado de cada canal
 ```
 
+Los miembros se rechazan con `invalid_field` y `members` de detalle cuando:
+
+- el tipo es de audiencia `person` y la lista no está vacía;
+- un miembro no es un objeto con exactamente `recipient_id` e `id`, los dos texto no vacío;
+- dos miembros tienen el mismo `recipient_id` o el mismo `id`.
+
+Reglas de las copias:
+
+- **Una copia es un aviso más en la bandeja del miembro**: mismo tipo, categoría, textos,
+  `action_url`, payload, ámbito y `dedupe_key`, y la misma fecha. Se lista, se cuenta y se marca
+  como leída como cualquier otro.
+- **Una copia no se entrega.** El aviso ya salió por los canales del grupo; mandarlo además a
+  cada miembro es lo que la audiencia `group` evita. Por eso no se miran las preferencias ni el
+  horario de los miembros.
+- **La clave vale por persona, como siempre.** Si un miembro ya tenía un aviso con esa
+  `dedupe_key`, su copia no se crea y se informa como no creada.
+- **Si el aviso del grupo ya existía, no se hacen copias**: el repetido no hace nada.
+- **Si el almacén rechaza una copia, el recorrido termina con ese error**: lo guardado hasta ahí
+  queda y no se entrega nada. Un `id` repetido es un error de quien llama.
+
 - **Primero se guarda, después se entrega.** La bandeja es la fuente de verdad: una entrega que
-  falla nunca deshace el aviso.
+  falla nunca deshace el aviso ni sus copias.
 - **Un repetido no se vuelve a entregar**, ni siquiera si la primera entrega falló. Reintentar es
   decisión de quien llama.
 - **Las preferencias que valen son las del ámbito del aviso.** Un aviso sin ámbito usa lo
@@ -451,8 +499,9 @@ Hay un quinto resultado, `silenced`, que no lo contesta un canal sino el recorri
 se intentó porque la persona está en su horario de [no molestar](#no-molestar). Un canal que
 contesta `silenced` cuenta como `failed`.
 
-Cada canal resuelve sus propios destinos a partir del destinatario: a qué dirección o a qué
-dispositivos va un aviso no pasa por el núcleo.
+Cada canal resuelve sus propios destinos a partir del aviso: a qué dirección o a qué
+dispositivos va no pasa por el núcleo. El destinatario y el ámbito viajan en el aviso, así que un
+canal puede tener un destino distinto para cada ámbito de una misma persona o grupo.
 
 Los canales configurados son **válidos** cuando cada identificador cumple la forma de
 identificador, ninguno es `inapp` y ninguno se repite. Puede no haber ninguno: entonces los
@@ -485,7 +534,8 @@ día en la hora local de la persona, de 0 a 1439.
 
 Reglas del recorrido:
 
-- **El horario es de la persona, no de un ámbito.** Vale para todos sus avisos.
+- **El horario es del destinatario, no de un ámbito.** Vale para todos sus avisos. El de un grupo
+  es el guardado con su `recipient_id`.
 - **Quien nunca definió un horario no tiene ninguno.** Y una instalación sin almacén de horarios
   no silencia nada.
 - **Una celda `urgent` se entrega igual.** Qué es urgente lo decide quien escribe la política.
@@ -582,8 +632,10 @@ que es lo que la operación devuelve, o `{"error": motivo}` cuando la rechaza.
   canal lance un error; `garbage`, que conteste algo que no es un resultado; y `unknown`, que
   conteste un resultado con un valor que no existe. `op` también puede ser `quiet` (guardar el
   horario de no molestar de una persona), y entonces cada `notify` puede traer `local_minute`: el
-  minuto local que el recorrido tiene que usar para el destinatario en ese paso. `expect` tiene `created`,
-  `notification`, `attempted` (los canales intentados, en orden) y `deliveries`, o
+  minuto local que el recorrido tiene que usar para el destinatario en ese paso. Un `notify`
+  también puede traer `members`, la lista que recibe el recorrido. `expect` tiene `created`,
+  `notification`, `copies` (cada una con `created` y `notification`, en el orden de los
+  miembros), `attempted` (los canales intentados, en orden) y `deliveries`, o
   `{"error": {"reason", "detail"}}`.
 
 `python3 tools/gen_vectors.py` los regenera; con `--check` falla si los archivos del repo no

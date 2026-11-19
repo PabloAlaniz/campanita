@@ -99,10 +99,15 @@ describe('recorrido', () => {
           const result = await notifier.notify(step['event'] as Step, {
             id: step['id'] as string,
             createdAt: new Date(step['at_ms'] as number),
+            members: step['members'] as never,
           });
           got = {
             created: result.created,
             notification: notificationToWire(result.notification),
+            copies: result.copies.map((copy) => ({
+              created: copy.created,
+              notification: notificationToWire(copy.notification),
+            })),
             attempted: [...result.deliveries]
               .filter(([, delivery]) => delivery.outcome !== 'silenced')
               .map(([id]) => id),
@@ -179,6 +184,48 @@ it('el error de un canal que lanza queda en el resultado', async () => {
   });
   const result = await notifier.notify({ type: 'nota', recipient_id: 'ana' });
   expect(result.deliveries.get('email')).toEqual({ outcome: 'failed', error: 'Error: el proveedor no responde' });
+});
+
+describe('audiencia de grupo', () => {
+  const policy = parsePolicy({ a: { inapp: { default: true, locked: true }, email: { default: true } } });
+  const catalog = parseCatalog(
+    {
+      'informe.listo': { category: 'a', title: 'Informe listo', audience: 'group' },
+      nota: { category: 'a', title: 'Hola' },
+    },
+    policy,
+  );
+
+  it('el catálogo dice a quién le habla cada tipo', () => {
+    expect(catalog['informe.listo']!.audience).toBe('group');
+    expect(catalog['nota']!.audience).toBe('person');
+  });
+
+  it('sale una vez, al destino del grupo, y cada miembro ve su copia en la bandeja', async () => {
+    const email = new Scripted('email');
+    const store = new MemoryStore();
+    const notifier = new Notifier({ policy, catalog, store, preferences: new MemoryPreferenceStore(), channels: [email] });
+    const result = await notifier.notify(
+      { type: 'informe.listo', recipient_id: 'equipo-1', scope: 'p-1' },
+      { id: 'g1', members: [{ recipient_id: 'ana', id: 'c1' }, { recipient_id: 'beto', id: 'c2' }] },
+    );
+    expect(email.sent).toEqual(['g1']);
+    expect(result.copies.map((c) => [c.created, c.notification.recipientId, c.notification.scope])).toEqual([
+      [true, 'ana', 'p-1'],
+      [true, 'beto', 'p-1'],
+    ]);
+    expect(await store.countUnread('ana')).toBe(1);
+    expect(await store.countUnread('equipo-1')).toBe(1);
+  });
+
+  it('un tipo de persona no acepta miembros y no guarda nada', async () => {
+    const store = new MemoryStore();
+    const notifier = new Notifier({ policy, catalog, store, preferences: new MemoryPreferenceStore() });
+    await expect(
+      notifier.notify({ type: 'nota', recipient_id: 'ana' }, { members: [{ recipient_id: 'beto', id: 'c1' }] }),
+    ).rejects.toEqual(new EventRejectedError('invalid_field', 'members'));
+    expect(await store.countUnread('ana')).toBe(0);
+  });
 });
 
 // --- no molestar: lo que depende de la plataforma ---------------------------

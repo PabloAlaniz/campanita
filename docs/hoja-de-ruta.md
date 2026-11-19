@@ -11,6 +11,10 @@
   canales que corresponden.
 - El canal de email, con transporte intercambiable: SMTP (Python), HTTP genérico y Resend.
 - El canal de Slack: cada persona conecta un canal con OAuth, sin tokens a la vista.
+- Avisos para un grupo: un tipo declara si le habla a una persona o a un grupo; el de grupo sale
+  una vez, al destino del grupo, y deja una copia en la bandeja de cada miembro.
+- Destinos por ámbito: los canales incluidos pueden elegir la dirección o el webhook a partir del
+  aviso entero, así una persona o un grupo tiene un destino distinto en cada ámbito.
 - No molestar: un horario por persona en el que los canales no interrumpen, salvo lo que la
   política marca como urgente.
 - Almacenes incluidos, para avisos, preferencias y horarios: en memoria (Python y TypeScript), SQLite

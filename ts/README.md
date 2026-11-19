@@ -168,6 +168,35 @@ result.deliveries; // Map { 'email' => { outcome: 'sent' } }
 Primero se guarda y después se entrega: un canal que falla, o que rechaza, no deshace el aviso ni
 impide intentar los demás. Un canal es cualquier objeto con `id` y `send`.
 
+### Avisos para un grupo
+
+Un tipo con `audience: 'group'` le habla a un grupo (un equipo, un proyecto) y no a una persona.
+El `recipient_id` es el del grupo: el aviso sale **una sola vez**, por los canales que eligió el
+grupo y a sus destinos (un canal de Slack compartido, por ejemplo). A cada miembro le queda una
+copia en su bandeja, que no se entrega por ningún canal.
+
+```ts
+const catalog = parseCatalog(
+  {
+    'report.ready': { category: 'reports', title: 'Informe listo: {name}', audience: 'group' },
+    'report.mine': { category: 'reports', title: 'Tu informe está listo: {name}' }, // audience: 'person'
+  },
+  policy,
+);
+
+await notifier.notify(
+  { type: 'report.ready', recipient_id: 'team-3', scope: 'project-9', payload: { name: 'Marzo' } },
+  { members: [{ recipient_id: 'user-7', id: 'n-1' }, { recipient_id: 'user-8', id: 'n-2' }] },
+);
+```
+
+- **Quiénes forman el grupo lo decide quien integra**: campanita no guarda grupos.
+- **Las preferencias y el horario del grupo** son los guardados con su `recipient_id`.
+- **Un mismo hecho para una persona y para un grupo son dos tipos**: quien emite elige cuál
+  manda, o los dos.
+- **Un tipo de persona no acepta miembros**: el aviso se rechaza con `invalid_field` (`members`)
+  y no se guarda nada.
+
 ## No molestar
 
 Cada persona puede tener un horario en el que los canales no la interrumpen. El aviso se guarda
@@ -258,6 +287,11 @@ await guardarConexion(recipientId, connection); // webhookUrl es un secreto; cha
 // 3. El canal pide la URL cuando hay algo que entregar.
 const slack = new SlackChannel({
   resolveWebhook: async (recipientId) => buscarWebhook(recipientId), // null si no conectó
+});
+
+// O, con un canal distinto por ámbito (un proyecto, un equipo), a partir del aviso entero:
+const porAmbito = new SlackChannel({
+  resolveWebhookFor: async (n) => buscarWebhook(n.recipientId, n.scope),
 });
 ```
 

@@ -106,6 +106,7 @@
      "created_at_ms": 1000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "email",
      "sms"
@@ -149,6 +150,7 @@
      "created_at_ms": 2000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "email",
      "sms"
@@ -192,6 +194,7 @@
      "created_at_ms": 3000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "email",
      "sms"
@@ -235,6 +238,7 @@
      "created_at_ms": 4000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "email",
      "sms"
@@ -278,6 +282,7 @@
      "created_at_ms": 4500,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "email",
      "sms"
@@ -321,6 +326,7 @@
      "created_at_ms": 4700,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "email",
      "sms"
@@ -365,6 +371,7 @@
      "created_at_ms": 5000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "email",
      "sms"
@@ -408,6 +415,7 @@
      "created_at_ms": 6000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "email",
      "sms"

@@ -144,6 +144,26 @@ describe('el canal', () => {
     expect(transport.sent[0]?.to).toBe('ana@example.com');
   });
 
+  it('con resolveAddressFor la dirección sale del aviso entero', async () => {
+    const transport = new Recorder();
+    const made = new EmailChannel({
+      transport,
+      sender: 'avisos@example.com',
+      resolveAddressFor: (n) => (n.scope ? `${n.recipientId}+${n.scope}@example.com` : null),
+    });
+    expect((await made.send(notification({ scope: 'p1' }))).outcome).toBe('sent');
+    expect(transport.sent[0]?.to).toBe('ana+p1@example.com');
+    expect((await made.send(notification())).outcome).toBe('skipped');
+  });
+
+  it('pide una sola forma de buscar la dirección', () => {
+    const sender = 'avisos@example.com';
+    expect(() => new EmailChannel({ transport: new Recorder(), sender })).toThrow(TypeError);
+    expect(
+      () => new EmailChannel({ transport: new Recorder(), sender, resolveAddress: () => null, resolveAddressFor: () => null }),
+    ).toThrow(TypeError);
+  });
+
   it('si buscar la dirección falla es una entrega fallida', async () => {
     const made = new EmailChannel({
       transport: new Recorder(),

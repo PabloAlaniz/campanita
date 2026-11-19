@@ -10,7 +10,7 @@ import re
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import final
+from typing import Literal, final
 
 from ._policy import Policy
 from ._templates import Parsed, parse_template, render_parsed
@@ -18,12 +18,16 @@ from ._types import EventRejected, InvalidCatalog, InvalidTemplate, TemplateErro
 
 _TYPE_ID = re.compile(r"[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)*")
 _MAX_TYPE_ID = 128
-_ENTRY_KEYS = frozenset({"category", "title", "body"})
+_ENTRY_KEYS = frozenset({"category", "title", "body", "audience"})
+_AUDIENCES = frozenset({"person", "group"})
 _OPTIONAL_TEXT = ("action_url", "scope", "dedupe_key")
 _EVENT_KEYS = frozenset({"type", "recipient_id", "payload", *_OPTIONAL_TEXT})
 #: Lo que cuenta como espacio para decidir si un título está vacío. Es una
 #: lista fija a propósito: "espacio" no significa lo mismo en cada lenguaje.
 _BLANK = " \t\n\r"
+
+#: A quién le habla un tipo de aviso.
+Audience = Literal["person", "group"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,6 +37,9 @@ class TypeSpec:
     category: str
     title: str
     body: str | None = None
+    #: `person` le habla a una persona; `group`, a un grupo: sale una sola vez,
+    #: por los canales del grupo, y a los miembros les queda una copia.
+    audience: Audience = "person"
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,8 +128,14 @@ def parse_catalog(raw: object, policy: Policy) -> Catalog:
         if not title_parts:
             raise InvalidCatalog(f"{type_id}: `title` no puede ser vacío")
 
+        audience = entry.get("audience", "person")
+        if not isinstance(audience, str) or audience not in _AUDIENCES:
+            raise InvalidCatalog(f"{type_id}: `audience` tiene que ser `person` o `group`")
+
         assert isinstance(title, str) and (body is None or isinstance(body, str))
-        types[type_id] = TypeSpec(category=category, title=title, body=body)
+        types[type_id] = TypeSpec(
+            category=category, title=title, body=body, audience="group" if audience == "group" else "person"
+        )
         parsed[type_id] = (title_parts, body_parts)
 
     return Catalog(types, parsed, _validated=True)

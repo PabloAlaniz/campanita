@@ -103,6 +103,7 @@
      "created_at_ms": 1000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [],
     "deliveries": {}
    }
@@ -140,6 +141,7 @@
      "created_at_ms": 2000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "push"
     ],
@@ -195,6 +197,7 @@
      "created_at_ms": 3000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "push"
     ],

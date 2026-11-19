@@ -184,13 +184,18 @@ def fill(template: object, payload: dict) -> str:
     return "".join(out)
 
 
+AUDIENCIAS = ("person", "group")
+
+
 def is_valid_catalog(catalog: object, policy: dict) -> bool:
     if type(catalog) is not dict:
         return False
     for type_id, entry in catalog.items():
         if len(type_id) > 128 or not TYPE_ID.fullmatch(type_id) or type(entry) is not dict:
             return False
-        if set(entry) - {"category", "title", "body"} or not {"category", "title"} <= set(entry):
+        if set(entry) - {"category", "title", "body", "audience"} or not {"category", "title"} <= set(entry):
+            return False
+        if "audience" in entry and entry["audience"] not in AUDIENCIAS:
             return False
         if type(entry["category"]) is not str or entry["category"] not in policy:
             return False
@@ -879,6 +884,13 @@ def catalogo_validacion() -> dict:
         ("tipo con salto de línea al final", {"a\n": ok}, False),
         ("tipo de 129 caracteres", {"a" * 129: ok}, False),
         ("uno bueno y uno malo", {"a": ok, "b": {"title": "Hola"}}, False),
+        ("audiencia de persona", {"a": {**ok, "audience": "person"}}, True),
+        ("audiencia de grupo", {"a": {**ok, "audience": "group"}}, True),
+        ("audiencia desconocida", {"a": {**ok, "audience": "team"}}, False),
+        ("audiencia con mayúscula", {"a": {**ok, "audience": "Group"}}, False),
+        ("audiencia vacía", {"a": {**ok, "audience": ""}}, False),
+        ("la audiencia es nula", {"a": {**ok, "audience": None}}, False),
+        ("la audiencia no es texto", {"a": {**ok, "audience": ["group"]}}, False),
     ]
     cases = []
     for note, catalog, valid in casos:
@@ -1470,6 +1482,22 @@ def guardadas_aislamiento() -> dict:
 OUTCOMES = ("sent", "expired", "failed", "skipped")
 
 
+def members_ok(members: object, group: bool) -> bool:
+    """La lista de miembros de un `notify`. Ausente o vacía vale siempre."""
+    if members is None:
+        return True
+    if type(members) is not list:
+        return False
+    if members and not group:
+        return False
+    for m in members:
+        if type(m) is not dict or set(m) != {"recipient_id", "id"}:
+            return False
+        if any(type(m[k]) is not str or not m[k] for k in m):
+            return False
+    return len({m["recipient_id"] for m in members}) == len({m["id"] for m in members}) == len(members)
+
+
 def valid_channels(channels: object) -> bool:
     if type(channels) is not list:
         return False
@@ -1818,14 +1846,21 @@ class Recorrido:
         self.steps.append(self.prefs.steps.pop())
 
     def notify(
-        self, note: str, event: dict, new_id: str, at_ms: int, minute: int | None = None, **outcomes: str
+        self,
+        note: str,
+        event: dict,
+        new_id: str,
+        at_ms: int,
+        minute: int | None = None,
+        members: object = None,
+        **outcomes: str,
     ) -> dict:
         """`minute` es el minuto local del destinatario en este paso (para no molestar).
         `outcomes` dice qué contesta cada canal en este paso; por omisión, `sent`.
         Además de los tres resultados válidos: `throws` (el canal falla con una
         excepción), `garbage` (devuelve algo que no es un resultado) y `unknown`
         (devuelve un resultado bien formado con un valor que no existe)."""
-        expect = self._notify(event, new_id, at_ms, outcomes, minute)
+        expect = self._notify(event, new_id, at_ms, outcomes, minute, members)
         step = {
             "note": note,
             "op": "notify",
@@ -1837,19 +1872,32 @@ class Recorrido:
         }
         if minute is not None:
             step["local_minute"] = minute
+        if members is not None:
+            step["members"] = members
         self.steps.append(step)
         return expect
 
-    def _notify(self, event: dict, new_id: str, at_ms: int, outcomes: dict, minute: int | None) -> dict:
+    def _notify(
+        self, event: dict, new_id: str, at_ms: int, outcomes: dict, minute: int | None, members: object
+    ) -> dict:
         try:
             draft = build_draft(self.catalog, event)
         except Fallo as fallo:
             return {"error": {"reason": fallo.reason, "detail": fallo.detail}}
+        group = self.catalog[draft["type"]].get("audience") == "group"
+        if not members_ok(members, group):
+            return {"error": {"reason": "invalid_field", "detail": "members"}}
         added = self.store.add(draft, new_id, at_ms)
         if "error" in added:
             return {"error": {"reason": added["error"], "detail": None}}
         if not added["created"]:
-            return {**added, "attempted": [], "deliveries": {}}
+            return {**added, "copies": [], "attempted": [], "deliveries": {}}
+        copies = []
+        for member in members or []:
+            copy = self.store.add({**draft, "recipient_id": member["recipient_id"]}, member["id"], at_ms)
+            if "error" in copy:
+                return {"error": {"reason": copy["error"], "detail": None}}
+            copies.append(copy)
         saved: dict = {}
         for (who, where, category, channel), enabled in self.prefs.cells.items():
             if who == draft["recipient_id"] and where == draft["scope"]:
@@ -1865,7 +1913,7 @@ class Recorrido:
             attempted.append(channel)
             answer = outcomes.get(channel, "sent")
             deliveries[channel] = answer if answer in OUTCOMES else "failed"
-        return {**added, "attempted": attempted, "deliveries": deliveries}
+        return {**added, "copies": copies, "attempted": attempted, "deliveries": deliveries}
 
 
 RECORRIDO_POLITICA = {
@@ -1995,6 +2043,7 @@ def recorrido_duplicados() -> dict:
     assert again == {
         "created": False,
         "notification": again["notification"],
+        "copies": [],
         "attempted": [],
         "deliveries": {},
     }
@@ -2099,6 +2148,156 @@ def recorrido_sin_canales() -> dict:
     a = r.notify("sin ningún canal configurado, el aviso se guarda y no se entrega", login, "n1", 1000)
     assert a["created"] and a["attempted"] == [] and a["deliveries"] == {}
     return recorrido_vector("recorrido/sin-canales", r)
+
+
+RECORRIDO_CATALOGO_GRUPOS = {
+    **RECORRIDO_CATALOGO,
+    "report.ready": {
+        "category": "digest",
+        "title": "Informe listo: {name}",
+        "audience": "group",
+    },
+    "report.mine": {"category": "digest", "title": "Tu informe está listo: {name}", "audience": "person"},
+}
+
+
+def recorrido_grupos() -> dict:
+    r = Recorrido(RECORRIDO_POLITICA, RECORRIDO_CATALOGO_GRUPOS, ["email", "push", "sms"])
+    report = {"type": "report.ready", "recipient_id": "equipo-1", "payload": {"name": "Marzo"}}
+    ana, beto = {"recipient_id": "ana", "id": "c-ana"}, {"recipient_id": "beto", "id": "c-beto"}
+
+    a = r.notify(
+        "un aviso de grupo sale una vez, por los canales del grupo, y deja una copia a cada miembro",
+        report,
+        "n1",
+        1000,
+        members=[ana, beto],
+    )
+    assert a["created"] and a["attempted"] == ["email"]
+    assert [c["notification"]["recipient_id"] for c in a["copies"]] == ["ana", "beto"]
+    r.save("ana apaga el email de los resúmenes", [("digest", "email", False)])
+    b = r.notify(
+        "las preferencias de los miembros no cambian lo que sale para el grupo",
+        report,
+        "n2",
+        2000,
+        members=[{"recipient_id": "ana", "id": "c2-ana"}],
+    )
+    assert b["attempted"] == ["email"] and b["copies"][0]["created"]
+    r.save("el grupo apaga el email de los resúmenes", [("digest", "email", False)], recipient="equipo-1")
+    c = r.notify("las del grupo sí", report, "n3", 3000, members=[{"recipient_id": "beto", "id": "c3-beto"}])
+    assert c["attempted"] == [] and c["copies"][0]["created"]
+    r.save(
+        "en el ámbito p2 el grupo quiere sms",
+        [("digest", "email", True)],
+        recipient="equipo-1",
+        scope="p2",
+    )
+    d = r.notify(
+        "el ámbito del aviso elige las preferencias del grupo",
+        {**report, "scope": "p2"},
+        "n4",
+        4000,
+        members=[{"recipient_id": "ana", "id": "c4-ana"}],
+    )
+    assert d["attempted"] == ["email"] and d["copies"][0]["notification"]["scope"] == "p2"
+    e = r.notify("sin miembros, sólo el grupo", report, "n5", 5000)
+    assert e["created"] and e["copies"] == []
+    f = r.notify("con la lista vacía, igual", report, "n6", 6000, members=[])
+    assert f["copies"] == []
+    r.quiet("el grupo tiene horario de no molestar", horario("22:00", "08:00"), recipient="equipo-1")
+    g = r.notify(
+        "el horario del grupo silencia lo que sale para el grupo; las copias se guardan igual",
+        {**report, "scope": "p2"},
+        "n7",
+        7000,
+        minute=minute_of("23:00"),
+        members=[{"recipient_id": "ana", "id": "c7-ana"}],
+    )
+    assert g["deliveries"] == {"email": "silenced"} and g["copies"][0]["created"]
+    keyed = {**report, "dedupe_key": "informe-marzo"}
+    h = r.notify(
+        "con clave, el grupo y cada miembro la guardan",
+        keyed,
+        "n8",
+        8000,
+        members=[{"recipient_id": "ana", "id": "c8-ana"}],
+    )
+    assert h["created"] and h["copies"][0]["created"]
+    i = r.notify(
+        "el repetido del grupo no hace copias ni entrega",
+        keyed,
+        "n9",
+        9000,
+        members=[{"recipient_id": "beto", "id": "c9-beto"}],
+    )
+    assert not i["created"] and i["copies"] == [] and i["attempted"] == []
+    r.notify(
+        "beto ya tenía un aviso suyo con la misma clave",
+        {
+            "type": "report.mine",
+            "recipient_id": "beto",
+            "payload": {"name": "Abril"},
+            "dedupe_key": "informe-abril",
+        },
+        "n10",
+        10000,
+    )
+    j = r.notify(
+        "su copia no se crea y se informa como no creada; la de ana sí",
+        {**report, "payload": {"name": "Abril"}, "dedupe_key": "informe-abril"},
+        "n11",
+        11000,
+        members=[{"recipient_id": "beto", "id": "c11-beto"}, {"recipient_id": "ana", "id": "c11-ana"}],
+    )
+    assert j["created"] and [c["created"] for c in j["copies"]] == [False, True]
+    assert j["copies"][0]["notification"]["id"] == "n10"
+    return recorrido_vector("recorrido/grupos", r)
+
+
+def recorrido_miembros() -> dict:
+    r = Recorrido(RECORRIDO_POLITICA, RECORRIDO_CATALOGO_GRUPOS, ["email", "push", "sms"])
+    report = {"type": "report.ready", "recipient_id": "equipo-1", "payload": {"name": "Marzo"}}
+    mine = {"type": "report.mine", "recipient_id": "ana", "payload": {"name": "Marzo"}}
+    ana = {"recipient_id": "ana", "id": "c-ana"}
+    casos = [
+        ("un tipo de persona no lleva miembros", mine, [ana]),
+        ("los miembros no son una lista", report, {"ana": "c-ana"}),
+        ("un miembro no es un objeto", report, ["ana"]),
+        ("a un miembro le falta el id", report, [{"recipient_id": "ana"}]),
+        ("un miembro con una clave de más", report, [{**ana, "scope": "x"}]),
+        ("un miembro con destinatario vacío", report, [{"recipient_id": "", "id": "c1"}]),
+        ("un miembro con id vacío", report, [{"recipient_id": "ana", "id": ""}]),
+        ("un miembro con id que no es texto", report, [{"recipient_id": "ana", "id": 1}]),
+        ("dos veces la misma persona", report, [ana, {"recipient_id": "ana", "id": "c2"}]),
+        ("dos veces el mismo id", report, [ana, {"recipient_id": "beto", "id": "c-ana"}]),
+    ]
+    for n, (note, event, members) in enumerate(casos, start=1):
+        got = r.notify(note, event, f"x{n}", n * 1000, members=members)
+        assert got == {"error": {"reason": "invalid_field", "detail": "members"}}, note
+    assert r.notify(
+        "el tipo se revisa antes que los miembros", {**report, "type": "nope"}, "x98", 98000, members=["ana"]
+    )["error"] == {"reason": "unknown_type", "detail": "nope"}
+    ok = r.notify(
+        "un tipo de persona con la lista vacía vale, y lo rechazado no guardó nada",
+        mine,
+        "x1",
+        99000,
+        members=[],
+    )
+    assert ok["created"] and ok["copies"] == []
+    r.notify(
+        "el id de una copia ocupado", report, "x100", 100000, members=[{"recipient_id": "beto", "id": "x1"}]
+    )
+    assert r.steps[-1]["expect"] == {"error": {"reason": "duplicate_id", "detail": None}}
+    after = r.notify(
+        "lo guardado antes de la copia rechazada queda: el id del grupo ya está ocupado",
+        report,
+        "x100",
+        101000,
+    )
+    assert after == {"error": {"reason": "duplicate_id", "detail": None}}
+    return recorrido_vector("recorrido/miembros", r)
 
 
 def recorrido_vector(vector_id: str, r: Recorrido) -> dict:
@@ -2279,6 +2478,8 @@ ALL = [
     recorrido_disponibles,
     recorrido_sin_canales,
     recorrido_silencio,
+    recorrido_grupos,
+    recorrido_miembros,
     canales_configurados,
     silencio_validacion,
     silencio_horario,

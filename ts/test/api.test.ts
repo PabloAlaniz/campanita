@@ -72,7 +72,12 @@ it('el catálogo es inmutable y no hereda propiedades', () => {
   const catalog = parseCatalog(rawCatalog, parsePolicy(raw));
   expect(Object.isFrozen(catalog)).toBe(true);
   expect(Object.isFrozen(catalog['comments.new'])).toBe(true);
-  expect(catalog['comments.new']).toEqual({ category: 'activity', title: '{author} comentó', body: '{excerpt}' });
+  expect(catalog['comments.new']).toEqual({
+    category: 'activity',
+    title: '{author} comentó',
+    body: '{excerpt}',
+    audience: 'person',
+  });
   expect(catalog['constructor']).toBeUndefined();
 });
 

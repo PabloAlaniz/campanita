@@ -90,6 +90,10 @@ from campanita.channels import SlackChannel
 slack = SlackChannel(resolve_webhook=buscar_webhook)   # tu función: None si no conectó
 ```
 
+Un aviso puede hablarle a una persona o a un **grupo** (un equipo, un proyecto). Uno de grupo
+sale una sola vez, al destino del grupo, y a cada miembro le queda una copia en la bandeja: nadie
+recibe el mismo mensaje repetido en un canal compartido.
+
 Avisar es mandar un tipo y sus datos. La categoría, el texto y los canales los decide campanita:
 
 ```python

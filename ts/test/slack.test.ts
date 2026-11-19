@@ -134,6 +134,22 @@ describe('SlackChannel', () => {
     });
   });
 
+  it('con resolveWebhookFor el destino sale del aviso entero, por ejemplo de su ámbito', async () => {
+    const fake = fakeFetch(ok);
+    const byScope: Record<string, string> = { 'p-1': 'https://hooks.slack.com/services/T1/B1/uno' };
+    const slack = new SlackChannel({ resolveWebhookFor: (n) => (n.scope ? byScope[n.scope] : null), fetch: fake.fetch });
+    expect((await slack.send(notification({ scope: 'p-1' }))).outcome).toBe('sent');
+    expect(fake.calls[0]!.url).toBe('https://hooks.slack.com/services/T1/B1/uno');
+    expect((await slack.send(notification({ scope: 'p-2' }))).outcome).toBe('skipped');
+    expect((await slack.send(notification())).outcome).toBe('skipped');
+    expect(fake.calls).toHaveLength(1);
+  });
+
+  it('pide una sola forma de buscar el webhook', () => {
+    expect(() => new SlackChannel({})).toThrow(TypeError);
+    expect(() => new SlackChannel({ resolveWebhook: () => WEBHOOK, resolveWebhookFor: () => WEBHOOK })).toThrow(TypeError);
+  });
+
   it('la búsqueda puede ser asincrónica', async () => {
     const fake = fakeFetch(ok);
     expect((await channel(fake, { resolveWebhook: async () => WEBHOOK }).send(notification())).outcome).toBe('sent');
