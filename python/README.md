@@ -235,7 +235,12 @@ HttpEmailTransport(
     "https://mail.example.com/v1/send",
     headers={"X-Api-Key": "…"},
     # El identificador del aviso, para que un reintento no mande el mensaje dos veces.
-    build_body=lambda m: {"to": m.to, "subject": m.subject, "body": m.text, "idempotency_key": m.idempotency_key},
+    build_body=lambda m: {
+        "to": m.to,
+        "subject": m.subject,
+        "body": m.text,
+        "idempotency_key": m.idempotency_key,
+    },
     read_result=leer_resultado,
 )
 ```
