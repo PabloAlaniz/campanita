@@ -120,8 +120,9 @@ class DeliveryResult:
 class DeliveryChannel(Protocol):
     """Cualquier canal de entrega fuera de la bandeja.
 
-    Cada adaptador resuelve sus propios destinos a partir de `recipient_id`: a
-    qué dirección o a qué dispositivos va un aviso es asunto suyo.
+    Cada adaptador resuelve sus propios destinos a partir del aviso: a qué
+    dirección o a qué dispositivos va es asunto suyo. El destinatario y el ámbito
+    viajan en el aviso, así que un destino puede cambiar de un ámbito a otro.
 
     `send` no debería lanzar: informa uno de los resultados de
     `DeliveryOutcome`. Si igual lanza, `Notifier` lo anota como `failed` y sigue

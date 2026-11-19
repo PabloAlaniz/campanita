@@ -63,12 +63,21 @@ export function renderSlack(notification: Notification): RenderedSlack {
   return { text: lines.filter((line) => line !== '').join('\n') };
 }
 
+type Found = string | null | undefined | Promise<string | null | undefined>;
+
+/**
+ * De dónde sale la URL del webhook: se pasa `resolveWebhook` o
+ * `resolveWebhookFor`, una de las dos. La escribe quien integra: campanita no
+ * guarda conexiones.
+ */
 export interface SlackChannelOptions {
+  /** De un destinatario a la URL de su webhook, o `null` si no conectó Slack. */
+  readonly resolveWebhook?: (recipientId: string) => Found;
   /**
-   * De un destinatario a la URL de su webhook, o `null` si no conectó Slack.
-   * La escribe quien integra: campanita no guarda conexiones.
+   * Lo mismo a partir del aviso entero, para elegir el destino según su
+   * ámbito: una persona o un grupo puede tener un canal distinto en cada uno.
    */
-  readonly resolveWebhook: (recipientId: string) => string | null | undefined | Promise<string | null | undefined>;
+  readonly resolveWebhookFor?: (notification: Notification) => Found;
   readonly render?: (notification: Notification) => RenderedSlack;
   /** Por omisión, `slack`. */
   readonly id?: string;
@@ -95,6 +104,9 @@ export class SlackChannel implements DeliveryChannel {
   readonly #options: SlackChannelOptions;
 
   constructor(options: SlackChannelOptions) {
+    if ((options.resolveWebhook === undefined) === (options.resolveWebhookFor === undefined)) {
+      throw new TypeError('pasá `resolveWebhook` o `resolveWebhookFor`, uno de los dos');
+    }
     this.id = options.id ?? 'slack';
     this.#options = options;
   }
@@ -102,7 +114,8 @@ export class SlackChannel implements DeliveryChannel {
   async send(notification: Notification): Promise<DeliveryResult> {
     let url: string | null | undefined;
     try {
-      url = await this.#options.resolveWebhook(notification.recipientId);
+      const { resolveWebhook, resolveWebhookFor } = this.#options;
+      url = await (resolveWebhookFor ? resolveWebhookFor(notification) : resolveWebhook!(notification.recipientId));
     } catch (error) {
       const kind = error instanceof Error ? error.name : 'Error';
       return { outcome: 'failed', error: `no se pudo buscar la conexión de Slack: ${kind}` };

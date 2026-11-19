@@ -123,6 +123,23 @@ def test_envia_el_mensaje_al_webhook_de_la_persona() -> None:
     assert timeout == 3.0
 
 
+def test_con_resolve_webhook_for_el_destino_sale_del_aviso_entero() -> None:
+    by_scope = {"p-1": "https://hooks.slack.com/services/T1/B1/uno"}
+    post = FakePost()
+    slack = SlackChannel(resolve_webhook_for=lambda n: by_scope.get(n.scope or ""), post=post)
+    assert send(slack, notification(scope="p-1")).outcome == "sent"
+    assert send(slack, notification(scope="p-2")).outcome == "skipped"
+    assert send(slack, notification()).outcome == "skipped"
+    assert len(post.calls) == 1
+
+
+def test_pide_una_sola_forma_de_buscar_el_webhook() -> None:
+    with pytest.raises(TypeError):
+        SlackChannel()
+    with pytest.raises(TypeError):
+        SlackChannel(resolve_webhook=lambda _: WEBHOOK, resolve_webhook_for=lambda _: WEBHOOK)
+
+
 def test_la_busqueda_puede_ser_asincronica() -> None:
     async def resolve(_: str) -> str:
         return WEBHOOK

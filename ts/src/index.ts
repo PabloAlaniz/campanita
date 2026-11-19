@@ -33,6 +33,7 @@ export type {
   RejectionReason,
   TemplateReason,
   TypeSpec,
+  Audience,
 } from './core/types.js';
 export { EmailChannel, formatSender, isValidAddress, renderEmail } from './channels/email.js';
 export type {
@@ -53,9 +54,13 @@ export {
   slackAuthorizeUrl,
   SlackOAuthError,
 } from './channels/slack.js';
-export type { RenderedSlack, SlackChannelOptions, SlackConnection } from './channels/slack.js';
+export type {
+  RenderedSlack,
+  SlackChannelOptions,
+  SlackConnection,
+} from './channels/slack.js';
 export { InvalidChannelsError, Notifier } from './core/notify.js';
-export type { NotifierOptions, NotifyResult } from './core/notify.js';
+export type { Member, NotifierOptions, NotifyResult } from './core/notify.js';
 export { StoreError } from './core/inbox.js';
 export type {
   AddResult,

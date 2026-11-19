@@ -96,6 +96,7 @@
      "created_at_ms": 1000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "email",
      "push"
@@ -152,6 +153,7 @@
      "created_at_ms": 2000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "email",
      "push"
@@ -196,6 +198,7 @@
      "created_at_ms": 3000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "push"
     ],
@@ -237,6 +240,7 @@
      "created_at_ms": 4000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "sms"
     ],
@@ -281,6 +285,7 @@
      "created_at_ms": 5000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "sms"
     ],
@@ -324,6 +329,7 @@
      "created_at_ms": 6000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "email",
      "push"
@@ -369,6 +375,7 @@
      "created_at_ms": 7000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "push"
     ],
@@ -431,6 +438,7 @@
      "created_at_ms": 8000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "push"
     ],
@@ -474,6 +482,7 @@
      "created_at_ms": 9000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "push",
      "sms"
@@ -518,6 +527,7 @@
      "created_at_ms": 10000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "push"
     ],
@@ -562,6 +572,7 @@
      "created_at_ms": 11000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "push",
      "sms"
@@ -607,6 +618,7 @@
      "created_at_ms": 11000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [],
     "deliveries": {}
    },
@@ -638,6 +650,7 @@
      "created_at_ms": 13000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [],
     "deliveries": {}
    },
@@ -688,6 +701,7 @@
      "created_at_ms": 14000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "push",
      "sms"
@@ -744,6 +758,7 @@
      "created_at_ms": 15000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "push",
      "sms"
@@ -800,6 +815,7 @@
      "created_at_ms": 16000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "push"
     ],
@@ -843,6 +859,7 @@
      "created_at_ms": 17000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [
      "push",
      "sms"

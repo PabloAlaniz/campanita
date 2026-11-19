@@ -89,7 +89,10 @@ def test_recorrido(path: Path) -> None:
             got: dict[str, Any]
             try:
                 result = await notifier.notify(
-                    step["event"], id=step["id"], created_at=from_ms(step["at_ms"])
+                    step["event"],
+                    id=step["id"],
+                    created_at=from_ms(step["at_ms"]),
+                    members=step.get("members"),
                 )
             except EventRejected as rejected:
                 got = {"error": {"reason": rejected.reason, "detail": rejected.detail}}
@@ -99,6 +102,10 @@ def test_recorrido(path: Path) -> None:
                 got = {
                     "created": result.created,
                     "notification": notification_to_wire(result.notification),
+                    "copies": [
+                        {"created": copy.created, "notification": notification_to_wire(copy.notification)}
+                        for copy in result.copies
+                    ],
                     "attempted": [
                         channel
                         for channel, delivery in result.deliveries.items()
@@ -288,3 +295,41 @@ def test_is_quiet_rechaza_un_minuto_fuera_del_dia(minute: Any) -> None:
     setting = parse_quiet_hours({"enabled": True, "start": "22:00", "end": "08:00", "timezone": "UTC"})
     with pytest.raises(ValueError, match="minuto"):
         is_quiet(setting, minute)
+
+
+def test_un_aviso_de_grupo_sale_una_vez_y_deja_una_copia_a_cada_miembro() -> None:
+    async def run() -> None:
+        policy = parse_policy({"a": {"inapp": {"default": True, "locked": True}, "email": {"default": True}}})
+        catalog = parse_catalog(
+            {
+                "informe.listo": {"category": "a", "title": "Informe listo", "audience": "group"},
+                "nota": {"category": "a", "title": "Hola"},
+            },
+            policy,
+        )
+        assert catalog["informe.listo"].audience == "group"
+        assert catalog["nota"].audience == "person"
+        email = Scripted("email")
+        store = MemoryStore()
+        notifier = Notifier(
+            policy=policy, catalog=catalog, store=store, preferences=MemoryPreferenceStore(), channels=[email]
+        )
+        result = await notifier.notify(
+            {"type": "informe.listo", "recipient_id": "equipo-1", "scope": "p-1"},
+            id="g1",
+            members=[{"recipient_id": "ana", "id": "c1"}, {"recipient_id": "beto", "id": "c2"}],
+        )
+        assert email.sent == ["g1"]
+        assert [(c.created, c.notification.recipient_id, c.notification.scope) for c in result.copies] == [
+            (True, "ana", "p-1"),
+            (True, "beto", "p-1"),
+        ]
+        assert await store.count_unread("ana") == 1
+        with pytest.raises(EventRejected) as rejected:
+            await notifier.notify(
+                {"type": "nota", "recipient_id": "ana"}, members=[{"recipient_id": "beto", "id": "c3"}]
+            )
+        assert (rejected.value.reason, rejected.value.detail) == ("invalid_field", "members")
+        assert await store.count_unread("ana") == 1
+
+    asyncio.run(run())

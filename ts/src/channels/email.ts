@@ -80,14 +80,19 @@ export interface EmailTransport {
   send(message: EmailMessage): Promise<DeliveryResult>;
 }
 
+type Found = string | null | undefined | Promise<string | null | undefined>;
+
 export interface EmailChannelOptions {
   readonly transport: EmailTransport;
   readonly sender: string;
   /**
-   * De un destinatario a su dirección, o `null` si no tiene. La escribe quien
-   * integra: campanita no guarda direcciones.
+   * De un destinatario a su dirección, o `null` si no tiene. Se pasa ésta o
+   * `resolveAddressFor`, una de las dos. La escribe quien integra: campanita
+   * no guarda direcciones.
    */
-  readonly resolveAddress: (recipientId: string) => string | null | undefined | Promise<string | null | undefined>;
+  readonly resolveAddress?: (recipientId: string) => Found;
+  /** Lo mismo a partir del aviso entero, para elegir la dirección según su ámbito. */
+  readonly resolveAddressFor?: (notification: Notification) => Found;
   readonly senderName?: string | null;
   readonly render?: (notification: Notification) => RenderedEmail;
   /** Por omisión, `email`. */
@@ -101,6 +106,9 @@ export class EmailChannel implements DeliveryChannel {
   readonly #senderName: string | null;
 
   constructor(options: EmailChannelOptions) {
+    if ((options.resolveAddress === undefined) === (options.resolveAddressFor === undefined)) {
+      throw new TypeError('pasá `resolveAddress` o `resolveAddressFor`, uno de los dos');
+    }
     if (!isValidAddress(options.sender)) {
       throw new TypeError('`sender` no es una dirección válida');
     }
@@ -118,7 +126,8 @@ export class EmailChannel implements DeliveryChannel {
   async send(notification: Notification): Promise<DeliveryResult> {
     let address: string | null | undefined;
     try {
-      address = await this.#options.resolveAddress(notification.recipientId);
+      const { resolveAddress, resolveAddressFor } = this.#options;
+      address = await (resolveAddressFor ? resolveAddressFor(notification) : resolveAddress!(notification.recipientId));
     } catch (error) {
       const kind = error instanceof Error ? error.name : 'Error';
       return { outcome: 'failed', error: `no se pudo buscar la dirección: ${kind}` };

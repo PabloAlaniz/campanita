@@ -90,8 +90,9 @@ export interface DeliveryResult {
 /**
  * Cualquier canal de entrega fuera de la bandeja.
  *
- * Cada adaptador resuelve sus propios destinos a partir de `recipientId`: a qué
- * dirección o a qué dispositivos va un aviso es asunto suyo.
+ * Cada adaptador resuelve sus propios destinos a partir del aviso: a qué
+ * dirección o a qué dispositivos va es asunto suyo. El destinatario y el ámbito
+ * viajan en el aviso, así que un destino puede cambiar de un ámbito a otro.
  *
  * `send` no debería rechazar: informa uno de los resultados de
  * `DeliveryOutcome`. Si igual rechaza, `Notifier` lo anota como `failed` y sigue

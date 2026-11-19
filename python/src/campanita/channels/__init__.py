@@ -9,6 +9,7 @@ from .email import (
     EmailChannel,
     EmailMessage,
     EmailTransport,
+    NotificationAddressResolver,
     RenderedEmail,
     is_valid_address,
     render_email,
@@ -16,6 +17,7 @@ from .email import (
 from .http import HttpEmailTransport, ResendTransport, default_body
 from .slack import (
     HttpPost,
+    NotificationWebhookResolver,
     SlackChannel,
     SlackConnection,
     SlackOAuthError,
@@ -37,6 +39,8 @@ __all__ = [
     "EmailTransport",
     "HttpEmailTransport",
     "HttpPost",
+    "NotificationAddressResolver",
+    "NotificationWebhookResolver",
     "RenderedEmail",
     "ResendTransport",
     "SlackChannel",

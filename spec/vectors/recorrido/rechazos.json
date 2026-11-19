@@ -151,6 +151,7 @@
      "created_at_ms": 4000,
      "read_at_ms": null
     },
+    "copies": [],
     "attempted": [],
     "deliveries": {}
    }

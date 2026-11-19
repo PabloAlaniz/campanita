@@ -90,6 +90,9 @@ class EmailTransport(Protocol):
 #: integra: campanita no guarda direcciones. Puede ser una función común o `async`.
 AddressResolver = Callable[[str], "str | Awaitable[str | None] | None"]
 
+#: Lo mismo, a partir del aviso entero: sirve para elegir la dirección según el ámbito.
+NotificationAddressResolver = Callable[[Notification], "str | Awaitable[str | None] | None"]
+
 
 class EmailChannel:
     """Avisa por email. Cumple `campanita.ports.DeliveryChannel`."""
@@ -99,11 +102,14 @@ class EmailChannel:
         *,
         transport: EmailTransport,
         sender: str,
-        resolve_address: AddressResolver,
+        resolve_address: AddressResolver | None = None,
+        resolve_address_for: NotificationAddressResolver | None = None,
         sender_name: str | None = None,
         render: Callable[[Notification], RenderedEmail] = render_email,
         id: str = "email",
     ) -> None:
+        if (resolve_address is None) == (resolve_address_for is None):
+            raise TypeError("pasá `resolve_address` o `resolve_address_for`, uno de los dos")
         if not is_valid_address(sender):
             raise ValueError("`sender` no es una dirección válida")
         if sender_name is not None and (
@@ -116,12 +122,14 @@ class EmailChannel:
         self._transport = transport
         self._sender = sender
         self._sender_name = sender_name
-        self._resolve_address = resolve_address
+        self._resolve: NotificationAddressResolver = (
+            resolve_address_for if resolve_address_for is not None else _by_recipient(resolve_address)  # type: ignore[arg-type]
+        )
         self._render = render
 
     async def send(self, notification: Notification) -> DeliveryResult:
         try:
-            found = self._resolve_address(notification.recipient_id)
+            found = self._resolve(notification)
             address = await found if inspect.isawaitable(found) else found
         except Exception as error:
             return DeliveryResult("failed", error=f"no se pudo buscar la dirección: {type(error).__name__}")
@@ -146,3 +154,7 @@ class EmailChannel:
             return await self._transport.send(message)
         except Exception as error:
             return DeliveryResult("failed", error=f"{type(error).__name__}: {error}")
+
+
+def _by_recipient(resolve: AddressResolver) -> NotificationAddressResolver:
+    return lambda notification: resolve(notification.recipient_id)

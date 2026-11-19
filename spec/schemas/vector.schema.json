@@ -1156,6 +1156,7 @@
                             "required": [
                               "created",
                               "notification",
+                              "copies",
                               "attempted",
                               "deliveries"
                             ],
@@ -1166,6 +1167,25 @@
                               },
                               "notification": {
                                 "$ref": "#/definitions/notification"
+                              },
+                              "copies": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "created",
+                                    "notification"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "created": {
+                                      "type": "boolean"
+                                    },
+                                    "notification": {
+                                      "$ref": "#/definitions/notification"
+                                    }
+                                  }
+                                }
                               },
                               "attempted": {
                                 "type": "array",
@@ -1193,6 +1213,9 @@
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 1439
+                      },
+                      "members": {
+                        "description": "La lista de miembros que recibe el recorrido. Puede ser inválida a propósito."
                       }
                     }
                   }

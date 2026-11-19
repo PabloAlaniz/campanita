@@ -424,6 +424,85 @@
     }
    },
    "valid": false
+  },
+  {
+   "note": "audiencia de persona",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "audience": "person"
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "audiencia de grupo",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "audience": "group"
+    }
+   },
+   "valid": true
+  },
+  {
+   "note": "audiencia desconocida",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "audience": "team"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "audiencia con mayúscula",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "audience": "Group"
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "audiencia vacía",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "audience": ""
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "la audiencia es nula",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "audience": null
+    }
+   },
+   "valid": false
+  },
+  {
+   "note": "la audiencia no es texto",
+   "catalog": {
+    "a": {
+     "category": "activity",
+     "title": "Hola",
+     "audience": [
+      "group"
+     ]
+    }
+   },
+   "valid": false
   }
  ]
 }

@@ -1,0 +1,797 @@
+{
+ "spec": "0",
+ "id": "recorrido/grupos",
+ "kind": "recorrido",
+ "policy": {
+  "security": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "sms": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": true
+   },
+   "sms": {
+    "default": false
+   }
+  },
+  "digest": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   }
+  },
+  "quiet": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "catalog": {
+  "login.new": {
+   "category": "security",
+   "title": "Nuevo inicio de sesión desde {device}"
+  },
+  "comment.new": {
+   "category": "activity",
+   "title": "{author} comentó",
+   "body": "{excerpt}"
+  },
+  "digest.weekly": {
+   "category": "digest",
+   "title": "Tu resumen de la semana"
+  },
+  "note.saved": {
+   "category": "quiet",
+   "title": "Nota guardada"
+  },
+  "report.ready": {
+   "category": "digest",
+   "title": "Informe listo: {name}",
+   "audience": "group"
+  },
+  "report.mine": {
+   "category": "digest",
+   "title": "Tu informe está listo: {name}",
+   "audience": "person"
+  }
+ },
+ "channels": [
+  "email",
+  "push",
+  "sms"
+ ],
+ "steps": [
+  {
+   "note": "un aviso de grupo sale una vez, por los canales del grupo, y deja una copia a cada miembro",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "equipo-1",
+     "type": "report.ready",
+     "category": "digest",
+     "title": "Informe listo: Marzo",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "name": "Marzo"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    },
+    "copies": [
+     {
+      "created": true,
+      "notification": {
+       "id": "c-ana",
+       "recipient_id": "ana",
+       "type": "report.ready",
+       "category": "digest",
+       "title": "Informe listo: Marzo",
+       "body": null,
+       "action_url": null,
+       "payload": {
+        "name": "Marzo"
+       },
+       "scope": null,
+       "dedupe_key": null,
+       "created_at_ms": 1000,
+       "read_at_ms": null
+      }
+     },
+     {
+      "created": true,
+      "notification": {
+       "id": "c-beto",
+       "recipient_id": "beto",
+       "type": "report.ready",
+       "category": "digest",
+       "title": "Informe listo: Marzo",
+       "body": null,
+       "action_url": null,
+       "payload": {
+        "name": "Marzo"
+       },
+       "scope": null,
+       "dedupe_key": null,
+       "created_at_ms": 1000,
+       "read_at_ms": null
+      }
+     }
+    ],
+    "attempted": [
+     "email"
+    ],
+    "deliveries": {
+     "email": "sent"
+    }
+   },
+   "members": [
+    {
+     "recipient_id": "ana",
+     "id": "c-ana"
+    },
+    {
+     "recipient_id": "beto",
+     "id": "c-beto"
+    }
+   ]
+  },
+  {
+   "note": "ana apaga el email de los resúmenes",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "digest",
+     "channel": "email",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "las preferencias de los miembros no cambian lo que sale para el grupo",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n2",
+     "recipient_id": "equipo-1",
+     "type": "report.ready",
+     "category": "digest",
+     "title": "Informe listo: Marzo",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "name": "Marzo"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 2000,
+     "read_at_ms": null
+    },
+    "copies": [
+     {
+      "created": true,
+      "notification": {
+       "id": "c2-ana",
+       "recipient_id": "ana",
+       "type": "report.ready",
+       "category": "digest",
+       "title": "Informe listo: Marzo",
+       "body": null,
+       "action_url": null,
+       "payload": {
+        "name": "Marzo"
+       },
+       "scope": null,
+       "dedupe_key": null,
+       "created_at_ms": 2000,
+       "read_at_ms": null
+      }
+     }
+    ],
+    "attempted": [
+     "email"
+    ],
+    "deliveries": {
+     "email": "sent"
+    }
+   },
+   "members": [
+    {
+     "recipient_id": "ana",
+     "id": "c2-ana"
+    }
+   ]
+  },
+  {
+   "note": "el grupo apaga el email de los resúmenes",
+   "op": "save",
+   "recipient_id": "equipo-1",
+   "scope": null,
+   "changes": [
+    {
+     "category": "digest",
+     "channel": "email",
+     "enabled": false
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "las del grupo sí",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "equipo-1",
+     "type": "report.ready",
+     "category": "digest",
+     "title": "Informe listo: Marzo",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "name": "Marzo"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    },
+    "copies": [
+     {
+      "created": true,
+      "notification": {
+       "id": "c3-beto",
+       "recipient_id": "beto",
+       "type": "report.ready",
+       "category": "digest",
+       "title": "Informe listo: Marzo",
+       "body": null,
+       "action_url": null,
+       "payload": {
+        "name": "Marzo"
+       },
+       "scope": null,
+       "dedupe_key": null,
+       "created_at_ms": 3000,
+       "read_at_ms": null
+      }
+     }
+    ],
+    "attempted": [],
+    "deliveries": {}
+   },
+   "members": [
+    {
+     "recipient_id": "beto",
+     "id": "c3-beto"
+    }
+   ]
+  },
+  {
+   "note": "en el ámbito p2 el grupo quiere sms",
+   "op": "save",
+   "recipient_id": "equipo-1",
+   "scope": "p2",
+   "changes": [
+    {
+     "category": "digest",
+     "channel": "email",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "el ámbito del aviso elige las preferencias del grupo",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    },
+    "scope": "p2"
+   },
+   "id": "n4",
+   "at_ms": 4000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "equipo-1",
+     "type": "report.ready",
+     "category": "digest",
+     "title": "Informe listo: Marzo",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "name": "Marzo"
+     },
+     "scope": "p2",
+     "dedupe_key": null,
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    },
+    "copies": [
+     {
+      "created": true,
+      "notification": {
+       "id": "c4-ana",
+       "recipient_id": "ana",
+       "type": "report.ready",
+       "category": "digest",
+       "title": "Informe listo: Marzo",
+       "body": null,
+       "action_url": null,
+       "payload": {
+        "name": "Marzo"
+       },
+       "scope": "p2",
+       "dedupe_key": null,
+       "created_at_ms": 4000,
+       "read_at_ms": null
+      }
+     }
+    ],
+    "attempted": [
+     "email"
+    ],
+    "deliveries": {
+     "email": "sent"
+    }
+   },
+   "members": [
+    {
+     "recipient_id": "ana",
+     "id": "c4-ana"
+    }
+   ]
+  },
+  {
+   "note": "sin miembros, sólo el grupo",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "n5",
+   "at_ms": 5000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n5",
+     "recipient_id": "equipo-1",
+     "type": "report.ready",
+     "category": "digest",
+     "title": "Informe listo: Marzo",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "name": "Marzo"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 5000,
+     "read_at_ms": null
+    },
+    "copies": [],
+    "attempted": [],
+    "deliveries": {}
+   }
+  },
+  {
+   "note": "con la lista vacía, igual",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    }
+   },
+   "id": "n6",
+   "at_ms": 6000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n6",
+     "recipient_id": "equipo-1",
+     "type": "report.ready",
+     "category": "digest",
+     "title": "Informe listo: Marzo",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "name": "Marzo"
+     },
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 6000,
+     "read_at_ms": null
+    },
+    "copies": [],
+    "attempted": [],
+    "deliveries": {}
+   },
+   "members": []
+  },
+  {
+   "note": "el grupo tiene horario de no molestar",
+   "op": "quiet",
+   "recipient_id": "equipo-1",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "expect": null
+  },
+  {
+   "note": "el horario del grupo silencia lo que sale para el grupo; las copias se guardan igual",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    },
+    "scope": "p2"
+   },
+   "id": "n7",
+   "at_ms": 7000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n7",
+     "recipient_id": "equipo-1",
+     "type": "report.ready",
+     "category": "digest",
+     "title": "Informe listo: Marzo",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "name": "Marzo"
+     },
+     "scope": "p2",
+     "dedupe_key": null,
+     "created_at_ms": 7000,
+     "read_at_ms": null
+    },
+    "copies": [
+     {
+      "created": true,
+      "notification": {
+       "id": "c7-ana",
+       "recipient_id": "ana",
+       "type": "report.ready",
+       "category": "digest",
+       "title": "Informe listo: Marzo",
+       "body": null,
+       "action_url": null,
+       "payload": {
+        "name": "Marzo"
+       },
+       "scope": "p2",
+       "dedupe_key": null,
+       "created_at_ms": 7000,
+       "read_at_ms": null
+      }
+     }
+    ],
+    "attempted": [],
+    "deliveries": {
+     "email": "silenced"
+    }
+   },
+   "local_minute": 1380,
+   "members": [
+    {
+     "recipient_id": "ana",
+     "id": "c7-ana"
+    }
+   ]
+  },
+  {
+   "note": "con clave, el grupo y cada miembro la guardan",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    },
+    "dedupe_key": "informe-marzo"
+   },
+   "id": "n8",
+   "at_ms": 8000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n8",
+     "recipient_id": "equipo-1",
+     "type": "report.ready",
+     "category": "digest",
+     "title": "Informe listo: Marzo",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "name": "Marzo"
+     },
+     "scope": null,
+     "dedupe_key": "informe-marzo",
+     "created_at_ms": 8000,
+     "read_at_ms": null
+    },
+    "copies": [
+     {
+      "created": true,
+      "notification": {
+       "id": "c8-ana",
+       "recipient_id": "ana",
+       "type": "report.ready",
+       "category": "digest",
+       "title": "Informe listo: Marzo",
+       "body": null,
+       "action_url": null,
+       "payload": {
+        "name": "Marzo"
+       },
+       "scope": null,
+       "dedupe_key": "informe-marzo",
+       "created_at_ms": 8000,
+       "read_at_ms": null
+      }
+     }
+    ],
+    "attempted": [],
+    "deliveries": {}
+   },
+   "members": [
+    {
+     "recipient_id": "ana",
+     "id": "c8-ana"
+    }
+   ]
+  },
+  {
+   "note": "el repetido del grupo no hace copias ni entrega",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Marzo"
+    },
+    "dedupe_key": "informe-marzo"
+   },
+   "id": "n9",
+   "at_ms": 9000,
+   "outcomes": {},
+   "expect": {
+    "created": false,
+    "notification": {
+     "id": "n8",
+     "recipient_id": "equipo-1",
+     "type": "report.ready",
+     "category": "digest",
+     "title": "Informe listo: Marzo",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "name": "Marzo"
+     },
+     "scope": null,
+     "dedupe_key": "informe-marzo",
+     "created_at_ms": 8000,
+     "read_at_ms": null
+    },
+    "copies": [],
+    "attempted": [],
+    "deliveries": {}
+   },
+   "members": [
+    {
+     "recipient_id": "beto",
+     "id": "c9-beto"
+    }
+   ]
+  },
+  {
+   "note": "beto ya tenía un aviso suyo con la misma clave",
+   "op": "notify",
+   "event": {
+    "type": "report.mine",
+    "recipient_id": "beto",
+    "payload": {
+     "name": "Abril"
+    },
+    "dedupe_key": "informe-abril"
+   },
+   "id": "n10",
+   "at_ms": 10000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n10",
+     "recipient_id": "beto",
+     "type": "report.mine",
+     "category": "digest",
+     "title": "Tu informe está listo: Abril",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "name": "Abril"
+     },
+     "scope": null,
+     "dedupe_key": "informe-abril",
+     "created_at_ms": 10000,
+     "read_at_ms": null
+    },
+    "copies": [],
+    "attempted": [
+     "email"
+    ],
+    "deliveries": {
+     "email": "sent"
+    }
+   }
+  },
+  {
+   "note": "su copia no se crea y se informa como no creada; la de ana sí",
+   "op": "notify",
+   "event": {
+    "type": "report.ready",
+    "recipient_id": "equipo-1",
+    "payload": {
+     "name": "Abril"
+    },
+    "dedupe_key": "informe-abril"
+   },
+   "id": "n11",
+   "at_ms": 11000,
+   "outcomes": {},
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n11",
+     "recipient_id": "equipo-1",
+     "type": "report.ready",
+     "category": "digest",
+     "title": "Informe listo: Abril",
+     "body": null,
+     "action_url": null,
+     "payload": {
+      "name": "Abril"
+     },
+     "scope": null,
+     "dedupe_key": "informe-abril",
+     "created_at_ms": 11000,
+     "read_at_ms": null
+    },
+    "copies": [
+     {
+      "created": false,
+      "notification": {
+       "id": "n10",
+       "recipient_id": "beto",
+       "type": "report.mine",
+       "category": "digest",
+       "title": "Tu informe está listo: Abril",
+       "body": null,
+       "action_url": null,
+       "payload": {
+        "name": "Abril"
+       },
+       "scope": null,
+       "dedupe_key": "informe-abril",
+       "created_at_ms": 10000,
+       "read_at_ms": null
+      }
+     },
+     {
+      "created": true,
+      "notification": {
+       "id": "c11-ana",
+       "recipient_id": "ana",
+       "type": "report.ready",
+       "category": "digest",
+       "title": "Informe listo: Abril",
+       "body": null,
+       "action_url": null,
+       "payload": {
+        "name": "Abril"
+       },
+       "scope": null,
+       "dedupe_key": "informe-abril",
+       "created_at_ms": 11000,
+       "read_at_ms": null
+      }
+     }
+    ],
+    "attempted": [],
+    "deliveries": {}
+   },
+   "members": [
+    {
+     "recipient_id": "beto",
+     "id": "c11-beto"
+    },
+    {
+     "recipient_id": "ana",
+     "id": "c11-ana"
+    }
+   ]
+  }
+ ]
+}

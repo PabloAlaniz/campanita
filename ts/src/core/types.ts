@@ -139,11 +139,19 @@ export class EventRejectedError extends Error {
   }
 }
 
-/** Un tipo de aviso: a qué categoría pertenece y cómo se redacta. */
+/**
+ * A quién le habla un tipo de aviso. `person`, a una persona. `group`, a un
+ * grupo: sale una sola vez, por los canales del grupo, y a los miembros les
+ * queda una copia en la bandeja.
+ */
+export type Audience = 'person' | 'group';
+
+/** Un tipo de aviso: a qué categoría pertenece, a quién le habla y cómo se redacta. */
 export interface TypeSpec {
   readonly category: string;
   readonly title: string;
   readonly body: string | null;
+  readonly audience: Audience;
 }
 
 /**

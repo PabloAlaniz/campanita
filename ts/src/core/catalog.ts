@@ -18,7 +18,7 @@ import {
 
 const TYPE_ID = /^[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)*$/;
 const MAX_TYPE_ID = 128;
-const ENTRY_KEYS = new Set(['category', 'title', 'body']);
+const ENTRY_KEYS = new Set(['category', 'title', 'body', 'audience']);
 const OPTIONAL_TEXT = ['action_url', 'scope', 'dedupe_key'] as const;
 const EVENT_KEYS = new Set<string>(['type', 'recipient_id', 'payload', ...OPTIONAL_TEXT]);
 /**
@@ -82,7 +82,12 @@ export function parseCatalog(raw: unknown, policy: Policy): Catalog {
       throw new InvalidCatalogError(`${typeId}: \`title\` no puede ser vacío`);
     }
 
-    types[typeId] = Object.freeze({ category, title: title as string, body: body as string | null });
+    const audience = Object.hasOwn(entry, 'audience') ? entry['audience'] : 'person';
+    if (audience !== 'person' && audience !== 'group') {
+      throw new InvalidCatalogError(`${typeId}: \`audience\` tiene que ser \`person\` o \`group\``);
+    }
+
+    types[typeId] = Object.freeze({ category, title: title as string, body: body as string | null, audience });
     parsed.set(typeId, { title: titleParts, body: bodyParts });
   }
 

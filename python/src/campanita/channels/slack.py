@@ -96,6 +96,10 @@ def render_slack(notification: Notification) -> dict[str, Any]:
 #: escribe quien integra: campanita no guarda conexiones. Puede ser `async`.
 WebhookResolver = Callable[[str], "str | Awaitable[str | None] | None"]
 
+#: Lo mismo, a partir del aviso entero: sirve para elegir el destino según el
+#: ámbito, cuando una persona o un grupo tiene un canal distinto en cada uno.
+NotificationWebhookResolver = Callable[[Notification], "str | Awaitable[str | None] | None"]
+
 
 class SlackChannel:
     """Avisa en el canal de Slack que conectó cada persona.
@@ -115,21 +119,26 @@ class SlackChannel:
     def __init__(
         self,
         *,
-        resolve_webhook: WebhookResolver,
+        resolve_webhook: WebhookResolver | None = None,
+        resolve_webhook_for: NotificationWebhookResolver | None = None,
         render: Callable[[Notification], Mapping[str, Any]] = render_slack,
         id: str = "slack",
         timeout: float = 10.0,
         post: HttpPost = http_post,
     ) -> None:
+        if (resolve_webhook is None) == (resolve_webhook_for is None):
+            raise TypeError("pasá `resolve_webhook` o `resolve_webhook_for`, uno de los dos")
         self.id = id
-        self._resolve_webhook = resolve_webhook
+        self._resolve: NotificationWebhookResolver = (
+            resolve_webhook_for if resolve_webhook_for is not None else _by_recipient(resolve_webhook)  # type: ignore[arg-type]
+        )
         self._render = render
         self._timeout = timeout
         self._post = post
 
     async def send(self, notification: Notification) -> DeliveryResult:
         try:
-            found = self._resolve_webhook(notification.recipient_id)
+            found = self._resolve(notification)
             url = await found if inspect.isawaitable(found) else found
         except Exception as error:
             return DeliveryResult(
@@ -277,3 +286,7 @@ async def exchange_slack_code(
     except Exception:
         raise SlackOAuthError("invalid_response") from None
     return parse_slack_oauth_response(parsed)
+
+
+def _by_recipient(resolve: WebhookResolver) -> NotificationWebhookResolver:
+    return lambda notification: resolve(notification.recipient_id)

@@ -149,6 +149,30 @@ def test_la_direccion_se_puede_buscar_con_una_funcion_async() -> None:
     assert transport.sent[0].to == "ana@example.com"
 
 
+def test_con_resolve_address_for_la_direccion_sale_del_aviso_entero() -> None:
+    transport = Recorder()
+    made = EmailChannel(
+        transport=transport,
+        sender="avisos@example.com",
+        resolve_address_for=lambda n: f"{n.recipient_id}+{n.scope}@example.com" if n.scope else None,
+    )
+    assert asyncio.run(made.send(notification(scope="p1"))).outcome == "sent"
+    assert transport.sent[0].to == "ana+p1@example.com"
+    assert asyncio.run(made.send(notification())).outcome == "skipped"
+
+
+def test_pide_una_sola_forma_de_buscar_la_direccion() -> None:
+    with pytest.raises(TypeError):
+        EmailChannel(transport=Recorder(), sender="avisos@example.com")
+    with pytest.raises(TypeError):
+        EmailChannel(
+            transport=Recorder(),
+            sender="avisos@example.com",
+            resolve_address=lambda _: None,
+            resolve_address_for=lambda _: None,
+        )
+
+
 def test_si_buscar_la_direccion_falla_es_una_entrega_fallida() -> None:
     def lookup(recipient_id: str) -> str:
         raise ConnectionError("clave=secreta")
