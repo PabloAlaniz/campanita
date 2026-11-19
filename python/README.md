@@ -169,10 +169,13 @@ grupo y a sus destinos (un canal de Slack compartido, por ejemplo). A cada miemb
 copia en su bandeja, que no se entrega por ningún canal.
 
 ```python
-catalog = parse_catalog({
-    "report.ready": {"category": "reports", "title": "Informe listo: {name}", "audience": "group"},
-    "report.mine": {"category": "reports", "title": "Tu informe está listo: {name}"},  # "person"
-}, policy)
+catalog = parse_catalog(
+    {
+        "report.ready": {"category": "reports", "title": "Informe listo: {name}", "audience": "group"},
+        "report.mine": {"category": "reports", "title": "Tu informe está listo: {name}"},  # "person"
+    },
+    policy,
+)
 
 await notifier.notify(
     {"type": "report.ready", "recipient_id": "team-3", "scope": "project-9", "payload": {"name": "Marzo"}},
