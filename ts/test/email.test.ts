@@ -283,6 +283,59 @@ describe('transporte HTTP', () => {
     expect(await transport.send(MESSAGE)).toEqual({ outcome: 'sent' });
   });
 
+  describe('el resultado en el cuerpo de un 2xx', () => {
+    type Reply = { ok: boolean; id?: string; code?: string };
+    const readResult = (response: unknown): DeliveryResult => {
+      const reply = response as Reply;
+      if (reply.ok) return { outcome: 'sent', providerMessageId: reply.id ?? null };
+      if (reply.code === 'blocked') return { outcome: 'skipped', error: reply.code };
+      return { outcome: 'failed', error: reply.code ?? null };
+    };
+    const send = (response: Response, read = readResult): Promise<DeliveryResult> =>
+      new HttpEmailTransport('https://mail.example.com', {
+        readResult: read,
+        readId: () => 'no-se-usa',
+        fetch: fakeFetch(() => response).fetch,
+      }).send(MESSAGE);
+
+    it('enviado, con el identificador', async () => {
+      expect(await send(json({ ok: true, id: 'm1' }))).toEqual({ outcome: 'sent', providerMessageId: 'm1' });
+    });
+
+    it('fallido aunque el código sea 200', async () => {
+      expect(await send(json({ ok: false, code: 'limit' }))).toEqual({ outcome: 'failed', error: 'limit' });
+    });
+
+    it('salteado', async () => {
+      expect(await send(json({ ok: false, code: 'blocked' }))).toEqual({ outcome: 'skipped', error: 'blocked' });
+    });
+
+    it('un cuerpo que no es JSON es una entrega fallida', async () => {
+      expect(await send(new Response('ok', { status: 200 }))).toEqual({
+        outcome: 'failed',
+        error: 'respuesta ilegible',
+      });
+    });
+
+    it('una función que lanza es una entrega fallida, sin el mensaje del error', async () => {
+      const result = await send(json({ ok: true }), () => {
+        throw new Error('k-secreta');
+      });
+      expect(result).toEqual({ outcome: 'failed', error: 'respuesta ilegible' });
+    });
+
+    it('sólo vale sent, failed o skipped', async () => {
+      for (const outcome of ['silenced', 'expired', 'otro']) {
+        const result = await send(json({}), () => ({ outcome }) as unknown as DeliveryResult);
+        expect(result).toEqual({ outcome: 'failed', error: 'respuesta ilegible' });
+      }
+    });
+
+    it('un no-2xx sigue siendo fallido sin leer el cuerpo', async () => {
+      expect(await send(json({ ok: true, id: 'm1' }, 500))).toEqual({ outcome: 'failed', error: 'HTTP 500' });
+    });
+  });
+
   it('un error de red es una entrega fallida, sin el mensaje del error', async () => {
     const fake = fakeFetch(() => {
       throw new TypeError('fetch failed: https://usuario:clave@mail.example.com');

@@ -25,6 +25,14 @@ export interface HttpEmailTransportOptions {
   readonly buildHeaders?: (message: EmailMessage) => Readonly<Record<string, string>>;
   /** De la respuesta JSON al identificador del mensaje. */
   readonly readId?: (response: unknown) => unknown;
+  /**
+   * De la respuesta JSON de un 2xx al resultado de la entrega. Para servicios
+   * que contestan 2xx también cuando no mandaron el mensaje y lo dicen en el
+   * cuerpo. Sólo vale `sent`, `failed` o `skipped`; un cuerpo que no es JSON,
+   * una función que lanza o cualquier otro resultado es `failed`. Si está,
+   * `readId` no se usa.
+   */
+  readonly readResult?: (response: unknown) => DeliveryResult;
   /** En milisegundos. Por omisión, 10 000. */
   readonly timeoutMs?: number;
   /** Por omisión, el `fetch` global. */
@@ -37,7 +45,9 @@ export interface HttpEmailTransportOptions {
  * Sirve para cualquier servicio con una API HTTP: se le dice la URL, las
  * cabeceras y, si el servicio espera otra forma, cómo armar el cuerpo.
  *
- * Una respuesta 2xx es `sent`; cualquier otra cosa, `failed`.
+ * Una respuesta 2xx es `sent`; cualquier otra cosa, `failed`. Si el servicio
+ * contesta 2xx también cuando no mandó el mensaje, `readResult` lee el
+ * resultado del cuerpo.
  */
 export class HttpEmailTransport implements EmailTransport {
   readonly #url: string;
@@ -58,7 +68,7 @@ export class HttpEmailTransport implements EmailTransport {
   }
 
   async send(message: EmailMessage): Promise<DeliveryResult> {
-    const { headers, buildBody, buildHeaders, readId, timeoutMs } = this.#options;
+    const { headers, buildBody, buildHeaders, readId, readResult, timeoutMs } = this.#options;
     let response: Response;
     try {
       response = await (this.#options.fetch ?? fetch)(this.#url, {
@@ -78,6 +88,7 @@ export class HttpEmailTransport implements EmailTransport {
       // Sólo el código: el cuerpo del error es del servicio y puede repetir datos del pedido.
       return { outcome: 'failed', error: `HTTP ${response.status}` };
     }
+    if (readResult !== undefined) return interpret(response, readResult);
     if (readId === undefined) return { outcome: 'sent' };
     let id: unknown;
     try {
@@ -87,6 +98,25 @@ export class HttpEmailTransport implements EmailTransport {
     }
     return typeof id === 'string' ? { outcome: 'sent', providerMessageId: id } : { outcome: 'sent' };
   }
+}
+
+const READABLE_OUTCOMES: ReadonlySet<string> = new Set(['sent', 'failed', 'skipped']);
+
+/** El resultado que dice el cuerpo, sin repetir el cuerpo si no se entiende. */
+async function interpret(
+  response: Response,
+  readResult: (response: unknown) => DeliveryResult,
+): Promise<DeliveryResult> {
+  let result: DeliveryResult;
+  try {
+    result = readResult(await response.json());
+  } catch {
+    return { outcome: 'failed', error: 'respuesta ilegible' };
+  }
+  if (typeof result !== 'object' || result === null || !READABLE_OUTCOMES.has(result.outcome)) {
+    return { outcome: 'failed', error: 'respuesta ilegible' };
+  }
+  return result;
 }
 
 /**

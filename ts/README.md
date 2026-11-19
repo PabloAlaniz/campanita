@@ -211,6 +211,19 @@ new HttpEmailTransport('https://mail.example.com/v1/send', {
   headers: { 'X-Api-Key': '…' },
   buildBody: (m) => ({ to: m.to, subject: m.subject, body: m.text }),
 });
+
+// Un servicio que contesta 200 también cuando no mandó el mensaje, y lo dice en el cuerpo:
+new HttpEmailTransport('https://mail.example.com/v1/send', {
+  headers: { 'X-Api-Key': '…' },
+  // El identificador del aviso, para que un reintento no mande el mensaje dos veces.
+  buildBody: (m) => ({ to: m.to, subject: m.subject, body: m.text, idempotency_key: m.idempotencyKey }),
+  readResult: (r) => {
+    const reply = r as { ok: boolean; id?: string; code?: string };
+    if (reply.ok) return { outcome: 'sent', providerMessageId: reply.id ?? null };
+    if (reply.code === 'unsubscribed') return { outcome: 'skipped', error: reply.code };
+    return { outcome: 'failed', error: reply.code ?? null };
+  },
+});
 ```
 
 - **Sin dirección no es una falla.** Si la persona no tiene dirección, o no es válida, la entrega
@@ -219,6 +232,8 @@ new HttpEmailTransport('https://mail.example.com/v1/send', {
   cambia con `render`; el asunto nunca sale con saltos de línea.
 - **Los transportes usan `fetch`**, así que corren donde corra el paquete. No siguen
   redirecciones y no repiten credenciales en los errores. Se les puede pasar otro `fetch`.
+- **Un 2xx es `sent`**, salvo que se pase `readResult`: entonces el resultado lo dice el cuerpo
+  (`sent`, `failed` o `skipped`). Un cuerpo que no se entiende es `failed`.
 - **SMTP todavía no está en TypeScript**; sí en el paquete de Python.
 
 Los transportes están probados con un `fetch` de prueba. Ninguno se probó contra un proveedor

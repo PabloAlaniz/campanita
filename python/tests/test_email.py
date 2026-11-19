@@ -566,6 +566,43 @@ def test_http_una_respuesta_que_no_es_json_igual_es_enviado() -> None:
     assert result == DeliveryResult("sent")
 
 
+def _read_reply(response: Any) -> DeliveryResult:
+    if response["ok"]:
+        return DeliveryResult("sent", provider_message_id=response.get("id"))
+    if response.get("code") == "blocked":
+        return DeliveryResult("skipped", error="blocked")
+    return DeliveryResult("failed", error=response.get("code"))
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        (b'{"ok": true, "id": "m1"}', DeliveryResult("sent", provider_message_id="m1")),
+        (b'{"ok": false, "code": "limit"}', DeliveryResult("failed", error="limit")),
+        (b'{"ok": false, "code": "blocked"}', DeliveryResult("skipped", error="blocked")),
+        (b"ok", DeliveryResult("failed", error="respuesta ilegible")),
+        (b"{}", DeliveryResult("failed", error="respuesta ilegible")),
+    ],
+)
+def test_http_el_resultado_en_el_cuerpo_de_un_2xx(body: bytes, expected: DeliveryResult) -> None:
+    with http_server(body=body) as server:
+        transport = HttpEmailTransport(server.url, read_result=_read_reply, read_id=lambda r: "no-se-usa")
+        assert asyncio.run(transport.send(MESSAGE)) == expected
+
+
+@pytest.mark.parametrize("outcome", ["silenced", "expired", "otro"])
+def test_http_el_resultado_del_cuerpo_solo_vale_sent_failed_o_skipped(outcome: str) -> None:
+    with http_server(body=b"{}") as server:
+        transport = HttpEmailTransport(server.url, read_result=lambda r: DeliveryResult(outcome))  # type: ignore[arg-type]
+        assert asyncio.run(transport.send(MESSAGE)) == DeliveryResult("failed", error="respuesta ilegible")
+
+
+def test_http_con_read_result_un_no_2xx_sigue_siendo_fallido() -> None:
+    with http_server(status=500, body=b'{"ok": true}') as server:
+        transport = HttpEmailTransport(server.url, read_result=_read_reply)
+        assert asyncio.run(transport.send(MESSAGE)) == DeliveryResult("failed", error="HTTP 500")
+
+
 @pytest.mark.parametrize("status", [301, 302, 303, 307, 308])
 def test_http_no_sigue_redirecciones_para_no_reenviar_las_credenciales(status: int) -> None:
     with http_server() as other, http_server(status=status, location="") as server:
