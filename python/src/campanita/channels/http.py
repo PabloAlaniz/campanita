@@ -27,6 +27,9 @@ def default_body(message: EmailMessage) -> dict[str, Any]:
     return body
 
 
+_READABLE_OUTCOMES = frozenset({"sent", "failed", "skipped"})
+
+
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     """Una redirección se informa como error en vez de seguirse: seguirla
     reenviaría las cabeceras, con sus credenciales, a otro servidor."""
@@ -45,6 +48,11 @@ class HttpEmailTransport:
     - `build_body(mensaje)`: el JSON a mandar. Por omisión, `default_body`.
     - `build_headers(mensaje)`: cabeceras que dependen del mensaje.
     - `read_id(respuesta)`: de la respuesta JSON al identificador del mensaje.
+    - `read_result(respuesta)`: de la respuesta JSON de un 2xx al resultado de
+      la entrega, para servicios que contestan 2xx también cuando no mandaron
+      el mensaje. Sólo vale `sent`, `failed` o `skipped`; un cuerpo que no es
+      JSON, una función que lanza o cualquier otro resultado es `failed`. Si
+      está, `read_id` no se usa.
 
     Una respuesta 2xx es `sent`; cualquier otra cosa, `failed`.
     """
@@ -57,6 +65,7 @@ class HttpEmailTransport:
         build_body: Callable[[EmailMessage], Mapping[str, Any]] = default_body,
         build_headers: Callable[[EmailMessage], Mapping[str, str]] | None = None,
         read_id: Callable[[Any], str | None] | None = None,
+        read_result: Callable[[Any], DeliveryResult] | None = None,
         timeout: float = 10.0,
     ) -> None:
         parts = urlsplit(url)
@@ -67,6 +76,7 @@ class HttpEmailTransport:
         self._build_body = build_body
         self._build_headers = build_headers
         self._read_id = read_id
+        self._read_result = read_result
         self._timeout = timeout
         self._opener = urllib.request.build_opener(_NoRedirect)
 
@@ -86,7 +96,20 @@ class HttpEmailTransport:
             return DeliveryResult("failed", error=f"HTTP {error.code}")
         except Exception as error:
             return DeliveryResult("failed", error=f"HTTP: {type(error).__name__}")
+        if self._read_result is not None:
+            return self._interpret(raw, self._read_result)
         return DeliveryResult("sent", provider_message_id=self._message_id(raw))
+
+    @staticmethod
+    def _interpret(raw: bytes, read_result: Callable[[Any], DeliveryResult]) -> DeliveryResult:
+        # Sin repetir el cuerpo si no se entiende: es del servicio y puede repetir datos del pedido.
+        try:
+            result = read_result(json.loads(raw))
+        except Exception:
+            return DeliveryResult("failed", error="respuesta ilegible")
+        if not isinstance(result, DeliveryResult) or result.outcome not in _READABLE_OUTCOMES:
+            return DeliveryResult("failed", error="respuesta ilegible")
+        return result
 
     def _message_id(self, raw: bytes) -> str | None:
         if self._read_id is None:

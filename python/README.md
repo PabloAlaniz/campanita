@@ -199,6 +199,7 @@ integra.
 transporte se cambia sin tocar el resto:
 
 ```python
+from campanita.ports import DeliveryResult
 from campanita.channels import EmailChannel, HttpEmailTransport, ResendTransport, SmtpTransport
 
 
@@ -219,6 +220,24 @@ HttpEmailTransport(
     headers={"X-Api-Key": "…"},
     build_body=lambda m: {"to": m.to, "subject": m.subject, "body": m.text},
 )
+
+
+# Un servicio que contesta 200 también cuando no mandó el mensaje, y lo dice en el cuerpo:
+def leer_resultado(r: dict) -> DeliveryResult:
+    if r["ok"]:
+        return DeliveryResult("sent", provider_message_id=r.get("id"))
+    if r.get("code") == "unsubscribed":
+        return DeliveryResult("skipped", error=r["code"])
+    return DeliveryResult("failed", error=r.get("code"))
+
+
+HttpEmailTransport(
+    "https://mail.example.com/v1/send",
+    headers={"X-Api-Key": "…"},
+    # El identificador del aviso, para que un reintento no mande el mensaje dos veces.
+    build_body=lambda m: {"to": m.to, "subject": m.subject, "body": m.text, "idempotency_key": m.idempotency_key},
+    read_result=leer_resultado,
+)
 ```
 
 - **Sin dirección no es una falla.** Si la persona no tiene dirección, o no es válida, la entrega
@@ -228,6 +247,8 @@ HttpEmailTransport(
 - **`SmtpTransport`** usa `starttls` por omisión (`security="tls"` para TLS directo), verifica el
   certificado y corre en un hilo aparte. No manda la contraseña por una conexión sin cifrar.
 - **Los transportes HTTP** no siguen redirecciones y no repiten credenciales en los errores.
+- **Un 2xx es `sent`**, salvo que se pase `read_result=`: entonces el resultado lo dice el cuerpo
+  (`sent`, `failed` o `skipped`). Un cuerpo que no se entiende es `failed`.
 
 Los transportes están probados contra servidores de prueba locales, incluido SMTP con TLS.
 Ninguno se probó contra un proveedor real: conviene hacer un envío de prueba antes de confiar en

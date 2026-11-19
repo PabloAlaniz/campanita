@@ -101,7 +101,9 @@ es un puerto más chico: `send(mensaje)`.
 
 - El **HTTP genérico** sirve para cualquier servicio de email con una API: se le pasa la URL, las
   cabeceras y, si el servicio espera otra forma, cómo armar el cuerpo. Es la forma de conectar un
-  servicio propio sin escribir un transporte.
+  servicio propio sin escribir un transporte. Si el servicio contesta 2xx también cuando no mandó
+  el mensaje, `readResult` (`read_result=`) lee el resultado del cuerpo: `sent`, `failed` o
+  `skipped`.
 - El mensaje por omisión y la validez de una dirección están en la sección "Email" del spec y en
   [`spec/vectors/email/`](../spec/vectors/email). El envío en sí es de cada transporte.
 
