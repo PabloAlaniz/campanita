@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/PabloAlaniz/campanita/compare/v0.6.0...v0.7.0) (2026-11-20)
+
+
+### Features
+
+* entregar un aviso ya guardado y canales disponibles por persona ([#10](https://github.com/PabloAlaniz/campanita/issues/10)) ([2abadd1](https://github.com/PabloAlaniz/campanita/commit/2abadd15dbc7c87f75e654f8d08bcae62bb91fe8))
+
 ## [0.6.0](https://github.com/PabloAlaniz/campanita/compare/v0.5.0...v0.6.0) (2026-11-20)
 
 
