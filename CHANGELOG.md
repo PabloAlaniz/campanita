@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/PabloAlaniz/campanita/compare/v0.5.0...v0.6.0) (2026-11-20)
+
+
+### Features
+
+* la bandeja por HTTP, con cliente y hooks para la interfaz ([#8](https://github.com/PabloAlaniz/campanita/issues/8)) ([f9394a0](https://github.com/PabloAlaniz/campanita/commit/f9394a076f38c95241b2a60d7293e5ad51a33f9c))
+
 ## [0.5.0](https://github.com/PabloAlaniz/campanita/compare/v0.4.0...v0.5.0) (2026-11-19)
 
 
