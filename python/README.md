@@ -169,7 +169,11 @@ para cada destinatario y ámbito:
 
 ```python
 notifier = Notifier(
-    policy=policy, catalog=catalog, store=store, preferences=preferences, channels=channels,
+    policy=policy,
+    catalog=catalog,
+    store=store,
+    preferences=preferences,
+    channels=channels,
     available=canales_de,  # (recipient_id, scope) -> canales; puede ser async
 )
 ```
