@@ -1,0 +1,961 @@
+{
+ "spec": "0",
+ "id": "http/preferencias",
+ "kind": "http",
+ "policy": {
+  "security": {
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "push": {
+    "default": true,
+    "locked": true
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "invitations": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "digest": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "available": [
+  "email"
+ ],
+ "steps": [
+  {
+   "note": "sin persona",
+   "op": "request",
+   "as": null,
+   "method": "GET",
+   "path": "/preferences",
+   "query": [],
+   "at_ms": 101000,
+   "expect": {
+    "status": 401,
+    "body": {
+     "error": {
+      "code": "unauthenticated"
+     }
+    }
+   }
+  },
+  {
+   "note": "no se borra",
+   "op": "request",
+   "as": "ana",
+   "method": "DELETE",
+   "path": "/preferences",
+   "query": [],
+   "at_ms": 102000,
+   "expect": {
+    "status": 405,
+    "body": {
+     "error": {
+      "code": "method_not_allowed"
+     }
+    }
+   }
+  },
+  {
+   "note": "la matriz de quien nunca cambió nada",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/preferences",
+   "query": [],
+   "at_ms": 103000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "categories": {
+      "security": {
+       "email": {
+        "enabled": true,
+        "locked": true
+       },
+       "push": {
+        "enabled": true,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "invitations": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "activity": {
+       "email": {
+        "enabled": false,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "digest": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "note": "un cambio",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/preferences",
+   "query": [],
+   "body": {
+    "activity": {
+     "email": true
+    }
+   },
+   "at_ms": 104000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "categories": {
+      "security": {
+       "email": {
+        "enabled": true,
+        "locked": true
+       },
+       "push": {
+        "enabled": true,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "invitations": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "activity": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "digest": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "note": "queda guardado",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/preferences",
+   "query": [],
+   "at_ms": 105000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "categories": {
+      "security": {
+       "email": {
+        "enabled": true,
+        "locked": true
+       },
+       "push": {
+        "enabled": true,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "invitations": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "activity": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "digest": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "note": "los ámbitos no se heredan",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/preferences",
+   "query": [
+    [
+     "scope",
+     "acme"
+    ]
+   ],
+   "at_ms": 106000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "categories": {
+      "security": {
+       "email": {
+        "enabled": true,
+        "locked": true
+       },
+       "push": {
+        "enabled": true,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "invitations": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "activity": {
+       "email": {
+        "enabled": false,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "digest": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "note": "un cambio en un ámbito",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/preferences",
+   "query": [
+    [
+     "scope",
+     "acme"
+    ]
+   ],
+   "body": {
+    "invitations": {
+     "email": false
+    }
+   },
+   "at_ms": 107000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "categories": {
+      "security": {
+       "email": {
+        "enabled": true,
+        "locked": true
+       },
+       "push": {
+        "enabled": true,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "invitations": {
+       "email": {
+        "enabled": false,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "activity": {
+       "email": {
+        "enabled": false,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "digest": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "note": "no toca lo de sin ámbito",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/preferences",
+   "query": [],
+   "at_ms": 108000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "categories": {
+      "security": {
+       "email": {
+        "enabled": true,
+        "locked": true
+       },
+       "push": {
+        "enabled": true,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "invitations": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "activity": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "digest": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "note": "de otra persona, nada",
+   "op": "request",
+   "as": "beto",
+   "method": "GET",
+   "path": "/preferences",
+   "query": [],
+   "at_ms": 109000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "categories": {
+      "security": {
+       "email": {
+        "enabled": true,
+        "locked": true
+       },
+       "push": {
+        "enabled": true,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "invitations": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "activity": {
+       "email": {
+        "enabled": false,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "digest": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "note": "una celda bloqueada",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/preferences",
+   "query": [],
+   "body": {
+    "security": {
+     "email": false
+    }
+   },
+   "at_ms": 110000,
+   "expect": {
+    "status": 422,
+    "body": {
+     "error": {
+      "code": "locked",
+      "category": "security",
+      "channel": "email"
+     }
+    }
+   }
+  },
+  {
+   "note": "un canal no disponible",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/preferences",
+   "query": [],
+   "body": {
+    "activity": {
+     "push": true
+    }
+   },
+   "at_ms": 111000,
+   "expect": {
+    "status": 422,
+    "body": {
+     "error": {
+      "code": "unavailable",
+      "category": "activity",
+      "channel": "push"
+     }
+    }
+   }
+  },
+  {
+   "note": "una categoría desconocida",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/preferences",
+   "query": [],
+   "body": {
+    "nada": {}
+   },
+   "at_ms": 112000,
+   "expect": {
+    "status": 422,
+    "body": {
+     "error": {
+      "code": "unknown_category",
+      "category": "nada",
+      "channel": null
+     }
+    }
+   }
+  },
+  {
+   "note": "un valor que no es booleano",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/preferences",
+   "query": [],
+   "body": {
+    "activity": {
+     "email": "sí"
+    }
+   },
+   "at_ms": 113000,
+   "expect": {
+    "status": 422,
+    "body": {
+     "error": {
+      "code": "invalid_value",
+      "category": "activity",
+      "channel": "email"
+     }
+    }
+   }
+  },
+  {
+   "note": "rechazado entero: lo válido tampoco se guarda",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/preferences",
+   "query": [],
+   "body": {
+    "activity": {
+     "email": false
+    },
+    "security": {
+     "email": false
+    }
+   },
+   "at_ms": 114000,
+   "expect": {
+    "status": 422,
+    "body": {
+     "error": {
+      "code": "locked",
+      "category": "security",
+      "channel": "email"
+     }
+    }
+   }
+  },
+  {
+   "note": "sigue como antes",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/preferences",
+   "query": [],
+   "at_ms": 115000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "categories": {
+      "security": {
+       "email": {
+        "enabled": true,
+        "locked": true
+       },
+       "push": {
+        "enabled": true,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "invitations": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "activity": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "digest": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "note": "un cuerpo que no es JSON",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/preferences",
+   "query": [],
+   "raw_body": "nope",
+   "at_ms": 116000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "un cuerpo que no es un objeto",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/preferences",
+   "query": [],
+   "body": [
+    "activity"
+   ],
+   "at_ms": 117000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "una categoría que no es un objeto",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/preferences",
+   "query": [],
+   "body": {
+    "activity": true
+   },
+   "at_ms": 118000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "sin cuerpo",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/preferences",
+   "query": [],
+   "at_ms": 119000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "un pedido vacío es válido",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/preferences",
+   "query": [],
+   "body": {},
+   "at_ms": 120000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "categories": {
+      "security": {
+       "email": {
+        "enabled": true,
+        "locked": true
+       },
+       "push": {
+        "enabled": true,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "invitations": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "activity": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      },
+      "digest": {
+       "email": {
+        "enabled": true,
+        "locked": false
+       },
+       "push": {
+        "enabled": false,
+        "locked": true
+       },
+       "inapp": {
+        "enabled": true,
+        "locked": true
+       }
+      }
+     }
+    }
+   }
+  }
+ ]
+}

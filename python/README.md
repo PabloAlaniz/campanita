@@ -222,6 +222,59 @@ Una celda de la política con `urgent: true` se entrega igual:
 en Windows necesita el paquete `tzdata`; si la plataforma no conoce la zona, se entrega. Lo silenciado no se manda después: eso lo decide quien
 integra.
 
+## La bandeja por HTTP
+
+La bandeja, las preferencias y el horario de no molestar se sirven por HTTP con un contrato fijo
+(sección "La bandeja por HTTP" del [spec](../spec/SPEC.md)): la misma interfaz habla igual con un
+backend en Python o en TypeScript. `InboxApp` es una aplicación ASGI, sin dependencias, que se monta
+bajo el prefijo que elijas:
+
+```python
+from fastapi import FastAPI, Request  # o Starlette: es lo mismo
+from campanita.http import InboxApp
+from campanita.stores import SqlitePreferenceStore, SqliteQuietHoursStore, SqliteStore
+
+
+def quien_pide(scope) -> str | None:
+    usuario = sesion(Request(scope))  # tu sesión o tu token
+    return usuario.id if usuario else None  # None: 401
+
+
+app = FastAPI()
+app.mount(
+    "/api/avisos",
+    InboxApp(
+        store=SqliteStore(conexion),
+        resolve_recipient=quien_pide,  # también puede ser async
+        # Opcionales: con política y preferencias se sirve /preferences; con horarios, /quiet-hours.
+        policy=policy,
+        preferences=SqlitePreferenceStore(conexion),
+        quiet_hours=SqliteQuietHoursStore(conexion),
+        available=canales_conectados,  # por omisión, todos los de la política
+    ),
+)
+```
+
+| Ruta | Qué hace |
+|---|---|
+| `GET /feed?limit&cursor&unread_only&category&scope` | una página de la bandeja, del más nuevo al más viejo |
+| `GET /unread-count?scope&cap` | el contador, con `capped` para mostrar `99+` |
+| `POST /feed/{id}/read` | marca uno |
+| `POST /feed/read-all` | marca hasta lo que la persona vio (`before`) |
+| `GET` / `PATCH /preferences?scope` | la matriz de preferencias y su cambio |
+| `GET` / `PUT /quiet-hours` | el horario de no molestar |
+
+- **El destinatario sale de `resolve_recipient`, nunca del pedido.** Una persona no puede pedir
+  la bandeja de otra.
+- **`scope` es un filtro, no un permiso**: trae lo de ese ámbito más lo de cuenta. Si tu producto
+  necesita que el ámbito sea uno de los de la persona, revisalo en `resolve_recipient` o antes.
+- **Es una aplicación entera**: lo que no es del contrato contesta `404`. Respeta `root_path`,
+  así que funciona montada en cualquier prefijo.
+- El contrato no autentica ni limita el ritmo de pedidos: eso va en tu aplicación.
+
+`campanita.http` también trae los ayudantes del cable (`encode_cursor`, `decode_cursor`,
+`to_iso`, `from_iso`, `item_to_wire`), para quien escriba el adaptador de otro framework.
+
 ## Email
 
 `EmailChannel` busca la dirección de la persona, arma el mensaje y se lo pasa a un transporte. El

@@ -17,6 +17,8 @@ import {
   parseCatalog,
   parsePolicy,
   parseQuietHours,
+  recipientFromVectorRequest,
+  runHttpVector,
   runPreferenceVector,
   runQuietHoursVector,
   runStoreVector,
@@ -24,6 +26,7 @@ import {
   type D1Like,
   type Draft,
 } from '../../src/index.js';
+import { createInboxHandler } from '../../src/http/index.js';
 
 const SPEC = fileURLToPath(new URL('../../../spec/vectors', import.meta.url));
 const files = (folder: string): string[] =>
@@ -288,4 +291,23 @@ it('no molestar sobre D1: lo no urgente se silencia', async () => {
     sms: 'sent',
   });
   expect(sent).toEqual(['sms']);
+});
+
+describe('la bandeja por HTTP sobre D1', () => {
+  it.each(files('http'))('%s', async (file) => {
+    await runHttpVector(load('http', file), async ({ policy, available, now }) => {
+      const notifications = await store();
+      const handle = createInboxHandler({
+        store: notifications,
+        basePath: '/api/avisos',
+        resolveRecipient: recipientFromVectorRequest,
+        policy,
+        preferences: await preferences(),
+        quietHours: await quietHours(),
+        available: () => available,
+        now,
+      });
+      return { store: notifications, handle };
+    });
+  });
 });

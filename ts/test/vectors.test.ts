@@ -51,7 +51,8 @@ interface Vector {
     | 'email-direcciones'
     | 'silencio-validacion'
     | 'silencio'
-    | 'silencio-guardado';
+    | 'silencio-guardado'
+    | 'http';
   policy?: unknown;
   catalog?: unknown;
   /** Los de tipo `bandeja` tienen `steps` y los corre test/stores.test.ts. */
@@ -93,6 +94,7 @@ it('todos los tipos de vector tienen quien los corra', () => {
     'catalogo',
     'email-direcciones',
     'email-mensaje',
+    'http',
     'matriz',
     'plantilla',
     'politica',
@@ -108,7 +110,7 @@ it('todos los tipos de vector tienen quien los corra', () => {
 
 for (const vector of vectors) {
   // Las secuencias las corren test/stores.test.ts y test/notify.test.ts.
-  // Los de email, test/email.test.ts.
+  // Los de email, test/email.test.ts. Los de http, test/http.test.ts.
   if (
     [
       'bandeja',
@@ -118,6 +120,7 @@ for (const vector of vectors) {
       'email-mensaje',
       'email-direcciones',
       'silencio-guardado',
+      'http',
     ].includes(vector.kind)
   ) {
     continue;

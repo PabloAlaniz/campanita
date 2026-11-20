@@ -164,8 +164,8 @@ def test_silencio(_vector: dict[str, Any], case: dict[str, Any]) -> None:
 
 def test_todos_los_tipos_de_vector_tienen_quien_los_corra() -> None:
     # Los de `bandeja`, `preferencias-guardadas` y `silencio-guardado` los corre tests/test_stores.py
-    # contra cada almacén; los de `recorrido`, tests/test_notify.py; y los de
-    # email, tests/test_email.py.
+    # contra cada almacén; los de `recorrido`, tests/test_notify.py; los de
+    # email, tests/test_email.py; y los de `http`, tests/test_http.py.
     corridos = {
         "politica",
         "canales",
@@ -183,5 +183,6 @@ def test_todos_los_tipos_de_vector_tienen_quien_los_corra() -> None:
         "silencio-validacion",
         "silencio",
         "silencio-guardado",
+        "http",
     }
     assert {load(path)["kind"] for path in VECTORS} == corridos

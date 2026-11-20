@@ -1,0 +1,346 @@
+{
+ "spec": "0",
+ "id": "http/horario",
+ "kind": "http",
+ "policy": {
+  "security": {
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "push": {
+    "default": true,
+    "locked": true
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "invitations": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "digest": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "available": [
+  "email"
+ ],
+ "steps": [
+  {
+   "note": "sin persona",
+   "op": "request",
+   "as": null,
+   "method": "GET",
+   "path": "/quiet-hours",
+   "query": [],
+   "at_ms": 101000,
+   "expect": {
+    "status": 401,
+    "body": {
+     "error": {
+      "code": "unauthenticated"
+     }
+    }
+   }
+  },
+  {
+   "note": "no es PATCH",
+   "op": "request",
+   "as": "ana",
+   "method": "PATCH",
+   "path": "/quiet-hours",
+   "query": [],
+   "at_ms": 102000,
+   "expect": {
+    "status": 405,
+    "body": {
+     "error": {
+      "code": "method_not_allowed"
+     }
+    }
+   }
+  },
+  {
+   "note": "quien nunca definió uno",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/quiet-hours",
+   "query": [],
+   "at_ms": 103000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "quiet_hours": null
+    }
+   }
+  },
+  {
+   "note": "guardar uno",
+   "op": "request",
+   "as": "ana",
+   "method": "PUT",
+   "path": "/quiet-hours",
+   "query": [],
+   "body": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "at_ms": 104000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "quiet_hours": {
+      "enabled": true,
+      "start": "22:00",
+      "end": "08:00",
+      "timezone": "America/Lima"
+     }
+    }
+   }
+  },
+  {
+   "note": "se lee",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/quiet-hours",
+   "query": [],
+   "at_ms": 105000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "quiet_hours": {
+      "enabled": true,
+      "start": "22:00",
+      "end": "08:00",
+      "timezone": "America/Lima"
+     }
+    }
+   }
+  },
+  {
+   "note": "es de la persona",
+   "op": "request",
+   "as": "beto",
+   "method": "GET",
+   "path": "/quiet-hours",
+   "query": [],
+   "at_ms": 106000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "quiet_hours": null
+    }
+   }
+  },
+  {
+   "note": "reemplazarlo",
+   "op": "request",
+   "as": "ana",
+   "method": "PUT",
+   "path": "/quiet-hours",
+   "query": [],
+   "body": {
+    "enabled": false,
+    "start": "23:00",
+    "end": "08:00",
+    "timezone": "Europe/Madrid"
+   },
+   "at_ms": 107000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "quiet_hours": {
+      "enabled": false,
+      "start": "23:00",
+      "end": "08:00",
+      "timezone": "Europe/Madrid"
+     }
+    }
+   }
+  },
+  {
+   "note": "una hora inválida",
+   "op": "request",
+   "as": "ana",
+   "method": "PUT",
+   "path": "/quiet-hours",
+   "query": [],
+   "body": {
+    "enabled": true,
+    "start": "24:00",
+    "end": "08:00",
+    "timezone": "America/Lima"
+   },
+   "at_ms": 108000,
+   "expect": {
+    "status": 422,
+    "body": {
+     "error": {
+      "code": "invalid_quiet_hours"
+     }
+    }
+   }
+  },
+  {
+   "note": "una clave de más",
+   "op": "request",
+   "as": "ana",
+   "method": "PUT",
+   "path": "/quiet-hours",
+   "query": [],
+   "body": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "America/Lima",
+    "days": []
+   },
+   "at_ms": 109000,
+   "expect": {
+    "status": 422,
+    "body": {
+     "error": {
+      "code": "invalid_quiet_hours"
+     }
+    }
+   }
+  },
+  {
+   "note": "una clave de menos",
+   "op": "request",
+   "as": "ana",
+   "method": "PUT",
+   "path": "/quiet-hours",
+   "query": [],
+   "body": {
+    "enabled": true,
+    "start": "22:00",
+    "timezone": "America/Lima"
+   },
+   "at_ms": 110000,
+   "expect": {
+    "status": 422,
+    "body": {
+     "error": {
+      "code": "invalid_quiet_hours"
+     }
+    }
+   }
+  },
+  {
+   "note": "no es un objeto",
+   "op": "request",
+   "as": "ana",
+   "method": "PUT",
+   "path": "/quiet-hours",
+   "query": [],
+   "body": "22:00-08:00",
+   "at_ms": 111000,
+   "expect": {
+    "status": 422,
+    "body": {
+     "error": {
+      "code": "invalid_quiet_hours"
+     }
+    }
+   }
+  },
+  {
+   "note": "una zona que no existe",
+   "op": "request",
+   "as": "ana",
+   "method": "PUT",
+   "path": "/quiet-hours",
+   "query": [],
+   "body": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "Marte/Olimpo"
+   },
+   "at_ms": 112000,
+   "expect": {
+    "status": 422,
+    "body": {
+     "error": {
+      "code": "unknown_timezone"
+     }
+    }
+   }
+  },
+  {
+   "note": "un cuerpo que no es JSON",
+   "op": "request",
+   "as": "ana",
+   "method": "PUT",
+   "path": "/quiet-hours",
+   "query": [],
+   "raw_body": "{",
+   "at_ms": 113000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "quedó el último válido",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/quiet-hours",
+   "query": [],
+   "at_ms": 114000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "quiet_hours": {
+      "enabled": false,
+      "start": "23:00",
+      "end": "08:00",
+      "timezone": "Europe/Madrid"
+     }
+    }
+   }
+  }
+ ]
+}

@@ -313,6 +313,94 @@ const porAmbito = new SlackChannel({
 Está probado con un `fetch` de prueba, no contra Slack: conviene hacer una conexión real antes de
 confiar en la configuración.
 
+## La campanita en tu app
+
+La bandeja, las preferencias y el horario de no molestar se sirven por HTTP con un contrato fijo
+(sección "La bandeja por HTTP" del [spec](../spec/SPEC.md)). Del lado del servidor hay un
+adaptador; del lado de la interfaz, un cliente, un store y dos hooks de React. El dibujo de la
+campana es tuyo: campanita no trae componentes ni estilos.
+
+### En el servidor: `campanita/http`
+
+`createInboxHandler` recibe un `Request` y devuelve un `Response`, o `null` si la ruta no es de la
+bandeja. Sirve en Workers, Hono, Next, Deno, Bun y Node 18+, sin dependencias.
+
+```ts
+import { D1PreferenceStore, D1QuietHoursStore, D1Store } from 'campanita';
+import { createInboxHandler } from 'campanita/http';
+
+const inbox = createInboxHandler({
+  store: new D1Store(env.DB),
+  basePath: '/api/avisos',
+  resolveRecipient: (request) => sesion(request)?.userId ?? null,   // null: 401
+  // Opcionales: con política y preferencias se sirve /preferences; con horarios, /quiet-hours.
+  policy,
+  preferences: new D1PreferenceStore(env.DB),
+  quietHours: new D1QuietHoursStore(env.DB),
+  available: (userId) => canalesConectados(userId),
+});
+
+// En Hono, por ejemplo:
+app.all('/api/avisos/*', async (c) => (await inbox(c.req.raw)) ?? c.notFound());
+```
+
+| Ruta | Qué hace |
+|---|---|
+| `GET /feed?limit&cursor&unread_only&category&scope` | una página de la bandeja, del más nuevo al más viejo |
+| `GET /unread-count?scope&cap` | el contador, con `capped` para mostrar `99+` |
+| `POST /feed/{id}/read` | marca uno |
+| `POST /feed/read-all` | marca hasta lo que la persona vio (`before`) |
+| `GET` / `PATCH /preferences?scope` | la matriz de preferencias y su cambio |
+| `GET` / `PUT /quiet-hours` | el horario de no molestar |
+
+- **El destinatario sale de `resolveRecipient`, nunca del pedido.** Una persona no puede pedir la
+  bandeja de otra.
+- **`scope` es un filtro, no un permiso**: trae lo de ese ámbito más lo de cuenta. Si tu producto
+  necesita que el ámbito sea uno de los de la persona, revisalo antes de llamar al adaptador.
+- El contrato no autentica ni limita el ritmo de pedidos: eso va en tu router.
+
+### En la interfaz: `campanita/client` y `campanita/react`
+
+```ts
+import { createInboxClient, createInboxStore } from 'campanita/client';
+
+const client = createInboxClient({
+  baseUrl: 'https://api.example.com/api/avisos',
+  fetch: (url, init) => fetch(url, { ...init, credentials: 'include' }),
+});
+const inbox = createInboxStore(client, { scope: proyectoActivo, pollMs: 30_000 });
+```
+
+El store guarda la primera página y el contador. Mientras alguien lo escucha, pide el contador
+cada `pollMs` (una consulta barata) y vuelve a pedir la página sólo cuando el número cambia.
+`markRead` y `markAllRead` son optimistas y vuelven atrás si el servidor falla; `markAllRead`
+marca lo que la persona tiene a la vista, no lo que llegó después.
+
+```tsx
+import { useInbox } from 'campanita/react';
+
+function Campana({ inbox }: { inbox: InboxStore }) {
+  const { items, unread, hasMore } = useInbox(inbox);
+  return (
+    <Menu badge={unread.capped ? `${unread.count}+` : unread.count}>
+      {items.map((n) => (
+        <Item key={n.id} unread={n.read_at === null} onClick={() => inbox.markRead(n.id)}>
+          {n.title}
+        </Item>
+      ))}
+      {hasMore && <button onClick={() => inbox.loadMore()}>Ver más</button>}
+      <button onClick={() => inbox.markAllRead()}>Marcar todo como leído</button>
+    </Menu>
+  );
+}
+```
+
+React es una dependencia opcional: sólo la necesita `campanita/react`. El cliente y el store no
+dependen de nada.
+
+`runHttpVector` corre los vectores de `spec/vectors/http/` contra un adaptador, para quien monte el
+suyo sobre otro almacén.
+
 ## Desarrollo
 
 Desde la raíz del repo:

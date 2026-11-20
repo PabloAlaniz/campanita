@@ -5,7 +5,7 @@ Todo port de campanita tiene que comportarse como se describe acá. Los archivos
 `tools/gen_vectors.py`, una implementación independiente, para que ningún port se valide a sí
 mismo.
 
-La versión 0 es un borrador y puede cambiar sin aviso. Cubre seis cosas:
+La versión 0 es un borrador y puede cambiar sin aviso. Cubre siete cosas:
 
 - **Por qué canales sale un aviso y qué puede cambiar el usuario**: la política, la resolución de
   canales, la matriz efectiva y el cambio de preferencias.
@@ -17,6 +17,8 @@ La versión 0 es un borrador y puede cambiar sin aviso. Cubre seis cosas:
 - **El recorrido completo**: de un evento a un aviso guardado y entregado por los canales que
   corresponden.
 - **El email**: qué mensaje sale de un aviso y qué direcciones se aceptan.
+- **La bandeja por HTTP**: el contrato con el que una interfaz lee la bandeja y cambia las
+  preferencias y el horario de una persona.
 
 Los reintentos de una entrega y su registro todavía no están especificados (ver
 `docs/hoja-de-ruta.md`).
@@ -553,6 +555,159 @@ El horario se guarda en un **almacén de horarios**, que cumple cuando reproduce
 
 El almacén guarda el horario que le pasen, sin validarlo, y la persona es texto exacto.
 
+## La bandeja por HTTP
+
+La bandeja, las preferencias y el horario de no molestar de una persona se pueden servir por HTTP
+con un contrato fijo. Así una interfaz (la campanita de una web, una app, una extensión) habla
+igual con cualquier backend que use campanita, en cualquier lenguaje. El contrato no agrega
+reglas: cada ruta llama a una operación que ya está en este spec.
+
+Un **adaptador HTTP** se monta bajo un prefijo que elige quien integra (`/api/avisos`, por
+ejemplo). Las rutas de abajo son relativas a ese prefijo.
+
+### Quién pide
+
+El adaptador no autentica. Quien integra le pasa `resolve_recipient(pedido)`, que devuelve el
+`recipient_id` de quien hace el pedido, o nada si no se sabe quién es.
+
+- **El destinatario sale siempre de `resolve_recipient`.** Ninguna ruta acepta un `recipient_id`
+  en la URL, en la consulta ni en el cuerpo: una persona no puede pedir la bandeja de otra.
+- Si `resolve_recipient` no devuelve a nadie, la respuesta es `401` con `unauthenticated`.
+- **El ámbito es un filtro, como en la bandeja.** Pedir un `scope` no da acceso a nada que no
+  sea de la persona. Si una instalación necesita además que el ámbito sea uno de los de la
+  persona, lo revisa antes de llegar al adaptador.
+
+### Las rutas
+
+| Método y ruta | Operación | Respuesta `200` |
+|---|---|---|
+| `GET /feed` | `list` | `{"items": [aviso], "next_cursor": texto o null}` |
+| `GET /unread-count` | `count_unread` | `{"count": entero, "capped": booleano}` |
+| `POST /feed/{id}/read` | `mark_read` | `{"changed": booleano}` |
+| `POST /feed/read-all` | `mark_all_read` | `{"changed": entero}` |
+| `GET /preferences` | `get_overrides` + `effective_matrix` | `{"categories": matriz}` |
+| `PATCH /preferences` | `validate_patch` + `save_changes` | `{"categories": matriz}` |
+| `GET /quiet-hours` | `get_quiet_hours` | `{"quiet_hours": horario o null}` |
+| `PUT /quiet-hours` | validar + `set_quiet_hours` | `{"quiet_hours": horario}` |
+
+Las rutas de preferencias existen sólo si la instalación tiene política y almacén de
+preferencias; las del horario, sólo si tiene almacén de horarios.
+
+El orden en que se decide un pedido:
+
+```text
+1. si la ruta no es del contrato:              no se atiende
+2. si el método no es el de la ruta:           405 method_not_allowed
+3. si resolve_recipient no devuelve a nadie:   401 unauthenticated
+4. validar la consulta y el cuerpo:            400 o 422
+5. correr la operación y responder 200
+```
+
+"No se atiende" depende del adaptador: uno que se monta dentro de un router deja pasar el pedido
+para que siga su camino; una aplicación entera contesta `404` con `not_found`.
+
+Toda respuesta es JSON (`application/json`) y lleva `cache-control: no-store`: es de una persona
+y cambia en cualquier momento.
+
+### Un aviso en la respuesta
+
+```json
+{
+  "id": "n1", "type": "comments.new", "category": "activity",
+  "title": "Ana comentó en Presupuesto", "body": null, "action_url": "/docs/7",
+  "payload": {"author": "Ana"}, "scope": "acme",
+  "created_at": "2026-11-20T13:05:00.000Z", "read_at": null
+}
+```
+
+- No lleva `recipient_id` (es quien pidió) ni `dedupe_key` (es del emisor).
+- **Las fechas son texto ISO 8601 en UTC con milisegundos**: `AAAA-MM-DDTHH:MM:SS.mmmZ`, siempre
+  con tres decimales y `Z`. Es el formato de `toISOString()` de JavaScript.
+
+### `GET /feed`
+
+| Parámetro | Valor | Por omisión |
+|---|---|---|
+| `limit` | entero de 1 a 100, escrito en decimal y sin ceros a la izquierda | 20 |
+| `cursor` | el `next_cursor` de la página anterior | desde el principio |
+| `unread_only` | `true` o `false` | `false` |
+| `category` | una categoría | todas |
+| `scope` | un ámbito; vacío es el ámbito de texto vacío, no "sin ámbito" | sin ámbito |
+
+- Un `limit` fuera de esa forma da `400` con `invalid_limit`; un cursor que no es uno de los que
+  devuelve el adaptador, `400` con `invalid_cursor`; un `unread_only` que no es `true` ni `false`,
+  o cualquier parámetro repetido, `400` con `invalid_query`.
+- Los parámetros desconocidos se ignoran: los agregan proxies y cachés.
+- **El cursor es opaco para la interfaz, pero está definido**, para que dos adaptadores den el
+  mismo: es el base64url sin relleno (RFC 4648 §5) del UTF-8 de `<created_at_ms>:<id>`, con
+  `created_at_ms` en decimal sin ceros a la izquierda y no mayor que 8640000000000000 (la
+  fecha más lejana de JavaScript). El `id` puede tener `:`; separa el
+  primero. Al leerlo, un texto que no vuelve a dar exactamente el mismo cursor al codificarlo de
+  nuevo es inválido.
+
+### `GET /unread-count`
+
+| Parámetro | Valor | Por omisión |
+|---|---|---|
+| `cap` | entero de 1 a 1000 | 99 |
+| `scope` | un ámbito | sin ámbito |
+
+- Cuenta con `count_unread(recipient_id, scope, cap + 1)`. `count` es el menor entre esa cuenta y
+  `cap`, y `capped` es verdadero si la cuenta pasó de `cap`: la interfaz muestra `99+` sólo
+  cuando hay más de 99, no cuando hay exactamente 99.
+- Un `cap` fuera de esa forma da `400` con `invalid_cap`.
+
+### `POST /feed/{id}/read` y `POST /feed/read-all`
+
+- `{id}` es el segmento de la ruta, no vacío, decodificado: `%2F` es una `/` del id, no un
+  separador. Por eso el adaptador mira la ruta como llegó, antes de decodificarla.
+  Marca con la hora del servidor. `changed` es lo que devuelve `mark_read`: falso si el aviso no
+  existe, es de otra persona o ya estaba leído. No es un error: la interfaz no tiene por qué
+  distinguir esos casos, y un `404` diría si el id existe para otra persona.
+- `read-all` recibe un objeto con `before` (obligatorio, una fecha con el formato de arriba),
+  `scope` y `category` (texto o null, opcionales). `before` es el `created_at` del aviso más nuevo
+  que la persona tiene a la vista **más un milisegundo**: el corte de `mark_all_read` es estricto
+  y ese aviso también se vio. Marca con la hora del servidor.
+- Un cuerpo que no es JSON, que no es un objeto, que tiene otras claves o valores de otro tipo, o
+  un `before` sin el formato, da `400` con `invalid_body`.
+
+### `GET /preferences` y `PATCH /preferences`
+
+- Las dos aceptan `scope` en la consulta, con la misma forma que en `/feed`, y trabajan con lo
+  guardado en ese ámbito.
+- Los canales disponibles los da quien integra con `available(recipient_id)`. Si no los da, son
+  todos los canales de la política.
+- `PATCH` recibe el pedido de cambio con la forma de los overrides (`{"categoría": {"canal":
+  valor}}`). Si no es un objeto de objetos, da `400` con `invalid_body`. Si `validate_patch` lo
+  rechaza, da `422` con el motivo como código y además `category` y `channel`; no se guarda nada.
+  Si no, guarda los cambios y responde la matriz que queda.
+
+### `GET /quiet-hours` y `PUT /quiet-hours`
+
+- `PUT` recibe el horario. Si no es válido (ver "No molestar"), da `422` con
+  `invalid_quiet_hours`. Si la plataforma no conoce la zona horaria, `422` con `unknown_timezone`:
+  con una zona desconocida el horario nunca silenciaría nada y la persona no se enteraría. Si no,
+  lo guarda y lo devuelve.
+
+### Los errores
+
+```json
+{ "error": { "code": "invalid_limit", "message": "el límite tiene que ser un entero de 1 a 100" } }
+```
+
+| Código | Estado | Cuándo |
+|---|---|---|
+| `not_found` | 404 | la ruta no es del contrato (sólo una aplicación entera) |
+| `method_not_allowed` | 405 | la ruta existe con otro método |
+| `unauthenticated` | 401 | `resolve_recipient` no devolvió a nadie |
+| `invalid_limit`, `invalid_cursor`, `invalid_cap`, `invalid_query` | 400 | la consulta |
+| `invalid_body` | 400 | el cuerpo |
+| los motivos de `validate_patch` | 422 | el cambio de preferencias, con `category` y `channel` |
+| `invalid_quiet_hours`, `unknown_timezone` | 422 | el horario |
+
+El `message` es para una persona y cada adaptador lo redacta: los vectores comparan el `code`, y
+`category` y `channel` cuando están.
+
 ## Email
 
 El canal de email separa dos cosas: qué se le dice a la persona y con qué se manda. El spec cubre
@@ -614,11 +769,12 @@ casos.
 | `silencio-guardado` | los horarios sobre un almacén | secuencia de pasos (ver abajo) |
 | `email-mensaje` | el mensaje por omisión | `notification`, `expect` |
 | `email-direcciones` | validez de una dirección | `address`, `valid` |
+| `http` | la bandeja por HTTP | secuencia de pasos (ver abajo) |
 
 Los vectores de `canales`, `matriz`, `preferencias` y `catalogo` llevan la `policy` una vez por
 archivo; los de `aviso` llevan además el `catalog`.
 
-Los vectores de `bandeja`, `preferencias-guardadas`, `silencio-guardado` y `recorrido` no tienen
+Los vectores de `bandeja`, `preferencias-guardadas`, `silencio-guardado`, `recorrido` y `http` no tienen
 `cases` sino `steps`: una secuencia
 que se corre en orden sobre un almacén vacío. Cada paso tiene `op`, sus argumentos y `expect`,
 que es lo que la operación devuelve, o `{"error": motivo}` cuando la rechaza.
@@ -637,6 +793,13 @@ que es lo que la operación devuelve, o `{"error": motivo}` cuando la rechaza.
   `notification`, `copies` (cada una con `created` y `notification`, en el orden de los
   miembros), `attempted` (los canales intentados, en orden) y `deliveries`, o
   `{"error": {"reason", "detail"}}`.
+- En `http`, el vector trae la `policy` y los canales disponibles (`available`), y el adaptador
+  arranca con un almacén de avisos, uno de preferencias y uno de horarios, vacíos. `op` es `add`
+  (guarda un aviso directo en el almacén, como en `bandeja`) o `request`: un pedido con `as` (lo
+  que devuelve `resolve_recipient`, o null), `method`, `path` (relativo al prefijo, ya
+  codificado), `query` (una lista de pares, en orden), y `body` (JSON) o `raw_body` (texto tal
+  cual). `at_ms` es la hora del servidor en ese pedido. `expect` es null si el adaptador no lo
+  atiende, o `status` y `body`; en los errores se comparan `code`, `category` y `channel`.
 
 `python3 tools/gen_vectors.py` los regenera; con `--check` falla si los archivos del repo no
 coinciden con lo generado.

@@ -12,7 +12,11 @@ Están declarados en [`python/src/campanita/ports.py`](../python/src/campanita/p
 | `DeliveryChannel` | Entregar un aviso fuera de la bandeja | Especificado dentro del recorrido; incluye email y Slack |
 
 La **bandeja** no es un puerto: es lo que se lee del `NotificationStore`. Cualquier superficie
-que la muestre (un panel web, una app, un bot) es un cliente de esa lectura.
+que la muestre (un panel web, una app, un bot) es un cliente de esa lectura, y para eso está el
+contrato de la sección "La bandeja por HTTP" del [spec](../spec/SPEC.md): un adaptador que lo sirve
+sobre cualquier almacén (`createInboxHandler` en TypeScript, `InboxApp` en Python) y un cliente
+para la interfaz (`campanita/client`). Un adaptador HTTP propio es correcto cuando reproduce las
+secuencias de [`spec/vectors/http/`](../spec/vectors/http).
 
 ## El almacén de avisos
 
