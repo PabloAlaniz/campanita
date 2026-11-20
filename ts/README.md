@@ -168,6 +168,33 @@ result.deliveries; // Map { 'email' => { outcome: 'sent' } }
 Primero se guarda y después se entrega: un canal que falla, o que rechaza, no deshace el aviso ni
 impide intentar los demás. Un canal es cualquier objeto con `id` y `send`.
 
+### Canales disponibles por persona
+
+Por omisión, los canales disponibles son los configurados. Si no todas las personas tienen todos,
+porque alguien apagó el email o no registró ningún dispositivo, la función `available` lo indica
+para cada destinatario y ámbito:
+
+```ts
+const notifier = new Notifier({
+  policy, catalog, store, preferences, channels,
+  available: async (recipientId, scope) => canalesDe(recipientId), // puede ser síncrona
+});
+```
+
+Un canal que no está disponible no se intenta, aunque la política lo tenga bloqueado en encendido.
+
+### Entregar un aviso ya guardado
+
+Cuando el aviso lo guardó otro, por ejemplo un trigger de la base, o cuando hay que reintentar una
+entrega que falló, `deliver` hace sólo la entrega, sin guardar nada:
+
+```ts
+const deliveries = await notifier.deliver(aviso); // Map { 'email' => { outcome: 'sent' } }
+```
+
+Usa las preferencias, la disponibilidad y el horario de no molestar del momento de la llamada.
+No mira la `dedupe_key`: cada llamada intenta los canales otra vez.
+
 ### Avisos para un grupo
 
 Un tipo con `audience: 'group'` le habla a un grupo (un equipo, un proyecto) y no a una persona.

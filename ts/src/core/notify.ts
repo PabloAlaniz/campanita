@@ -42,6 +42,15 @@ export interface NotifierOptions {
   readonly store: NotificationStore;
   readonly preferences: PreferenceStore;
   readonly channels?: Iterable<DeliveryChannel>;
+  /**
+   * Qué canales tiene cada destinatario: los que activó y para los que hay a
+   * dónde mandar. Sin función, todos los configurados. Un canal que devuelve
+   * pero no está configurado no cuenta.
+   */
+  readonly available?: (
+    recipientId: string,
+    scope: string | null,
+  ) => Iterable<string> | Promise<Iterable<string>>;
   /** Los horarios de no molestar. Sin almacén, nadie está en silencio. */
   readonly quietHours?: QuietHoursStore;
   /**
@@ -80,7 +89,7 @@ export class Notifier {
     event: Readonly<Record<string, unknown>>,
     options: { id?: string; createdAt?: Date; members?: readonly Member[] } = {},
   ): Promise<NotifyResult> {
-    const { policy, catalog, store, preferences } = this.#options;
+    const { catalog, store } = this.#options;
     const draft = buildNotification(catalog, event);
     const members = checkMembers(options.members, catalog[draft.type]!.audience === 'group');
     const createdAt = options.createdAt ?? (this.#options.clock ?? (() => new Date()))();
@@ -88,10 +97,11 @@ export class Notifier {
       id: options.id ?? (this.#options.newId ?? (() => crypto.randomUUID()))(),
       createdAt,
     });
-    const deliveries = new Map<string, DeliveryResult>();
     // El aviso ya existía: no se copia ni se vuelve a entregar. Reintentar una
-    // entrega fallida es decisión de quien llama.
-    if (!added.created) return { notification: added.notification, created: false, copies: [], deliveries };
+    // entrega fallida es decisión de quien llama (con `deliver`).
+    if (!added.created) {
+      return { notification: added.notification, created: false, copies: [], deliveries: new Map() };
+    }
     // Las copias van a la bandeja de cada miembro y no se entregan: el aviso
     // sale una sola vez, por los canales del grupo.
     const copies: AddResult[] = [];
@@ -99,27 +109,61 @@ export class Notifier {
       copies.push(await store.add({ ...draft, recipientId: member.recipient_id }, { id: member.id, createdAt }));
     }
 
-    const overrides = await preferences.getOverrides(draft.recipientId, { scope: draft.scope });
-    // `resolveChannels` ya los devuelve ordenados por punto de código.
-    const targets = resolveChannels(policy, draft.category, overrides, this.#channels.keys());
-    const silent = targets.length > 0 && (await this.#isQuiet(added.notification));
-    for (const channelId of targets) {
-      if (silent && !policy[draft.category]![channelId]!.urgent) {
-        deliveries.set(channelId, { outcome: 'silenced' });
-        continue;
-      }
-      deliveries.set(channelId, await deliver(this.#channels.get(channelId)!, added.notification));
-    }
+    const deliveries = await this.#deliver(added.notification, added.notification.createdAt);
     return { notification: added.notification, created: true, copies, deliveries };
   }
 
-  /** Si el destinatario está en su horario de no molestar cuando se creó el aviso. */
-  async #isQuiet(notification: Notification): Promise<boolean> {
+  /**
+   * Entrega un aviso que ya está guardado, sin guardar nada: para avisos que
+   * guardó otro (un trigger de la base, otro servicio) o para reintentar una
+   * entrega que falló. No mira la `dedupe_key` ni hace copias, y usa las
+   * preferencias, la disponibilidad y el horario de no molestar de ahora.
+   *
+   * Rechaza con `EventRejectedError` (`invalid_field`, `category`) si la
+   * política no tiene la categoría del aviso. Una entrega que falla nunca
+   * rechaza: queda anotada en el resultado.
+   */
+  async deliver(notification: Notification): Promise<ReadonlyMap<string, DeliveryResult>> {
+    if (!Object.hasOwn(this.#options.policy, notification.category)) {
+      throw new EventRejectedError('invalid_field', 'category');
+    }
+    return this.#deliver(notification, (this.#options.clock ?? (() => new Date()))());
+  }
+
+  /** Los pasos 6 a 9 del recorrido. `moment` es el instante para el horario de no molestar. */
+  async #deliver(notification: Notification, moment: Date): Promise<Map<string, DeliveryResult>> {
+    const { policy, preferences } = this.#options;
+    const deliveries = new Map<string, DeliveryResult>();
+    const overrides = await preferences.getOverrides(notification.recipientId, { scope: notification.scope });
+    const usable = await this.#usable(notification);
+    // `resolveChannels` ya los devuelve ordenados por punto de código.
+    const targets = resolveChannels(policy, notification.category, overrides, usable);
+    const silent = targets.length > 0 && (await this.#isQuiet(notification.recipientId, moment));
+    for (const channelId of targets) {
+      if (silent && !policy[notification.category]![channelId]!.urgent) {
+        deliveries.set(channelId, { outcome: 'silenced' });
+        continue;
+      }
+      deliveries.set(channelId, await deliver(this.#channels.get(channelId)!, notification));
+    }
+    return deliveries;
+  }
+
+  /** Los canales configurados que están disponibles para el destinatario del aviso. */
+  async #usable(notification: Notification): Promise<string[]> {
+    const available = this.#options.available;
+    if (available === undefined) return [...this.#channels.keys()];
+    const theirs = new Set(await available(notification.recipientId, notification.scope));
+    return [...this.#channels.keys()].filter((id) => theirs.has(id));
+  }
+
+  /** Si el destinatario está en su horario de no molestar en ese instante. */
+  async #isQuiet(recipientId: string, moment: Date): Promise<boolean> {
     const store = this.#options.quietHours;
     if (store === undefined) return false;
-    const quietHours = await store.getQuietHours(notification.recipientId);
+    const quietHours = await store.getQuietHours(recipientId);
     if (quietHours === null || !quietHours.enabled) return false;
-    const minute = (this.#options.localMinute ?? localMinute)(quietHours.timezone, notification.createdAt);
+    const minute = (this.#options.localMinute ?? localMinute)(quietHours.timezone, moment);
     // Zona desconocida: ante la duda, se entrega.
     return minute !== null && isQuiet(quietHours, minute);
   }

@@ -1082,6 +1082,7 @@
                 "op": {
                   "enum": [
                     "notify",
+                    "deliver",
                     "save",
                     "quiet"
                   ]
@@ -1225,6 +1226,91 @@
                       },
                       "members": {
                         "description": "La lista de miembros que recibe el recorrido. Puede ser inválida a propósito."
+                      },
+                      "available": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Lo que devuelve la función de disponibilidad en este paso. Sin la clave, la instalación no tiene función."
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "deliver"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "id",
+                      "outcomes"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "note": {},
+                      "op": {},
+                      "id": {
+                        "type": "string",
+                        "description": "El aviso guardado por un `notify` anterior que se entrega otra vez."
+                      },
+                      "outcomes": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "enum": [
+                            "sent",
+                            "expired",
+                            "failed",
+                            "skipped",
+                            "throws",
+                            "garbage",
+                            "unknown"
+                          ]
+                        }
+                      },
+                      "local_minute": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1439
+                      },
+                      "available": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Lo que devuelve la función de disponibilidad en este paso. Sin la clave, la instalación no tiene función."
+                      },
+                      "expect": {
+                        "type": "object",
+                        "required": [
+                          "attempted",
+                          "deliveries"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "attempted": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "deliveries": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "enum": [
+                                "sent",
+                                "expired",
+                                "failed",
+                                "skipped",
+                                "silenced"
+                              ]
+                            }
+                          }
+                        }
                       }
                     }
                   }

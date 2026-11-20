@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -64,6 +65,9 @@ def test_recorrido(path: Path) -> None:
         quiet_hours = MemoryQuietHoursStore()
         # El minuto local lo dice cada paso: la base de zonas horarias no entra en los vectores.
         minute: list[int | None] = [None]
+        # Lo que devuelve la función de disponibilidad en este paso; sin valor, la instalación no tiene.
+        available: list[list[str] | None] = [None]
+        known: dict[str, Notification] = {}
         notifier = Notifier(
             policy=policy,
             catalog=parse_catalog(vector["catalog"], policy),
@@ -72,6 +76,7 @@ def test_recorrido(path: Path) -> None:
             channels=channels,
             quiet_hours=quiet_hours,
             local_minute=lambda _zone, _moment: minute[0],
+            available=lambda _who, _scope: vector["channels"] if available[0] is None else available[0],
         )
         for index, step in enumerate(vector["steps"]):
             where = f"{vector['id']} paso {index} ({step['note']})"
@@ -83,10 +88,22 @@ def test_recorrido(path: Path) -> None:
                 await quiet_hours.set_quiet_hours(step["recipient_id"], parse_quiet_hours(step["setting"]))
                 continue
             minute[0] = step.get("local_minute")
+            available[0] = step.get("available")
             for channel in channels:
                 channel.answer = step["outcomes"].get(channel.id, "sent")
                 channel.sent.clear()
             got: dict[str, Any]
+            if step["op"] == "deliver":
+                entregas = await notifier.deliver(known[step["id"]])
+                got = {
+                    "attempted": [c for c, d in entregas.items() if d.outcome != "silenced"],
+                    "deliveries": {c: d.outcome for c, d in entregas.items()},
+                }
+                assert got == step["expect"], where
+                assert sorted(channel.id for channel in channels if channel.sent) == sorted(
+                    got["attempted"]
+                ), where
+                continue
             try:
                 result = await notifier.notify(
                     step["event"],
@@ -99,6 +116,9 @@ def test_recorrido(path: Path) -> None:
             except StoreError as rejected:
                 got = {"error": {"reason": rejected.reason, "detail": None}}
             else:
+                known[result.notification.id] = result.notification
+                for copy in result.copies:
+                    known[copy.notification.id] = copy.notification
                 got = {
                     "created": result.created,
                     "notification": notification_to_wire(result.notification),
@@ -331,5 +351,90 @@ def test_un_aviso_de_grupo_sale_una_vez_y_deja_una_copia_a_cada_miembro() -> Non
             )
         assert (rejected.value.reason, rejected.value.detail) == ("invalid_field", "members")
         assert await store.count_unread("ana") == 1
+
+    asyncio.run(run())
+
+
+def _base() -> tuple[Any, Any]:
+    policy = parse_policy({"a": {"inapp": {"default": True, "locked": True}, "email": {"default": True}}})
+    return policy, parse_catalog({"nota": {"category": "a", "title": "Hola"}}, policy)
+
+
+def test_deliver_rechaza_una_categoria_que_la_politica_no_tiene() -> None:
+    async def run() -> None:
+        policy, catalog = _base()
+        email = Scripted("email")
+        notifier = Notifier(
+            policy=policy,
+            catalog=catalog,
+            store=MemoryStore(),
+            preferences=MemoryPreferenceStore(),
+            channels=[email],
+        )
+        result = await notifier.notify({"type": "nota", "recipient_id": "ana"}, id="n1")
+        email.sent.clear()
+        with pytest.raises(EventRejected) as rejected:
+            await notifier.deliver(replace(result.notification, category="otra"))
+        assert (rejected.value.reason, rejected.value.detail) == ("invalid_field", "category")
+        assert email.sent == []
+
+    asyncio.run(run())
+
+
+def test_deliver_mira_no_molestar_en_el_instante_de_la_llamada() -> None:
+    async def run() -> None:
+        policy, catalog = _base()
+        quiet_hours = MemoryQuietHoursStore()
+        await quiet_hours.set_quiet_hours(
+            "ana", parse_quiet_hours({"enabled": True, "start": "22:00", "end": "08:00", "timezone": "UTC"})
+        )
+        now = [datetime(2030, 1, 1, 12, tzinfo=UTC)]
+        moments: list[datetime] = []
+
+        def minute_of(_zone: str, moment: datetime) -> int:
+            moments.append(moment)
+            return moment.hour * 60 + moment.minute
+
+        notifier = Notifier(
+            policy=policy,
+            catalog=catalog,
+            store=MemoryStore(),
+            preferences=MemoryPreferenceStore(),
+            channels=[Scripted("email")],
+            quiet_hours=quiet_hours,
+            clock=lambda: now[0],
+            local_minute=minute_of,
+        )
+        result = await notifier.notify({"type": "nota", "recipient_id": "ana"}, id="n1")
+        now[0] = datetime(2030, 1, 1, 23, tzinfo=UTC)
+        deliveries = await notifier.deliver(result.notification)
+        assert deliveries["email"].outcome == "silenced"
+        assert [m.hour for m in moments] == [12, 23]
+
+    asyncio.run(run())
+
+
+def test_disponibilidad_asincrona_con_destinatario_y_ambito() -> None:
+    async def run() -> None:
+        policy, catalog = _base()
+        calls: list[tuple[str, str | None]] = []
+
+        async def available(who: str, scope: str | None) -> list[str]:
+            calls.append((who, scope))
+            return [] if who == "ana" else ["email"]
+
+        notifier = Notifier(
+            policy=policy,
+            catalog=catalog,
+            store=MemoryStore(),
+            preferences=MemoryPreferenceStore(),
+            channels=[Scripted("email")],
+            available=available,
+        )
+        ana = await notifier.notify({"type": "nota", "recipient_id": "ana", "scope": "acme"}, id="n1")
+        beto = await notifier.notify({"type": "nota", "recipient_id": "beto"}, id="n2")
+        assert list(ana.deliveries) == []
+        assert list(beto.deliveries) == ["email"]
+        assert calls == [("ana", "acme"), ("beto", None)]
 
     asyncio.run(run())
