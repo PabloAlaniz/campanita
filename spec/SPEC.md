@@ -429,7 +429,9 @@ Para resolver los canales de un aviso, se le pasa a `resolve_channels` lo que de
 
 `notify(evento, id, created_at, miembros)` es la operación que usa quien quiere avisarle algo a
 alguien. Trabaja con lo que una instalación tiene configurado: una política, un catálogo, un
-almacén de avisos, un almacén de preferencias y una lista de canales de entrega.
+almacén de avisos, un almacén de preferencias y una lista de canales de entrega. Puede tener
+además una función de **disponibilidad**, `disponibles(recipient_id, ámbito)`, que dice qué
+canales tiene cada destinatario: los que activó y para los que hay a dónde mandar.
 
 `miembros` sólo tiene sentido para un tipo de audiencia `group`: es la lista de quienes reciben
 una copia en su bandeja, cada uno con el `id` que va a tener su copia. Puede faltar o estar
@@ -445,7 +447,7 @@ vacía.
        copia = el aviso, con el recipient_id del miembro
        almacén.add(copia, id del miembro, created_at)  si se rechaza, termina
 6. overrides = preferencias.get_overrides(recipient_id, ámbito del aviso)
-7. canales = resolve_channels(política, categoría, overrides, canales configurados)
+7. canales = resolve_channels(política, categoría, overrides, configurados ∩ disponibles)
 8. en_silencio = el destinatario está ahora en su horario de no molestar
 9. para cada canal, en orden por punto de código:
        si en_silencio y la celda no es `urgent`: anotar `silenced`, sin intentar la entrega
@@ -479,9 +481,25 @@ Reglas de las copias:
   decisión de quien llama.
 - **Las preferencias que valen son las del ámbito del aviso.** Un aviso sin ámbito usa lo
   guardado sin ámbito.
-- **Los canales disponibles son los configurados.** Un canal que la política nombra pero la
-  instalación no tiene no se intenta, aunque esté bloqueado en encendido.
+- **Los canales disponibles son los configurados**, y si la instalación tiene función de
+  disponibilidad, sólo los que ella devuelve para el destinatario y el ámbito del aviso. Un canal
+  que la política nombra pero no está disponible no se intenta, aunque esté bloqueado en
+  encendido. Un canal que la función devuelve pero la instalación no tiene no cuenta.
 - **Cada canal se intenta por separado.** Que uno falle no impide intentar los demás.
+
+### Entregar un aviso guardado
+
+`deliver(aviso)` hace sólo la entrega: los pasos 6 a 9 del recorrido, sobre un aviso que ya está
+en el almacén. Sirve cuando el aviso lo guardó otro (un trigger de la base, otro servicio) y para
+reintentar una entrega que falló.
+
+- **No guarda nada ni mira la `dedupe_key`.** Cada llamada intenta los canales otra vez: llevar la
+  cuenta de lo entregado es decisión de quien llama.
+- **Valen las preferencias, la disponibilidad y el horario de ahora**, no los del momento en que se
+  guardó el aviso. El horario de no molestar se mira en el instante de la llamada.
+- **No hace copias.** Se entrega al `recipient_id` del aviso, sea una persona o un grupo.
+- La categoría es la del aviso. Si la política no la tiene, se rechaza con `invalid_field` y
+  `category` de detalle, sin intentar ningún canal.
 
 ### Canales de entrega
 
@@ -793,6 +811,10 @@ que es lo que la operación devuelve, o `{"error": motivo}` cuando la rechaza.
   `notification`, `copies` (cada una con `created` y `notification`, en el orden de los
   miembros), `attempted` (los canales intentados, en orden) y `deliveries`, o
   `{"error": {"reason", "detail"}}`.
+  Un `notify` puede traer `available`: lo que devuelve la función de disponibilidad en ese paso
+  (sin la clave, la instalación no tiene función). `op` también puede ser `deliver`: entrega otra
+  vez el aviso guardado con ese `id` (uno que devolvió un `notify` anterior), con sus `outcomes`
+  y, opcionales, `local_minute` y `available`; su `expect` tiene sólo `attempted` y `deliveries`.
 - En `http`, el vector trae la `policy` y los canales disponibles (`available`), y el adaptador
   arranca con un almacén de avisos, uno de preferencias y uno de horarios, vacíos. `op` es `add`
   (guarda un aviso directo en el almacén, como en `bandeja`) o `request`: un pedido con `as` (lo

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import inspect
 import re
 import uuid
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 
@@ -51,6 +52,7 @@ class Notifier:
         store: NotificationStore,
         preferences: PreferenceStore,
         channels: Iterable[DeliveryChannel] = (),
+        available: Callable[[str, str | None], Iterable[str] | Awaitable[Iterable[str]]] | None = None,
         quiet_hours: QuietHoursStore | None = None,
         local_minute: Callable[[str, datetime], int | None] = local_minute,
         new_id: Callable[[], str] = lambda: str(uuid.uuid4()),
@@ -61,6 +63,9 @@ class Notifier:
         self._store = store
         self._preferences = preferences
         self._channels = check_channels(channels)
+        #: Qué canales tiene cada destinatario (y ámbito). Sin función, todos los
+        #: configurados. Un canal que devuelve pero no está configurado no cuenta.
+        self._available = available
         #: Sin almacén de horarios, nadie está en no molestar.
         self._quiet_hours = quiet_hours
         #: De una zona horaria y un instante al minuto local. Se puede reemplazar
@@ -93,34 +98,64 @@ class Notifier:
         added = await self._store.add(draft, id=self._new_id() if id is None else id, created_at=at)
         if not added.created:
             # El aviso ya existía: no se copia ni se vuelve a entregar.
-            # Reintentar una entrega fallida es decisión de quien llama.
+            # Reintentar una entrega fallida es decisión de quien llama (`deliver`).
             return NotifyResult(added.notification, created=False, copies=(), deliveries={})
         copies = [
             await self._store.add(replace(draft, recipient_id=recipient_id), id=copy_id, created_at=at)
             for recipient_id, copy_id in copies_to
         ]
 
-        overrides = await self._preferences.get_overrides(draft.recipient_id, scope=draft.scope)
-        targets = resolve_channels(self._policy, draft.category, overrides, self._channels.keys())
-        silent = bool(targets) and await self._is_quiet(added.notification)
-        cells = self._policy[draft.category]
+        deliveries = await self._deliver(added.notification, added.notification.created_at)
+        return NotifyResult(added.notification, created=True, copies=copies, deliveries=deliveries)
+
+    async def deliver(self, notification: Notification) -> Mapping[str, DeliveryResult]:
+        """Entrega un aviso que ya está guardado, sin guardar nada.
+
+        Sirve para avisos que guardó otro (un trigger de la base, otro servicio)
+        y para reintentar una entrega que falló. No mira la `dedupe_key` ni hace
+        copias, y usa las preferencias, la disponibilidad y el horario de no
+        molestar de ahora.
+
+        Lanza `EventRejected` (`invalid_field`, `category`) si la política no
+        tiene la categoría del aviso. Una entrega que falla nunca lanza.
+        """
+        if notification.category not in self._policy:
+            raise EventRejected("invalid_field", "category")
+        return await self._deliver(notification, self._clock())
+
+    async def _deliver(self, notification: Notification, moment: datetime) -> dict[str, DeliveryResult]:
+        """Los pasos 6 a 9 del recorrido. `moment` es el instante para no molestar."""
+        overrides = await self._preferences.get_overrides(notification.recipient_id, scope=notification.scope)
+        targets = resolve_channels(
+            self._policy, notification.category, overrides, await self._usable(notification)
+        )
+        silent = bool(targets) and await self._is_quiet(notification.recipient_id, moment)
+        cells = self._policy[notification.category]
         deliveries: dict[str, DeliveryResult] = {}
         # `sorted` sobre `str` ordena por punto de código: el orden del spec.
         for channel_id in sorted(targets):
             if silent and not cells[channel_id].urgent:
                 deliveries[channel_id] = DeliveryResult("silenced")
                 continue
-            deliveries[channel_id] = await _deliver(self._channels[channel_id], added.notification)
-        return NotifyResult(added.notification, created=True, copies=copies, deliveries=deliveries)
+            deliveries[channel_id] = await _deliver(self._channels[channel_id], notification)
+        return deliveries
 
-    async def _is_quiet(self, notification: Notification) -> bool:
-        """Si el destinatario está en su horario de no molestar cuando se creó el aviso."""
+    async def _usable(self, notification: Notification) -> list[str]:
+        """Los canales configurados que están disponibles para el destinatario del aviso."""
+        if self._available is None:
+            return list(self._channels)
+        value = self._available(notification.recipient_id, notification.scope)
+        theirs = set(await value if inspect.isawaitable(value) else value)
+        return [channel_id for channel_id in self._channels if channel_id in theirs]
+
+    async def _is_quiet(self, recipient_id: str, moment: datetime) -> bool:
+        """Si el destinatario está en su horario de no molestar en ese instante."""
         if self._quiet_hours is None:
             return False
-        quiet_hours = await self._quiet_hours.get_quiet_hours(notification.recipient_id)
+        quiet_hours = await self._quiet_hours.get_quiet_hours(recipient_id)
         if quiet_hours is None or not quiet_hours.enabled:
             return False
-        minute = self._local_minute(quiet_hours.timezone, notification.created_at)
+        minute = self._local_minute(quiet_hours.timezone, moment)
         # Zona desconocida: ante la duda, se entrega.
         return minute is not None and is_quiet(quiet_hours, minute)
 

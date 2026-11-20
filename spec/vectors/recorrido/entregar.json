@@ -1,0 +1,279 @@
+{
+ "spec": "0",
+ "id": "recorrido/entregar",
+ "kind": "recorrido",
+ "policy": {
+  "security": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "sms": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": true
+   },
+   "sms": {
+    "default": false
+   }
+  },
+  "digest": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   },
+   "email": {
+    "default": true
+   }
+  },
+  "quiet": {
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "catalog": {
+  "login.new": {
+   "category": "security",
+   "title": "Nuevo inicio de sesión desde {device}"
+  },
+  "comment.new": {
+   "category": "activity",
+   "title": "{author} comentó",
+   "body": "{excerpt}"
+  },
+  "digest.weekly": {
+   "category": "digest",
+   "title": "Tu resumen de la semana"
+  },
+  "note.saved": {
+   "category": "quiet",
+   "title": "Nota guardada"
+  }
+ },
+ "channels": [
+  "email",
+  "push",
+  "sms"
+ ],
+ "steps": [
+  {
+   "note": "se avisa y el push falla",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    },
+    "dedupe_key": "c-1"
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "outcomes": {
+    "push": "failed"
+   },
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": "c-1",
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    },
+    "copies": [],
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "push": "failed"
+    }
+   }
+  },
+  {
+   "note": "el repetido no se vuelve a entregar",
+   "op": "notify",
+   "event": {
+    "type": "comment.new",
+    "recipient_id": "ana",
+    "payload": {
+     "author": "Beto",
+     "excerpt": "Hola"
+    },
+    "dedupe_key": "c-1"
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "outcomes": {},
+   "expect": {
+    "created": false,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "comment.new",
+     "category": "activity",
+     "title": "Beto comentó",
+     "body": "Hola",
+     "action_url": null,
+     "payload": {
+      "author": "Beto",
+      "excerpt": "Hola"
+     },
+     "scope": null,
+     "dedupe_key": "c-1",
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    },
+    "copies": [],
+    "attempted": [],
+    "deliveries": {}
+   }
+  },
+  {
+   "note": "entregar el aviso guardado lo intenta otra vez",
+   "op": "deliver",
+   "id": "n1",
+   "outcomes": {},
+   "expect": {
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "push": "sent"
+    }
+   }
+  },
+  {
+   "note": "y otra: entregar no lleva la cuenta de lo entregado",
+   "op": "deliver",
+   "id": "n1",
+   "outcomes": {},
+   "expect": {
+    "attempted": [
+     "push"
+    ],
+    "deliveries": {
+     "push": "sent"
+    }
+   }
+  },
+  {
+   "note": "ana pide la actividad por email",
+   "op": "save",
+   "recipient_id": "ana",
+   "scope": null,
+   "changes": [
+    {
+     "category": "activity",
+     "channel": "email",
+     "enabled": true
+    }
+   ],
+   "expect": null
+  },
+  {
+   "note": "las preferencias son las de ahora, no las del momento en que se guardó",
+   "op": "deliver",
+   "id": "n1",
+   "outcomes": {},
+   "expect": {
+    "attempted": [
+     "email",
+     "push"
+    ],
+    "deliveries": {
+     "email": "sent",
+     "push": "sent"
+    }
+   }
+  },
+  {
+   "note": "con la disponibilidad de ahora",
+   "op": "deliver",
+   "id": "n1",
+   "outcomes": {},
+   "expect": {
+    "attempted": [
+     "email"
+    ],
+    "deliveries": {
+     "email": "sent"
+    }
+   },
+   "available": [
+    "email"
+   ]
+  },
+  {
+   "note": "ana silencia la noche",
+   "op": "quiet",
+   "recipient_id": "ana",
+   "setting": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "UTC"
+   },
+   "expect": null
+  },
+  {
+   "note": "en silencio no se interrumpe",
+   "op": "deliver",
+   "id": "n1",
+   "outcomes": {},
+   "expect": {
+    "attempted": [],
+    "deliveries": {
+     "email": "silenced",
+     "push": "silenced"
+    }
+   },
+   "local_minute": 1380
+  },
+  {
+   "note": "fuera del horario, sí",
+   "op": "deliver",
+   "id": "n1",
+   "outcomes": {},
+   "expect": {
+    "attempted": [
+     "email",
+     "push"
+    ],
+    "deliveries": {
+     "email": "sent",
+     "push": "sent"
+    }
+   },
+   "local_minute": 720
+  }
+ ]
+}

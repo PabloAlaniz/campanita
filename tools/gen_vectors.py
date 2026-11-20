@@ -1857,14 +1857,17 @@ class Recorrido:
         at_ms: int,
         minute: int | None = None,
         members: object = None,
+        available: list[str] | None = None,
         **outcomes: str,
     ) -> dict:
         """`minute` es el minuto local del destinatario en este paso (para no molestar).
+        `available` son los canales que la instalación dice disponibles para el
+        destinatario en este paso; sin valor, todos los configurados.
         `outcomes` dice qué contesta cada canal en este paso; por omisión, `sent`.
         Además de los tres resultados válidos: `throws` (el canal falla con una
         excepción), `garbage` (devuelve algo que no es un resultado) y `unknown`
         (devuelve un resultado bien formado con un valor que no existe)."""
-        expect = self._notify(event, new_id, at_ms, outcomes, minute, members)
+        expect = self._notify(event, new_id, at_ms, outcomes, minute, members, available)
         step = {
             "note": note,
             "op": "notify",
@@ -1878,11 +1881,39 @@ class Recorrido:
             step["local_minute"] = minute
         if members is not None:
             step["members"] = members
+        if available is not None:
+            step["available"] = available
+        self.steps.append(step)
+        return expect
+
+    def deliver(
+        self,
+        note: str,
+        notification_id: str,
+        minute: int | None = None,
+        available: list[str] | None = None,
+        **outcomes: str,
+    ) -> dict:
+        """Entrega otra vez un aviso que ya está en el almacén, sin guardar nada."""
+        row = next(row for row in self.store.rows if row["id"] == notification_id)
+        expect = self._entregar(row, outcomes, minute, available)
+        step = {"note": note, "op": "deliver", "id": notification_id, "outcomes": outcomes, "expect": expect}
+        if minute is not None:
+            step["local_minute"] = minute
+        if available is not None:
+            step["available"] = available
         self.steps.append(step)
         return expect
 
     def _notify(
-        self, event: dict, new_id: str, at_ms: int, outcomes: dict, minute: int | None, members: object
+        self,
+        event: dict,
+        new_id: str,
+        at_ms: int,
+        outcomes: dict,
+        minute: int | None,
+        members: object,
+        available: list[str] | None,
     ) -> dict:
         try:
             draft = build_draft(self.catalog, event)
@@ -1902,22 +1933,27 @@ class Recorrido:
             if "error" in copy:
                 return {"error": {"reason": copy["error"], "detail": None}}
             copies.append(copy)
+        return {**added, "copies": copies, **self._entregar(draft, outcomes, minute, available)}
+
+    def _entregar(self, aviso: dict, outcomes: dict, minute: int | None, available: list[str] | None) -> dict:
+        """Los pasos que comparten `notify` y `deliver`: elegir los canales y entregar."""
         saved: dict = {}
         for (who, where, category, channel), enabled in self.prefs.cells.items():
-            if who == draft["recipient_id"] and where == draft["scope"]:
+            if who == aviso["recipient_id"] and where == aviso["scope"]:
                 saved.setdefault(category, {})[channel] = enabled
-        targets = channels_for(self.policy, draft["category"], saved, self.channels)
-        setting = self.quiet_hours.get(draft["recipient_id"])
+        usable = [c for c in self.channels if available is None or c in available]
+        targets = channels_for(self.policy, aviso["category"], saved, usable)
+        setting = self.quiet_hours.get(aviso["recipient_id"])
         silent = setting is not None and minute is not None and in_quiet_hours(setting, minute)
         deliveries, attempted = {}, []
         for channel in targets:
-            if silent and not self.policy[draft["category"]][channel].get("urgent", False):
+            if silent and not self.policy[aviso["category"]][channel].get("urgent", False):
                 deliveries[channel] = "silenced"
                 continue
             attempted.append(channel)
             answer = outcomes.get(channel, "sent")
             deliveries[channel] = answer if answer in OUTCOMES else "failed"
-        return {**added, "copies": copies, "attempted": attempted, "deliveries": deliveries}
+        return {"attempted": attempted, "deliveries": deliveries}
 
 
 RECORRIDO_POLITICA = {
@@ -2144,6 +2180,64 @@ def recorrido_disponibles() -> dict:
     r.save("pedir un canal que no está configurado", [("activity", "email", True)])
     assert r.notify("no lo hace aparecer", comment, "n3", 3000)["attempted"] == ["push"]
     return recorrido_vector("recorrido/disponibles", r)
+
+
+def recorrido_disponibles_por_persona() -> dict:
+    r = Recorrido(RECORRIDO_POLITICA, RECORRIDO_CATALOGO, ["email", "push", "sms"])
+    login = {"type": "login.new", "recipient_id": "ana", "payload": {"device": "Firefox"}}
+    comment = {"type": "comment.new", "recipient_id": "ana", "payload": {"author": "Beto", "excerpt": "Hola"}}
+    r.save("ana pide los avisos de actividad por email", [("activity", "email", True)])
+    assert r.notify("sin decir qué hay disponible, valen todos los configurados", comment, "n1", 1000)[
+        "attempted"
+    ] == ["email", "push"]
+    assert r.notify(
+        "la instalación dice qué tiene disponible ana: sólo esos se miran",
+        comment,
+        "n2",
+        2000,
+        available=["push"],
+    )["attempted"] == ["push"]
+    assert r.notify(
+        "un canal bloqueado en encendido tampoco sale si no está disponible para ella",
+        login,
+        "n3",
+        3000,
+        available=["email"],
+    )["attempted"] == ["email"]
+    assert r.notify(
+        "un canal disponible que no está configurado no aparece",
+        comment,
+        "n4",
+        4000,
+        available=["push", "telegram"],
+    )["attempted"] == ["push"]
+    a = r.notify("nada disponible: el aviso se guarda y no se entrega", login, "n5", 5000, available=[])
+    assert a["created"] and a["attempted"] == []
+    return recorrido_vector("recorrido/disponibles-por-persona", r)
+
+
+def recorrido_entregar() -> dict:
+    r = Recorrido(RECORRIDO_POLITICA, RECORRIDO_CATALOGO, ["email", "push", "sms"])
+    comment = {"type": "comment.new", "recipient_id": "ana", "payload": {"author": "Beto", "excerpt": "Hola"}}
+    keyed = {**comment, "dedupe_key": "c-1"}
+    assert r.notify("se avisa y el push falla", keyed, "n1", 1000, push="failed")["deliveries"] == {
+        "push": "failed"
+    }
+    assert r.notify("el repetido no se vuelve a entregar", keyed, "n2", 2000)["attempted"] == []
+    assert r.deliver("entregar el aviso guardado lo intenta otra vez", "n1")["deliveries"] == {"push": "sent"}
+    assert r.deliver("y otra: entregar no lleva la cuenta de lo entregado", "n1")["attempted"] == ["push"]
+    r.save("ana pide la actividad por email", [("activity", "email", True)])
+    assert r.deliver("las preferencias son las de ahora, no las del momento en que se guardó", "n1")[
+        "attempted"
+    ] == ["email", "push"]
+    assert r.deliver("con la disponibilidad de ahora", "n1", available=["email"])["attempted"] == ["email"]
+    r.quiet("ana silencia la noche", {"enabled": True, "start": "22:00", "end": "08:00", "timezone": "UTC"})
+    assert r.deliver("en silencio no se interrumpe", "n1", minute=23 * 60)["deliveries"] == {
+        "email": "silenced",
+        "push": "silenced",
+    }
+    assert r.deliver("fuera del horario, sí", "n1", minute=12 * 60)["attempted"] == ["email", "push"]
+    return recorrido_vector("recorrido/entregar", r)
 
 
 def recorrido_sin_canales() -> dict:
@@ -2948,6 +3042,8 @@ ALL = [
     recorrido_rechazos,
     recorrido_ambitos,
     recorrido_disponibles,
+    recorrido_disponibles_por_persona,
+    recorrido_entregar,
     recorrido_sin_canales,
     recorrido_silencio,
     recorrido_grupos,

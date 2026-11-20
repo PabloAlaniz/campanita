@@ -66,6 +66,9 @@ describe('recorrido', () => {
       const quietHours = new MemoryQuietHoursStore();
       // El minuto local lo dice cada paso: la base de zonas horarias no entra en los vectores.
       let minute: number | null = null;
+      // Lo que la función de disponibilidad devuelve en este paso; sin valor, la instalación no tiene.
+      let available: string[] | undefined;
+      const known = new Map<string, Notification>();
       const notifier = new Notifier({
         policy,
         catalog: parseCatalog(vector.catalog, policy),
@@ -74,6 +77,7 @@ describe('recorrido', () => {
         channels,
         quietHours,
         localMinute: () => minute,
+        available: () => available ?? vector.channels,
       });
 
       for (const [index, step] of vector.steps.entries()) {
@@ -89,18 +93,32 @@ describe('recorrido', () => {
           continue;
         }
         minute = (step['local_minute'] as number | undefined) ?? null;
+        available = step['available'] as string[] | undefined;
         const outcomes = step['outcomes'] as Record<string, string>;
         for (const channel of channels) {
           channel.answer = Object.hasOwn(outcomes, channel.id) ? outcomes[channel.id]! : 'sent';
           channel.sent = [];
         }
         let got: Record<string, unknown>;
+        if (step['op'] === 'deliver') {
+          const deliveries = await notifier.deliver(known.get(step['id'] as string)!);
+          got = {
+            attempted: [...deliveries].filter(([, d]) => d.outcome !== 'silenced').map(([id]) => id),
+            deliveries: Object.fromEntries([...deliveries].map(([id, d]) => [id, d.outcome])),
+          };
+          expect(got, where).toEqual(step['expect']);
+          const called = channels.filter((channel) => channel.sent.length > 0).map((channel) => channel.id);
+          expect(called.sort(), where).toEqual([...(got['attempted'] as string[])].sort());
+          continue;
+        }
         try {
           const result = await notifier.notify(step['event'] as Step, {
             id: step['id'] as string,
             createdAt: new Date(step['at_ms'] as number),
             members: step['members'] as never,
           });
+          known.set(result.notification.id, result.notification);
+          for (const copy of result.copies) known.set(copy.notification.id, copy.notification);
           got = {
             created: result.created,
             notification: notificationToWire(result.notification),
@@ -351,5 +369,64 @@ describe('no molestar', () => {
     await quietHours.setQuietHours('ana', setting);
     setting.start = '10:00';
     expect((await quietHours.getQuietHours('ana'))?.start).toBe('22:00');
+  });
+});
+
+describe('deliver', () => {
+  it('rechaza un aviso con una categoría que la política no tiene, sin intentar canales', async () => {
+    const email = new Scripted('email');
+    const store = new MemoryStore();
+    const notifier = new Notifier({ ...base(), store, preferences: new MemoryPreferenceStore(), channels: [email] });
+    const { notification } = await notifier.notify({ type: 'nota', recipient_id: 'ana' }, { id: 'n1' });
+    email.sent = [];
+    const ajeno = { ...notification, category: 'otra' };
+    await expect(notifier.deliver(ajeno)).rejects.toMatchObject({ reason: 'invalid_field', detail: 'category' });
+    expect(email.sent).toEqual([]);
+  });
+
+  it('mira el horario de no molestar en el instante de la llamada, no en el del aviso', async () => {
+    const quietHours = new MemoryQuietHoursStore();
+    await quietHours.setQuietHours('ana', parseQuietHours({ enabled: true, start: '22:00', end: '08:00', timezone: 'UTC' }));
+    const moments: Date[] = [];
+    let now = new Date('2030-01-01T12:00:00Z');
+    const notifier = new Notifier({
+      ...base(),
+      store: new MemoryStore(),
+      preferences: new MemoryPreferenceStore(),
+      channels: [new Scripted('email')],
+      quietHours,
+      clock: () => now,
+      localMinute: (_zone, moment) => {
+        moments.push(moment);
+        return moment.getUTCHours() * 60 + moment.getUTCMinutes();
+      },
+    });
+    const { notification } = await notifier.notify({ type: 'nota', recipient_id: 'ana' }, { id: 'n1' });
+    now = new Date('2030-01-01T23:00:00Z');
+    const deliveries = await notifier.deliver(notification);
+    expect(deliveries.get('email')).toEqual({ outcome: 'silenced' });
+    expect(moments.map((m) => m.toISOString())).toEqual(['2030-01-01T12:00:00.000Z', '2030-01-01T23:00:00.000Z']);
+  });
+
+  it('acepta una disponibilidad asíncrona y le pasa el destinatario y el ámbito', async () => {
+    const calls: Array<[string, string | null]> = [];
+    const notifier = new Notifier({
+      ...base(),
+      store: new MemoryStore(),
+      preferences: new MemoryPreferenceStore(),
+      channels: [new Scripted('email')],
+      available: async (recipientId, scope) => {
+        calls.push([recipientId, scope]);
+        return recipientId === 'ana' ? [] : ['email'];
+      },
+    });
+    const ana = await notifier.notify({ type: 'nota', recipient_id: 'ana', scope: 'acme' }, { id: 'n1' });
+    const beto = await notifier.notify({ type: 'nota', recipient_id: 'beto' }, { id: 'n2' });
+    expect([...ana.deliveries.keys()]).toEqual([]);
+    expect([...beto.deliveries.keys()]).toEqual(['email']);
+    expect(calls).toEqual([
+      ['ana', 'acme'],
+      ['beto', null],
+    ]);
   });
 });
