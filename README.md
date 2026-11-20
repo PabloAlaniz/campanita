@@ -15,7 +15,7 @@ npm install campanita
 > **Versión temprana.** El núcleo decide por qué canales sale un aviso, qué puede cambiar la
 > persona y cómo se arma un aviso, y guarda la bandeja y las preferencias sobre cualquier base.
 > Los canales de entrega incluidos son email (SMTP, HTTP o Resend) y Slack; los demás los escribe
-> quien integra.
+> quien integra. La bandeja se sirve por HTTP, con un cliente sin dependencias para la interfaz.
 > Hasta la 1.0 la API puede cambiar entre versiones menores. La [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene y el
 > [CHANGELOG](CHANGELOG.md), qué cambió.
 
@@ -139,6 +139,21 @@ const result = await notifier.notify({
   recipient_id: 'user-7',
   payload: { author: 'Ana', document: 'Presupuesto' },
 });
+```
+
+### La campanita en tu app
+
+La bandeja también se sirve por HTTP, con un contrato que está en el spec: el mismo para cualquier
+backend. Del lado del servidor hay un adaptador (`campanita/http` en TypeScript, `InboxApp` ASGI en
+Python); del lado de la interfaz, un cliente con su store y dos hooks de React. La campana la
+dibujás vos, con tu diseño:
+
+```ts
+// el servidor
+const inbox = createInboxHandler({ store, basePath: '/api/avisos', resolveRecipient });
+// la interfaz
+const store = createInboxStore(createInboxClient({ baseUrl: '/api/avisos' }), { scope: 'acme' });
+const { items, unread } = useInbox(store);   // unread.capped → "99+"
 ```
 
 Más detalle en [`python/README.md`](python/README.md) y [`ts/README.md`](ts/README.md).

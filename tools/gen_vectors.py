@@ -15,10 +15,14 @@ Sólo usa la biblioteca estándar.
 
 from __future__ import annotations
 
+import base64
+import calendar
 import itertools
 import json
 import re
 import sys
+import time
+import urllib.parse
 from pathlib import Path
 
 SPEC = "0"
@@ -2439,6 +2443,474 @@ def email_direcciones() -> dict:
     return {"spec": SPEC, "id": "email/direcciones", "kind": "email-direcciones", "cases": cases}
 
 
+# ---------------------------------------------------------------------------
+# La bandeja por HTTP: un servidor de juguete sobre los modelos de arriba.
+#
+# Cada pedido se resuelve con comparaciones de texto y expresiones regulares,
+# sin router: es la lectura más literal de la tabla de rutas del spec.
+# ---------------------------------------------------------------------------
+
+DECIMAL = re.compile(r"[1-9][0-9]*")
+ISO = re.compile(r"([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\.([0-9]{3})Z")
+B64URL = re.compile(r"[A-Za-z0-9_-]*")
+RUTAS = {
+    "/feed": "GET",
+    "/unread-count": "GET",
+    "/feed/read-all": "POST",
+    "/preferences": ("GET", "PATCH"),
+    "/quiet-hours": ("GET", "PUT"),
+}
+#: Zonas que el servidor de juguete conoce. Alcanza para los vectores.
+ZONAS = {"America/Lima", "UTC", "Europe/Madrid"}
+
+
+def iso(ms: int) -> str:
+    seconds, millis = divmod(ms, 1000)
+    y, mo, d, h, mi, s = time.gmtime(seconds)[:6]
+    return f"{y:04d}-{mo:02d}-{d:02d}T{h:02d}:{mi:02d}:{s:02d}.{millis:03d}Z"
+
+
+def from_iso(text: object) -> int | None:
+    if not isinstance(text, str) or not ISO.fullmatch(text):
+        return None
+    y, mo, d, h, mi, s, ms = (int(x) for x in ISO.fullmatch(text).groups())
+    if y < 1970 or not 1 <= mo <= 12 or not 1 <= d <= calendar.monthrange(y, mo)[1]:
+        return None
+    if h > 23 or mi > 59 or s > 59:
+        return None
+    return calendar.timegm((y, mo, d, h, mi, s, 0, 0, 0)) * 1000 + ms
+
+
+def cursor_text(created_at_ms: int, row_id: str) -> str:
+    raw = f"{created_at_ms}:{row_id}".encode()
+    return base64.urlsafe_b64encode(raw).decode().rstrip("=")
+
+
+def cursor_value(text: str) -> dict | None:
+    if not B64URL.fullmatch(text) or len(text) % 4 == 1:
+        return None
+    try:
+        raw = base64.urlsafe_b64decode(text + "=" * (-len(text) % 4)).decode("utf-8")
+    except (ValueError, UnicodeDecodeError):
+        return None
+    ms, sep, row_id = raw.partition(":")
+    if not sep or not (ms == "0" or DECIMAL.fullmatch(ms)) or int(ms) > 8_640_000_000_000_000:
+        return None
+    if cursor_text(int(ms), row_id) != text:
+        return None
+    return {"created_at_ms": int(ms), "id": row_id}
+
+
+def en_el_cable(row: dict) -> dict:
+    return {
+        "id": row["id"],
+        "type": row["type"],
+        "category": row["category"],
+        "title": row["title"],
+        "body": row["body"],
+        "action_url": row["action_url"],
+        "payload": row["payload"],
+        "scope": row["scope"],
+        "created_at": iso(row["created_at_ms"]),
+        "read_at": None if row["read_at_ms"] is None else iso(row["read_at_ms"]),
+    }
+
+
+def falla(status: int, code: str, **extra) -> dict:
+    return {"status": status, "body": {"error": {"code": code, **extra}}}
+
+
+def ok(body: dict) -> dict:
+    return {"status": 200, "body": body}
+
+
+class Servidor:
+    def __init__(self, policy: dict, available: list[str]) -> None:
+        self.policy, self.available = policy, available
+        self.modelo = Modelo()
+        self.ajustes: dict[tuple[str, str | None], dict] = {}
+        self.horarios: dict[str, dict] = {}
+
+    def atender(self, who, method, path, query, body, raw, at_ms) -> dict | None:
+        id_read = re.fullmatch(r"/feed/([^/]+)/read", path)
+        if id_read:
+            allowed = ("POST",)
+        elif path in RUTAS:
+            allowed = RUTAS[path] if isinstance(RUTAS[path], tuple) else (RUTAS[path],)
+        else:
+            return None
+        if method not in allowed:
+            return falla(405, "method_not_allowed")
+        if who is None:
+            return falla(401, "unauthenticated")
+        params: dict[str, str] = {}
+        for key, value in query:
+            if key in params:
+                return falla(400, "invalid_query")
+            params[key] = value
+        if id_read:
+            row_id = urllib.parse.unquote(id_read.group(1))
+            return ok({"changed": self.modelo.mark_read(row_id, who, at_ms)})
+        if path == "/feed":
+            return self.feed(who, params)
+        if path == "/unread-count":
+            cap_text = params.get("cap", "99")
+            if not DECIMAL.fullmatch(cap_text) or int(cap_text) > 1000:
+                return falla(400, "invalid_cap")
+            cap = int(cap_text)
+            n = self.modelo.count_unread(who, params.get("scope"), cap + 1)
+            return ok({"count": min(n, cap), "capped": n > cap})
+        if path == "/feed/read-all":
+            return self.read_all(who, body, raw, at_ms)
+        if path == "/preferences":
+            return self.preferencias(who, method, params.get("scope"), body, raw)
+        return self.horario(who, method, body, raw)
+
+    def feed(self, who: str, params: dict) -> dict:
+        limit_text = params.get("limit", "20")
+        if not DECIMAL.fullmatch(limit_text) or int(limit_text) > 100:
+            return falla(400, "invalid_limit")
+        if params.get("unread_only", "false") not in ("true", "false"):
+            return falla(400, "invalid_query")
+        cursor = None
+        if "cursor" in params:
+            cursor = cursor_value(params["cursor"])
+            if cursor is None:
+                return falla(400, "invalid_cursor")
+        page = self.modelo.list(
+            {
+                "recipient_id": who,
+                "limit": int(limit_text),
+                "cursor": cursor,
+                "unread_only": params.get("unread_only") == "true",
+                "category": params.get("category"),
+                "scope": params.get("scope"),
+            }
+        )
+        edge = page["next_cursor"]
+        return ok(
+            {
+                "items": [en_el_cable(row) for row in page["items"]],
+                "next_cursor": None if edge is None else cursor_text(edge["created_at_ms"], edge["id"]),
+            }
+        )
+
+    def read_all(self, who, body, raw, at_ms) -> dict:
+        if raw is not None or not isinstance(body, dict) or not set(body) <= {"before", "scope", "category"}:
+            return falla(400, "invalid_body")
+        before = from_iso(body.get("before"))
+        texto_o_nada = all(body.get(k) is None or isinstance(body[k], str) for k in ("scope", "category"))
+        if before is None or not texto_o_nada:
+            return falla(400, "invalid_body")
+        changed = self.modelo.mark_all_read(who, before, at_ms, body.get("scope"), body.get("category"))
+        return ok({"changed": changed})
+
+    def preferencias(self, who, method, scope, body, raw) -> dict:
+        guardado = self.ajustes.setdefault((who, scope), {})
+        if method == "PATCH":
+            de_objetos = isinstance(body, dict) and all(isinstance(v, dict) for v in body.values())
+            if raw is not None or not de_objetos:
+                return falla(400, "invalid_body")
+            result = patch_result(self.policy, body, self.available)
+            if not result["ok"]:
+                e = result["error"]
+                return falla(422, e["reason"], category=e["category"], channel=e["channel"])
+            for change in result["changes"]:
+                guardado.setdefault(change["category"], {})[change["channel"]] = change["enabled"]
+        return ok({"categories": matrix_for(self.policy, guardado, self.available)})
+
+    def horario(self, who, method, body, raw) -> dict:
+        if method == "PUT":
+            if raw is not None:
+                return falla(400, "invalid_body")
+            if not valid_quiet_hours(body):
+                return falla(422, "invalid_quiet_hours")
+            if body["timezone"] not in ZONAS:
+                return falla(422, "unknown_timezone")
+            self.horarios[who] = body
+        return ok({"quiet_hours": self.horarios.get(who)})
+
+
+class Pedidos:
+    """Arma los pasos de un vector `http` contra el servidor de juguete."""
+
+    def __init__(self, policy: dict | None = None, available: list[str] | None = None) -> None:
+        self.policy = EJEMPLO if policy is None else policy
+        self.available = ["email"] if available is None else available
+        self.servidor = Servidor(self.policy, self.available)
+        self.steps: list[dict] = []
+        self.clock = 100_000
+
+    def add(self, note, new_id, at_ms, **draft) -> None:
+        d = aviso(**draft)
+        expect = self.servidor.modelo.add(d, new_id, at_ms)
+        self.steps.append(
+            {"note": note, "op": "add", "draft": d, "id": new_id, "at_ms": at_ms, "expect": expect}
+        )
+
+    def req(self, note, method, path, query=(), body=..., raw=None, who="ana"):
+        self.clock += 1000
+        step = {"note": note, "op": "request", "as": who, "method": method, "path": path}
+        step["query"] = [list(pair) for pair in query]
+        if body is not ...:
+            step["body"] = body
+        if raw is not None:
+            step["raw_body"] = raw
+        step["at_ms"] = self.clock
+        got = self.servidor.atender(
+            who, method, path, list(query), None if body is ... else body, raw, self.clock
+        )
+        step["expect"] = got
+        self.steps.append(step)
+        return got
+
+    def vector(self, vector_id: str) -> dict:
+        return {
+            "spec": SPEC,
+            "id": vector_id,
+            "kind": "http",
+            "policy": self.policy,
+            "available": self.available,
+            "steps": self.steps,
+        }
+
+
+def items_of(response: dict) -> list[str]:
+    return [item["id"] for item in response["body"]["items"]]
+
+
+def code_of(response: dict) -> tuple[int, str]:
+    return response["status"], response["body"]["error"]["code"]
+
+
+def http_bandeja() -> dict:
+    p = Pedidos()
+    for index in range(1, 6):
+        p.add(f"aviso {index}", f"n{index}", index * 1000)
+    p.add("uno del ámbito acme", "n6", 6000, scope="acme", category="security")
+    p.add("uno de otro ámbito", "n7", 7000, scope="otro")
+    p.add("uno de otra persona", "b1", 8000, recipient="beto")
+    p.add("un id con barra y espacio", "x/y z", 500)
+
+    assert p.req("una ruta que no es del contrato no se atiende", "GET", "/nada") is None
+    assert p.req("ni con una barra al final", "GET", "/feed/") is None
+    assert p.req("ni sin id", "POST", "/feed//read") is None
+    assert code_of(p.req("sin persona", "GET", "/feed", who=None)) == (401, "unauthenticated")
+    assert code_of(p.req("el método va antes que la persona", "DELETE", "/feed", who=None)) == (
+        405,
+        "method_not_allowed",
+    )
+    assert code_of(p.req("read-all es POST", "GET", "/feed/read-all")) == (405, "method_not_allowed")
+
+    r = p.req("la bandeja, del más nuevo al más viejo", "GET", "/feed")
+    assert items_of(r) == ["n7", "n6", "n5", "n4", "n3", "n2", "n1", "x/y z"]
+    assert r["body"]["next_cursor"] is None
+    r = p.req("de a tres", "GET", "/feed", [("limit", "3")])
+    assert items_of(r) == ["n7", "n6", "n5"]
+    r = p.req("la página siguiente", "GET", "/feed", [("limit", "3"), ("cursor", r["body"]["next_cursor"])])
+    assert items_of(r) == ["n4", "n3", "n2"]
+    r = p.req("la última", "GET", "/feed", [("limit", "3"), ("cursor", r["body"]["next_cursor"])])
+    assert items_of(r) == ["n1", "x/y z"] and r["body"]["next_cursor"] is None
+    assert items_of(p.req("con ámbito: el suyo y los de cuenta", "GET", "/feed", [("scope", "acme")])) == [
+        "n6",
+        "n5",
+        "n4",
+        "n3",
+        "n2",
+        "n1",
+        "x/y z",
+    ]
+    assert items_of(p.req("el ámbito vacío es un ámbito", "GET", "/feed", [("scope", "")]))[0] == "n5"
+    assert items_of(p.req("por categoría", "GET", "/feed", [("category", "security")])) == ["n6"]
+    assert len(items_of(p.req("parámetros desconocidos se ignoran", "GET", "/feed", [("_", "123")]))) == 8
+    assert items_of(p.req("beto ve lo suyo", "GET", "/feed", who="beto")) == ["b1"]
+    assert items_of(p.req("alguien sin avisos", "GET", "/feed", who="carla")) == []
+
+    for note, value in [
+        ("límite cero", "0"),
+        ("límite mayor que 100", "101"),
+        ("límite con cero a la izquierda", "07"),
+        ("límite que no es un número", "diez"),
+        ("límite vacío", ""),
+        ("límite negativo", "-1"),
+        ("límite con decimales", "2.0"),
+    ]:
+        assert code_of(p.req(note, "GET", "/feed", [("limit", value)])) == (400, "invalid_limit")
+    assert items_of(p.req("límite 100", "GET", "/feed", [("limit", "100")]))[0] == "n7"
+    otro = cursor_text(5000, "n5")
+    for note, value in [
+        ("cursor que no es base64url", "%%%"),
+        ("cursor con relleno", otro + "="),
+        ("cursor sin dos puntos", base64.urlsafe_b64encode(b"5000").decode().rstrip("=")),
+        ("cursor con fecha que no es un número", base64.urlsafe_b64encode(b"x:n5").decode().rstrip("=")),
+        ("cursor con cero a la izquierda", base64.urlsafe_b64encode(b"05000:n5").decode().rstrip("=")),
+        ("cursor vacío", ""),
+        ("cursor más allá de la última fecha", cursor_text(8_640_000_000_000_001, "n5")),
+    ]:
+        assert code_of(p.req(note, "GET", "/feed", [("cursor", value)])) == (400, "invalid_cursor"), note
+    assert items_of(p.req("un cursor armado a mano vale", "GET", "/feed", [("cursor", otro)])) == [
+        "n4",
+        "n3",
+        "n2",
+        "n1",
+        "x/y z",
+    ]
+    assert code_of(p.req("unread_only raro", "GET", "/feed", [("unread_only", "1")])) == (
+        400,
+        "invalid_query",
+    )
+    assert code_of(p.req("un parámetro repetido", "GET", "/feed", [("limit", "2"), ("limit", "3")])) == (
+        400,
+        "invalid_query",
+    )
+
+    assert p.req("el contador", "GET", "/unread-count")["body"] == {"count": 8, "capped": False}
+    assert p.req("con tope", "GET", "/unread-count", [("cap", "3")])["body"] == {"count": 3, "capped": True}
+    assert p.req("tope igual al total: no es 8+", "GET", "/unread-count", [("cap", "8")])["body"] == {
+        "count": 8,
+        "capped": False,
+    }
+    assert p.req("con ámbito", "GET", "/unread-count", [("scope", "otro")])["body"]["count"] == 7
+    for note, value in [("tope cero", "0"), ("tope mayor que 1000", "1001"), ("tope raro", "x")]:
+        assert code_of(p.req(note, "GET", "/unread-count", [("cap", value)])) == (400, "invalid_cap")
+
+    assert p.req("marcar uno", "POST", "/feed/n1/read")["body"] == {"changed": True}
+    assert p.req("marcarlo de nuevo no cambia nada", "POST", "/feed/n1/read")["body"] == {"changed": False}
+    assert p.req("uno que no existe no es un error", "POST", "/feed/zz/read")["body"] == {"changed": False}
+    assert p.req("lo de otra persona tampoco", "POST", "/feed/b1/read")["body"] == {"changed": False}
+    assert p.req("el id va decodificado", "POST", "/feed/x%2Fy%20z/read")["body"] == {"changed": True}
+    r = p.req(
+        "se ve leído, con la hora del servidor", "GET", "/feed", [("category", "activity"), ("scope", "")]
+    )
+    assert [i["read_at"] is not None for i in r["body"]["items"]] == [False] * 4 + [True, True]
+    r = p.req("sólo los no leídos", "GET", "/feed", [("unread_only", "true")])
+    assert items_of(r) == ["n7", "n6", "n5", "n4", "n3", "n2"]
+
+    hasta = iso(3000 + 1)
+    assert p.req("marcar todo hasta n3, que se vio", "POST", "/feed/read-all", body={"before": hasta})[
+        "body"
+    ] == {"changed": 2}
+    assert p.req(
+        "por ámbito y categoría",
+        "POST",
+        "/feed/read-all",
+        body={"before": iso(99000), "scope": "acme", "category": "security"},
+    )["body"] == {"changed": 1}
+    assert p.req("el resto", "POST", "/feed/read-all", body={"before": iso(99000), "scope": None})[
+        "body"
+    ] == {"changed": 3}
+    assert p.req("no queda nada", "GET", "/unread-count")["body"] == {"count": 0, "capped": False}
+    assert p.req("beto sigue igual", "GET", "/unread-count", who="beto")["body"]["count"] == 1
+    for note, kwargs in [
+        ("un cuerpo que no es JSON", {"raw": "{"}),
+        ("sin cuerpo", {}),
+        ("un cuerpo que no es un objeto", {"body": [iso(1)]}),
+        ("sin before", {"body": {}}),
+        ("una clave de más", {"body": {"before": iso(1), "recipient_id": "beto"}}),
+        ("before sin milisegundos", {"body": {"before": "2026-11-20T10:00:00Z"}}),
+        ("before con zona", {"body": {"before": "2026-11-20T10:00:00.000-03:00"}}),
+        ("before en un día que no existe", {"body": {"before": "2026-02-30T10:00:00.000Z"}}),
+        ("before antes de 1970", {"body": {"before": "1969-12-31T23:59:59.999Z"}}),
+        ("before como número", {"body": {"before": 3000}}),
+        ("scope que no es texto", {"body": {"before": iso(1), "scope": 5}}),
+    ]:
+        assert code_of(p.req(note, "POST", "/feed/read-all", **kwargs)) == (400, "invalid_body"), note
+    return p.vector("http/bandeja")
+
+
+def http_preferencias() -> dict:
+    p = Pedidos()
+    assert code_of(p.req("sin persona", "GET", "/preferences", who=None)) == (401, "unauthenticated")
+    assert code_of(p.req("no se borra", "DELETE", "/preferences")) == (405, "method_not_allowed")
+    r = p.req("la matriz de quien nunca cambió nada", "GET", "/preferences")
+    assert r["body"]["categories"]["activity"]["email"] == {"enabled": False, "locked": False}
+    r = p.req("un cambio", "PATCH", "/preferences", body={"activity": {"email": True}})
+    assert r["body"]["categories"]["activity"]["email"] == {"enabled": True, "locked": False}
+    r = p.req("queda guardado", "GET", "/preferences")
+    assert r["body"]["categories"]["activity"]["email"]["enabled"] is True
+    r = p.req("los ámbitos no se heredan", "GET", "/preferences", [("scope", "acme")])
+    assert r["body"]["categories"]["activity"]["email"]["enabled"] is False
+    p.req(
+        "un cambio en un ámbito",
+        "PATCH",
+        "/preferences",
+        [("scope", "acme")],
+        body={"invitations": {"email": False}},
+    )
+    r = p.req("no toca lo de sin ámbito", "GET", "/preferences")
+    assert r["body"]["categories"]["invitations"]["email"]["enabled"] is True
+    assert (
+        p.req("de otra persona, nada", "GET", "/preferences", who="beto")["body"]["categories"]["activity"][
+            "email"
+        ]["enabled"]
+        is False
+    )
+    assert p.req("una celda bloqueada", "PATCH", "/preferences", body={"security": {"email": False}})["body"][
+        "error"
+    ] == {"code": "locked", "category": "security", "channel": "email"}
+    assert p.req("un canal no disponible", "PATCH", "/preferences", body={"activity": {"push": True}})[
+        "body"
+    ]["error"] == {"code": "unavailable", "category": "activity", "channel": "push"}
+    assert p.req("una categoría desconocida", "PATCH", "/preferences", body={"nada": {}})["body"][
+        "error"
+    ] == {"code": "unknown_category", "category": "nada", "channel": None}
+    assert p.req(
+        "un valor que no es booleano",
+        "PATCH",
+        "/preferences",
+        body={"activity": {"email": "sí"}},
+    )["body"]["error"] == {"code": "invalid_value", "category": "activity", "channel": "email"}
+    r = p.req(
+        "rechazado entero: lo válido tampoco se guarda",
+        "PATCH",
+        "/preferences",
+        body={"activity": {"email": False}, "security": {"email": False}},
+    )
+    assert r["status"] == 422
+    assert (
+        p.req("sigue como antes", "GET", "/preferences")["body"]["categories"]["activity"]["email"]["enabled"]
+        is True
+    )
+    for note, kwargs in [
+        ("un cuerpo que no es JSON", {"raw": "nope"}),
+        ("un cuerpo que no es un objeto", {"body": ["activity"]}),
+        ("una categoría que no es un objeto", {"body": {"activity": True}}),
+        ("sin cuerpo", {}),
+    ]:
+        assert code_of(p.req(note, "PATCH", "/preferences", **kwargs)) == (400, "invalid_body"), note
+    assert p.req("un pedido vacío es válido", "PATCH", "/preferences", body={})["status"] == 200
+    return p.vector("http/preferencias")
+
+
+def http_horario() -> dict:
+    p = Pedidos()
+    assert code_of(p.req("sin persona", "GET", "/quiet-hours", who=None)) == (401, "unauthenticated")
+    assert code_of(p.req("no es PATCH", "PATCH", "/quiet-hours")) == (405, "method_not_allowed")
+    assert p.req("quien nunca definió uno", "GET", "/quiet-hours")["body"] == {"quiet_hours": None}
+    h = horario()
+    assert p.req("guardar uno", "PUT", "/quiet-hours", body=h)["body"] == {"quiet_hours": h}
+    assert p.req("se lee", "GET", "/quiet-hours")["body"] == {"quiet_hours": h}
+    assert p.req("es de la persona", "GET", "/quiet-hours", who="beto")["body"] == {"quiet_hours": None}
+    otro = horario(start="23:00", enabled=False, timezone="Europe/Madrid")
+    assert p.req("reemplazarlo", "PUT", "/quiet-hours", body=otro)["body"] == {"quiet_hours": otro}
+    for note, body in [
+        ("una hora inválida", horario(start="24:00")),
+        ("una clave de más", {**horario(), "days": []}),
+        ("una clave de menos", {k: v for k, v in horario().items() if k != "end"}),
+        ("no es un objeto", "22:00-08:00"),
+    ]:
+        assert code_of(p.req(note, "PUT", "/quiet-hours", body=body)) == (422, "invalid_quiet_hours"), note
+    assert code_of(
+        p.req("una zona que no existe", "PUT", "/quiet-hours", body=horario(timezone="Marte/Olimpo"))
+    ) == (
+        422,
+        "unknown_timezone",
+    )
+    assert code_of(p.req("un cuerpo que no es JSON", "PUT", "/quiet-hours", raw="{")) == (400, "invalid_body")
+    assert p.req("quedó el último válido", "GET", "/quiet-hours")["body"] == {"quiet_hours": otro}
+    return p.vector("http/horario")
+
+
 def vector(vector_id: str, kind: str, cases: list, policy: dict | None = None) -> dict:
     out: dict = {"spec": SPEC, "id": vector_id, "kind": kind}
     if policy is not None:
@@ -2486,6 +2958,9 @@ ALL = [
     silencio_guardado,
     email_mensaje,
     email_direcciones,
+    http_bandeja,
+    http_preferencias,
+    http_horario,
 ]
 
 

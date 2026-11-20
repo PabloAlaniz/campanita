@@ -13,7 +13,8 @@
  * Cada vector necesita un almacén vacío.
  */
 import { StoreError, type Notification } from './core/inbox.js';
-import type { Change, Draft } from './core/types.js';
+import { parsePolicy } from './core/policy.js';
+import type { Change, Draft, Policy } from './core/types.js';
 import { parseQuietHours, type QuietHours } from './core/quiet.js';
 import type { NotificationStore, PreferenceStore, QuietHoursStore } from './ports.js';
 
@@ -224,4 +225,90 @@ function sameJson(a: unknown, b: unknown): boolean {
     keys.length === Object.keys(right).length &&
     keys.every((key) => Object.hasOwn(right, key) && sameJson(left[key], right[key]))
   );
+}
+
+/** Lo que necesita `runHttpVector`: el almacén donde guardar los `add` y el adaptador. */
+export interface HttpVectorSetup {
+  readonly store: NotificationStore;
+  readonly handle: (request: Request) => Promise<Response | null>;
+}
+
+/**
+ * Corre un vector de tipo `http` contra un adaptador montado en `basePath`.
+ * `make` recibe la política, los canales disponibles y el reloj del vector, y
+ * arma el adaptador con almacenes vacíos.
+ *
+ *     await runHttpVector(vector, ({ policy, available, now }) => {
+ *       const store = new MemoryStore();
+ *       const handle = createInboxHandler({ store, policy, available: () => available, now, ... });
+ *       return { store, handle };
+ *     });
+ */
+export async function runHttpVector(
+  vector: {
+    readonly id: string;
+    readonly kind: string;
+    readonly policy?: unknown;
+    readonly available?: readonly string[];
+    readonly steps: readonly Wire[];
+  },
+  make: (setup: {
+    policy: Policy;
+    available: readonly string[];
+    now: () => Date;
+  }) => HttpVectorSetup | Promise<HttpVectorSetup>,
+  basePath = '/api/avisos',
+): Promise<void> {
+  if (vector.kind !== 'http') throw new TypeError('runHttpVector sólo corre vectores de tipo `http`');
+  let clock = 0;
+  const { store, handle } = await make({
+    policy: parsePolicy(vector.policy),
+    available: vector.available ?? [],
+    now: () => new Date(clock),
+  });
+  for (const [index, step] of vector.steps.entries()) {
+    const where = `${vector.id} paso ${index} (${String(step['note'])})`;
+    if (step['op'] === 'add') {
+      const draft = draftFromWire(step['draft'] as Wire);
+      await store.add(draft, { id: step['id'] as string, createdAt: new Date(step['at_ms'] as number) });
+      continue;
+    }
+    clock = step['at_ms'] as number;
+    const query = new URLSearchParams(step['query'] as [string, string][]).toString();
+    const url = `https://campanita.test${basePath}${step['path'] as string}${query ? `?${query}` : ''}`;
+    const init: { method: string; headers: Record<string, string>; body?: string } = {
+      method: step['method'] as string,
+      headers: { 'x-recipient': JSON.stringify(step['as']) },
+    };
+    if ('raw_body' in step) init.body = step['raw_body'] as string;
+    else if ('body' in step) init.body = JSON.stringify(step['body']);
+    const response = await handle(new Request(url, init));
+    const expect = step['expect'] as { status: number; body: Wire } | null;
+    let got: unknown = null;
+    if (response !== null) {
+      const body = (await response.json()) as Wire;
+      if (expect !== null && expect.status >= 400 && typeof body['error'] === 'object' && body['error'] !== null) {
+        const error = body['error'] as Wire;
+        const wanted = (expect.body['error'] ?? {}) as Wire;
+        const compared: Wire = { code: error['code'] };
+        for (const key of ['category', 'channel']) if (key in wanted) compared[key] = error[key];
+        got = { status: response.status, body: { error: compared } };
+      } else {
+        got = { status: response.status, body };
+      }
+    }
+    if (!sameJson(got, expect)) {
+      throw new Error(
+        `${where}, ${String(step['method'])} ${String(step['path'])}:\n` +
+          `  se esperaba: ${JSON.stringify(expect)}\n` +
+          `  se obtuvo:   ${JSON.stringify(got)}`,
+      );
+    }
+  }
+}
+
+/** Para `runHttpVector`: el destinatario que el vector puso en el pedido. */
+export function recipientFromVectorRequest(request: Request): string | null {
+  const raw = request.headers.get('x-recipient');
+  return raw === null ? null : (JSON.parse(raw) as string | null);
 }

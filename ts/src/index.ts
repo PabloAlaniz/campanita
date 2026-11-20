@@ -73,10 +73,13 @@ export type {
 export {
   notificationToWire,
   quietHoursToWire,
+  recipientFromVectorRequest,
+  runHttpVector,
   runPreferenceVector,
   runQuietHoursVector,
   runStoreVector,
 } from './conformance.js';
+export type { HttpVectorSetup } from './conformance.js';
 export { MemoryPreferenceStore, MemoryQuietHoursStore, MemoryStore } from './stores/memory.js';
 export { D1PreferenceStore, D1QuietHoursStore, D1Store, d1Schema } from './stores/d1.js';
 export type { D1Like, D1StatementLike } from './stores/d1.js';

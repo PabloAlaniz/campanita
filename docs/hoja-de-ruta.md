@@ -23,6 +23,9 @@
   escriba un adaptador.
 - Núcleo en Python y en TypeScript, sin dependencias, pasando los mismos vectores.
 - Publicado en npm y PyPI, con la misma versión en los dos.
+- La bandeja por HTTP: un contrato especificado, con vectores, para leer la bandeja y cambiar
+  preferencias y horario; el adaptador (Web Fetch en TypeScript, ASGI en Python), y del lado de
+  la interfaz un cliente, un store con polling y acciones optimistas, y hooks de React.
 
 ## Lo que sigue
 
@@ -31,9 +34,10 @@
    las que fallaron.
 3. **Más de email.** SMTP en TypeScript, mensajes en HTML y qué hacer con los rebotes.
 4. **Más almacenes.** Postgres, en los dos lenguajes.
-5. **La campanita.** Componentes para mostrar la bandeja y la pantalla de preferencias.
-6. **Un servicio listo para desplegar.** Una API HTTP armada con el núcleo y los adaptadores,
-   para quien no quiera embeber la librería.
+5. **Avisos al instante.** Hoy la interfaz mira el contador cada tanto; después, Server-Sent
+   Events sobre el mismo contrato.
+6. **Un servicio listo para desplegar.** El contrato HTTP en un proceso propio, con su base, para
+   quien no quiera embeber la librería.
 7. **Avisos en varios idiomas.** El payload ya se guarda entero para poder redactar de nuevo.
 8. **Vencimiento y borrado** de avisos viejos.
 9. **Restablecer preferencias**: volver una celda al valor de la política.
@@ -43,6 +47,8 @@
 ## Fuera de alcance
 
 - Flujos con pasos y esperas, y un editor visual de plantillas.
+- Componentes con estilos para la campana: la librería da el estado y el contrato, el dibujo es
+  de cada producto.
 - Un catálogo de proveedores: se incluyen unos pocos canales de uso general; cualquier otro es
   un adaptador que escribe quien lo necesita.
 - Autenticación y autorización: el núcleo recibe datos ya autorizados.

@@ -34,7 +34,8 @@
         "email-direcciones",
         "silencio-validacion",
         "silencio",
-        "silencio-guardado"
+        "silencio-guardado",
+        "http"
       ]
     },
     "policy": {
@@ -58,6 +59,14 @@
         "type": "string"
       },
       "uniqueItems": true
+    },
+    "available": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "description": "Los canales disponibles de los vectores `http`."
     }
   },
   "allOf": [
@@ -1712,6 +1721,173 @@
                           }
                         ]
                       }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "http"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "policy",
+          "available",
+          "steps"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "cases"
+              ]
+            },
+            {
+              "required": [
+                "catalog"
+              ]
+            },
+            {
+              "required": [
+                "channels"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "steps": {
+            "items": {
+              "type": "object",
+              "required": [
+                "note",
+                "op",
+                "expect"
+              ],
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "op": {
+                  "enum": [
+                    "add",
+                    "request"
+                  ]
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "add"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "draft",
+                      "id",
+                      "at_ms"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "request"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "as",
+                      "method",
+                      "path",
+                      "query",
+                      "at_ms"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "note": {},
+                      "op": {},
+                      "as": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "method": {
+                        "enum": [
+                          "GET",
+                          "POST",
+                          "PUT",
+                          "PATCH",
+                          "DELETE"
+                        ]
+                      },
+                      "path": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "query": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "minItems": 2,
+                          "maxItems": 2,
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "body": {},
+                      "raw_body": {
+                        "type": "string"
+                      },
+                      "at_ms": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "expect": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "status",
+                              "body"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "type": "integer"
+                              },
+                              "body": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "not": {
+                      "required": [
+                        "body",
+                        "raw_body"
+                      ]
                     }
                   }
                 }

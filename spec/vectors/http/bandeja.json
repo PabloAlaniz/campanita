@@ -1,0 +1,2401 @@
+{
+ "spec": "0",
+ "id": "http/bandeja",
+ "kind": "http",
+ "policy": {
+  "security": {
+   "email": {
+    "default": true,
+    "locked": true
+   },
+   "push": {
+    "default": true,
+    "locked": true
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "invitations": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "activity": {
+   "email": {
+    "default": false
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  },
+  "digest": {
+   "email": {
+    "default": true
+   },
+   "push": {
+    "default": false
+   },
+   "inapp": {
+    "default": true,
+    "locked": true
+   }
+  }
+ },
+ "available": [
+  "email"
+ ],
+ "steps": [
+  {
+   "note": "aviso 1",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n1",
+   "at_ms": 1000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n1",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 1000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 2",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n2",
+   "at_ms": 2000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n2",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 2000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 3",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n3",
+   "at_ms": 3000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n3",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 3000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 4",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n4",
+   "at_ms": 4000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n4",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 4000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "aviso 5",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "n5",
+   "at_ms": 5000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n5",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 5000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "uno del ámbito acme",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "security",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": "acme",
+    "dedupe_key": null
+   },
+   "id": "n6",
+   "at_ms": 6000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n6",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "security",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": "acme",
+     "dedupe_key": null,
+     "created_at_ms": 6000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "uno de otro ámbito",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": "otro",
+    "dedupe_key": null
+   },
+   "id": "n7",
+   "at_ms": 7000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "n7",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": "otro",
+     "dedupe_key": null,
+     "created_at_ms": 7000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "uno de otra persona",
+   "op": "add",
+   "draft": {
+    "recipient_id": "beto",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "b1",
+   "at_ms": 8000,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "b1",
+     "recipient_id": "beto",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 8000,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "un id con barra y espacio",
+   "op": "add",
+   "draft": {
+    "recipient_id": "ana",
+    "type": "nota",
+    "category": "activity",
+    "title": "Aviso",
+    "body": null,
+    "action_url": null,
+    "payload": {},
+    "scope": null,
+    "dedupe_key": null
+   },
+   "id": "x/y z",
+   "at_ms": 500,
+   "expect": {
+    "created": true,
+    "notification": {
+     "id": "x/y z",
+     "recipient_id": "ana",
+     "type": "nota",
+     "category": "activity",
+     "title": "Aviso",
+     "body": null,
+     "action_url": null,
+     "payload": {},
+     "scope": null,
+     "dedupe_key": null,
+     "created_at_ms": 500,
+     "read_at_ms": null
+    }
+   }
+  },
+  {
+   "note": "una ruta que no es del contrato no se atiende",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/nada",
+   "query": [],
+   "at_ms": 101000,
+   "expect": null
+  },
+  {
+   "note": "ni con una barra al final",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed/",
+   "query": [],
+   "at_ms": 102000,
+   "expect": null
+  },
+  {
+   "note": "ni sin id",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed//read",
+   "query": [],
+   "at_ms": 103000,
+   "expect": null
+  },
+  {
+   "note": "sin persona",
+   "op": "request",
+   "as": null,
+   "method": "GET",
+   "path": "/feed",
+   "query": [],
+   "at_ms": 104000,
+   "expect": {
+    "status": 401,
+    "body": {
+     "error": {
+      "code": "unauthenticated"
+     }
+    }
+   }
+  },
+  {
+   "note": "el método va antes que la persona",
+   "op": "request",
+   "as": null,
+   "method": "DELETE",
+   "path": "/feed",
+   "query": [],
+   "at_ms": 105000,
+   "expect": {
+    "status": 405,
+    "body": {
+     "error": {
+      "code": "method_not_allowed"
+     }
+    }
+   }
+  },
+  {
+   "note": "read-all es POST",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed/read-all",
+   "query": [],
+   "at_ms": 106000,
+   "expect": {
+    "status": 405,
+    "body": {
+     "error": {
+      "code": "method_not_allowed"
+     }
+    }
+   }
+  },
+  {
+   "note": "la bandeja, del más nuevo al más viejo",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [],
+   "at_ms": 107000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "n7",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": "otro",
+       "created_at": "1970-01-01T00:00:07.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n6",
+       "type": "nota",
+       "category": "security",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": "acme",
+       "created_at": "1970-01-01T00:00:06.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n5",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:05.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n4",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:04.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n3",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:03.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n2",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:02.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n1",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:01.000Z",
+       "read_at": null
+      },
+      {
+       "id": "x/y z",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:00.500Z",
+       "read_at": null
+      }
+     ],
+     "next_cursor": null
+    }
+   }
+  },
+  {
+   "note": "de a tres",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "limit",
+     "3"
+    ]
+   ],
+   "at_ms": 108000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "n7",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": "otro",
+       "created_at": "1970-01-01T00:00:07.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n6",
+       "type": "nota",
+       "category": "security",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": "acme",
+       "created_at": "1970-01-01T00:00:06.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n5",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:05.000Z",
+       "read_at": null
+      }
+     ],
+     "next_cursor": "NTAwMDpuNQ"
+    }
+   }
+  },
+  {
+   "note": "la página siguiente",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "limit",
+     "3"
+    ],
+    [
+     "cursor",
+     "NTAwMDpuNQ"
+    ]
+   ],
+   "at_ms": 109000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "n4",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:04.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n3",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:03.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n2",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:02.000Z",
+       "read_at": null
+      }
+     ],
+     "next_cursor": "MjAwMDpuMg"
+    }
+   }
+  },
+  {
+   "note": "la última",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "limit",
+     "3"
+    ],
+    [
+     "cursor",
+     "MjAwMDpuMg"
+    ]
+   ],
+   "at_ms": 110000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "n1",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:01.000Z",
+       "read_at": null
+      },
+      {
+       "id": "x/y z",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:00.500Z",
+       "read_at": null
+      }
+     ],
+     "next_cursor": null
+    }
+   }
+  },
+  {
+   "note": "con ámbito: el suyo y los de cuenta",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "scope",
+     "acme"
+    ]
+   ],
+   "at_ms": 111000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "n6",
+       "type": "nota",
+       "category": "security",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": "acme",
+       "created_at": "1970-01-01T00:00:06.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n5",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:05.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n4",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:04.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n3",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:03.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n2",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:02.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n1",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:01.000Z",
+       "read_at": null
+      },
+      {
+       "id": "x/y z",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:00.500Z",
+       "read_at": null
+      }
+     ],
+     "next_cursor": null
+    }
+   }
+  },
+  {
+   "note": "el ámbito vacío es un ámbito",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "scope",
+     ""
+    ]
+   ],
+   "at_ms": 112000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "n5",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:05.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n4",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:04.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n3",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:03.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n2",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:02.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n1",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:01.000Z",
+       "read_at": null
+      },
+      {
+       "id": "x/y z",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:00.500Z",
+       "read_at": null
+      }
+     ],
+     "next_cursor": null
+    }
+   }
+  },
+  {
+   "note": "por categoría",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "category",
+     "security"
+    ]
+   ],
+   "at_ms": 113000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "n6",
+       "type": "nota",
+       "category": "security",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": "acme",
+       "created_at": "1970-01-01T00:00:06.000Z",
+       "read_at": null
+      }
+     ],
+     "next_cursor": null
+    }
+   }
+  },
+  {
+   "note": "parámetros desconocidos se ignoran",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "_",
+     "123"
+    ]
+   ],
+   "at_ms": 114000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "n7",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": "otro",
+       "created_at": "1970-01-01T00:00:07.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n6",
+       "type": "nota",
+       "category": "security",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": "acme",
+       "created_at": "1970-01-01T00:00:06.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n5",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:05.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n4",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:04.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n3",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:03.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n2",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:02.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n1",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:01.000Z",
+       "read_at": null
+      },
+      {
+       "id": "x/y z",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:00.500Z",
+       "read_at": null
+      }
+     ],
+     "next_cursor": null
+    }
+   }
+  },
+  {
+   "note": "beto ve lo suyo",
+   "op": "request",
+   "as": "beto",
+   "method": "GET",
+   "path": "/feed",
+   "query": [],
+   "at_ms": 115000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "b1",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:08.000Z",
+       "read_at": null
+      }
+     ],
+     "next_cursor": null
+    }
+   }
+  },
+  {
+   "note": "alguien sin avisos",
+   "op": "request",
+   "as": "carla",
+   "method": "GET",
+   "path": "/feed",
+   "query": [],
+   "at_ms": 116000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [],
+     "next_cursor": null
+    }
+   }
+  },
+  {
+   "note": "límite cero",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "limit",
+     "0"
+    ]
+   ],
+   "at_ms": 117000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_limit"
+     }
+    }
+   }
+  },
+  {
+   "note": "límite mayor que 100",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "limit",
+     "101"
+    ]
+   ],
+   "at_ms": 118000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_limit"
+     }
+    }
+   }
+  },
+  {
+   "note": "límite con cero a la izquierda",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "limit",
+     "07"
+    ]
+   ],
+   "at_ms": 119000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_limit"
+     }
+    }
+   }
+  },
+  {
+   "note": "límite que no es un número",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "limit",
+     "diez"
+    ]
+   ],
+   "at_ms": 120000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_limit"
+     }
+    }
+   }
+  },
+  {
+   "note": "límite vacío",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "limit",
+     ""
+    ]
+   ],
+   "at_ms": 121000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_limit"
+     }
+    }
+   }
+  },
+  {
+   "note": "límite negativo",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "limit",
+     "-1"
+    ]
+   ],
+   "at_ms": 122000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_limit"
+     }
+    }
+   }
+  },
+  {
+   "note": "límite con decimales",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "limit",
+     "2.0"
+    ]
+   ],
+   "at_ms": 123000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_limit"
+     }
+    }
+   }
+  },
+  {
+   "note": "límite 100",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "limit",
+     "100"
+    ]
+   ],
+   "at_ms": 124000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "n7",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": "otro",
+       "created_at": "1970-01-01T00:00:07.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n6",
+       "type": "nota",
+       "category": "security",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": "acme",
+       "created_at": "1970-01-01T00:00:06.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n5",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:05.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n4",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:04.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n3",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:03.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n2",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:02.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n1",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:01.000Z",
+       "read_at": null
+      },
+      {
+       "id": "x/y z",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:00.500Z",
+       "read_at": null
+      }
+     ],
+     "next_cursor": null
+    }
+   }
+  },
+  {
+   "note": "cursor que no es base64url",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "cursor",
+     "%%%"
+    ]
+   ],
+   "at_ms": 125000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_cursor"
+     }
+    }
+   }
+  },
+  {
+   "note": "cursor con relleno",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "cursor",
+     "NTAwMDpuNQ="
+    ]
+   ],
+   "at_ms": 126000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_cursor"
+     }
+    }
+   }
+  },
+  {
+   "note": "cursor sin dos puntos",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "cursor",
+     "NTAwMA"
+    ]
+   ],
+   "at_ms": 127000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_cursor"
+     }
+    }
+   }
+  },
+  {
+   "note": "cursor con fecha que no es un número",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "cursor",
+     "eDpuNQ"
+    ]
+   ],
+   "at_ms": 128000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_cursor"
+     }
+    }
+   }
+  },
+  {
+   "note": "cursor con cero a la izquierda",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "cursor",
+     "MDUwMDA6bjU"
+    ]
+   ],
+   "at_ms": 129000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_cursor"
+     }
+    }
+   }
+  },
+  {
+   "note": "cursor vacío",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "cursor",
+     ""
+    ]
+   ],
+   "at_ms": 130000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_cursor"
+     }
+    }
+   }
+  },
+  {
+   "note": "cursor más allá de la última fecha",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "cursor",
+     "ODY0MDAwMDAwMDAwMDAwMTpuNQ"
+    ]
+   ],
+   "at_ms": 131000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_cursor"
+     }
+    }
+   }
+  },
+  {
+   "note": "un cursor armado a mano vale",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "cursor",
+     "NTAwMDpuNQ"
+    ]
+   ],
+   "at_ms": 132000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "n4",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:04.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n3",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:03.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n2",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:02.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n1",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:01.000Z",
+       "read_at": null
+      },
+      {
+       "id": "x/y z",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:00.500Z",
+       "read_at": null
+      }
+     ],
+     "next_cursor": null
+    }
+   }
+  },
+  {
+   "note": "unread_only raro",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "unread_only",
+     "1"
+    ]
+   ],
+   "at_ms": 133000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_query"
+     }
+    }
+   }
+  },
+  {
+   "note": "un parámetro repetido",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "limit",
+     "2"
+    ],
+    [
+     "limit",
+     "3"
+    ]
+   ],
+   "at_ms": 134000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_query"
+     }
+    }
+   }
+  },
+  {
+   "note": "el contador",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/unread-count",
+   "query": [],
+   "at_ms": 135000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "count": 8,
+     "capped": false
+    }
+   }
+  },
+  {
+   "note": "con tope",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/unread-count",
+   "query": [
+    [
+     "cap",
+     "3"
+    ]
+   ],
+   "at_ms": 136000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "count": 3,
+     "capped": true
+    }
+   }
+  },
+  {
+   "note": "tope igual al total: no es 8+",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/unread-count",
+   "query": [
+    [
+     "cap",
+     "8"
+    ]
+   ],
+   "at_ms": 137000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "count": 8,
+     "capped": false
+    }
+   }
+  },
+  {
+   "note": "con ámbito",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/unread-count",
+   "query": [
+    [
+     "scope",
+     "otro"
+    ]
+   ],
+   "at_ms": 138000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "count": 7,
+     "capped": false
+    }
+   }
+  },
+  {
+   "note": "tope cero",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/unread-count",
+   "query": [
+    [
+     "cap",
+     "0"
+    ]
+   ],
+   "at_ms": 139000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_cap"
+     }
+    }
+   }
+  },
+  {
+   "note": "tope mayor que 1000",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/unread-count",
+   "query": [
+    [
+     "cap",
+     "1001"
+    ]
+   ],
+   "at_ms": 140000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_cap"
+     }
+    }
+   }
+  },
+  {
+   "note": "tope raro",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/unread-count",
+   "query": [
+    [
+     "cap",
+     "x"
+    ]
+   ],
+   "at_ms": 141000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_cap"
+     }
+    }
+   }
+  },
+  {
+   "note": "marcar uno",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/n1/read",
+   "query": [],
+   "at_ms": 142000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "changed": true
+    }
+   }
+  },
+  {
+   "note": "marcarlo de nuevo no cambia nada",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/n1/read",
+   "query": [],
+   "at_ms": 143000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "changed": false
+    }
+   }
+  },
+  {
+   "note": "uno que no existe no es un error",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/zz/read",
+   "query": [],
+   "at_ms": 144000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "changed": false
+    }
+   }
+  },
+  {
+   "note": "lo de otra persona tampoco",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/b1/read",
+   "query": [],
+   "at_ms": 145000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "changed": false
+    }
+   }
+  },
+  {
+   "note": "el id va decodificado",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/x%2Fy%20z/read",
+   "query": [],
+   "at_ms": 146000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "changed": true
+    }
+   }
+  },
+  {
+   "note": "se ve leído, con la hora del servidor",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "category",
+     "activity"
+    ],
+    [
+     "scope",
+     ""
+    ]
+   ],
+   "at_ms": 147000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "n5",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:05.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n4",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:04.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n3",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:03.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n2",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:02.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n1",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:01.000Z",
+       "read_at": "1970-01-01T00:02:22.000Z"
+      },
+      {
+       "id": "x/y z",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:00.500Z",
+       "read_at": "1970-01-01T00:02:26.000Z"
+      }
+     ],
+     "next_cursor": null
+    }
+   }
+  },
+  {
+   "note": "sólo los no leídos",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/feed",
+   "query": [
+    [
+     "unread_only",
+     "true"
+    ]
+   ],
+   "at_ms": 148000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "items": [
+      {
+       "id": "n7",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": "otro",
+       "created_at": "1970-01-01T00:00:07.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n6",
+       "type": "nota",
+       "category": "security",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": "acme",
+       "created_at": "1970-01-01T00:00:06.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n5",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:05.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n4",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:04.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n3",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:03.000Z",
+       "read_at": null
+      },
+      {
+       "id": "n2",
+       "type": "nota",
+       "category": "activity",
+       "title": "Aviso",
+       "body": null,
+       "action_url": null,
+       "payload": {},
+       "scope": null,
+       "created_at": "1970-01-01T00:00:02.000Z",
+       "read_at": null
+      }
+     ],
+     "next_cursor": null
+    }
+   }
+  },
+  {
+   "note": "marcar todo hasta n3, que se vio",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "body": {
+    "before": "1970-01-01T00:00:03.001Z"
+   },
+   "at_ms": 149000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "changed": 2
+    }
+   }
+  },
+  {
+   "note": "por ámbito y categoría",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "body": {
+    "before": "1970-01-01T00:01:39.000Z",
+    "scope": "acme",
+    "category": "security"
+   },
+   "at_ms": 150000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "changed": 1
+    }
+   }
+  },
+  {
+   "note": "el resto",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "body": {
+    "before": "1970-01-01T00:01:39.000Z",
+    "scope": null
+   },
+   "at_ms": 151000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "changed": 3
+    }
+   }
+  },
+  {
+   "note": "no queda nada",
+   "op": "request",
+   "as": "ana",
+   "method": "GET",
+   "path": "/unread-count",
+   "query": [],
+   "at_ms": 152000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "count": 0,
+     "capped": false
+    }
+   }
+  },
+  {
+   "note": "beto sigue igual",
+   "op": "request",
+   "as": "beto",
+   "method": "GET",
+   "path": "/unread-count",
+   "query": [],
+   "at_ms": 153000,
+   "expect": {
+    "status": 200,
+    "body": {
+     "count": 1,
+     "capped": false
+    }
+   }
+  },
+  {
+   "note": "un cuerpo que no es JSON",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "raw_body": "{",
+   "at_ms": 154000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "sin cuerpo",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "at_ms": 155000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "un cuerpo que no es un objeto",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "body": [
+    "1970-01-01T00:00:00.001Z"
+   ],
+   "at_ms": 156000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "sin before",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "body": {},
+   "at_ms": 157000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "una clave de más",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "body": {
+    "before": "1970-01-01T00:00:00.001Z",
+    "recipient_id": "beto"
+   },
+   "at_ms": 158000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "before sin milisegundos",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "body": {
+    "before": "2026-11-20T10:00:00Z"
+   },
+   "at_ms": 159000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "before con zona",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "body": {
+    "before": "2026-11-20T10:00:00.000-03:00"
+   },
+   "at_ms": 160000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "before en un día que no existe",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "body": {
+    "before": "2026-02-30T10:00:00.000Z"
+   },
+   "at_ms": 161000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "before antes de 1970",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "body": {
+    "before": "1969-12-31T23:59:59.999Z"
+   },
+   "at_ms": 162000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "before como número",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "body": {
+    "before": 3000
+   },
+   "at_ms": 163000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  },
+  {
+   "note": "scope que no es texto",
+   "op": "request",
+   "as": "ana",
+   "method": "POST",
+   "path": "/feed/read-all",
+   "query": [],
+   "body": {
+    "before": "1970-01-01T00:00:00.001Z",
+    "scope": 5
+   },
+   "at_ms": 164000,
+   "expect": {
+    "status": 400,
+    "body": {
+     "error": {
+      "code": "invalid_body"
+     }
+    }
+   }
+  }
+ ]
+}
