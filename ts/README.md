@@ -80,8 +80,8 @@ lo que hacen es igual en todos los lenguajes.
 
 ## La bandeja
 
-Un almacén guarda los avisos y contesta la bandeja. El paquete trae uno en memoria y uno para
-Cloudflare D1:
+Un almacén guarda los avisos y contesta la bandeja. El paquete trae uno en memoria, uno para
+Cloudflare D1 y uno para Postgres:
 
 ```ts
 import { MemoryStore } from 'campanita';
@@ -120,6 +120,45 @@ Las tablas se crean una vez. `d1Schema()` devuelve las sentencias para copiar a 
 Que dos pedidos simultáneos con la misma `dedupeKey` dejen un solo aviso lo garantiza un índice
 único y una sola sentencia de inserción. Los almacenes de D1 se prueban con las mismas secuencias
 del spec, contra la base D1 del runtime local de Workers.
+
+### Postgres
+
+`PostgresStore`, `PostgresPreferenceStore` y `PostgresQuietHoursStore` guardan en Postgres. El
+paquete no trae ni pide un driver: reciben cualquier objeto con `query(text, params)` que devuelva
+`{ rows, rowCount }`. El `Pool` y el `Client` de [`pg`](https://node-postgres.com) y de
+`@neondatabase/serverless` lo cumplen tal cual, y el driver por HTTP de Neon también, con
+`neon(url, { fullResults: true })`:
+
+```ts
+import pg from 'pg';
+import { PostgresPreferenceStore, PostgresQuietHoursStore, PostgresStore } from 'campanita';
+
+const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const store = new PostgresStore(db);
+const preferences = new PostgresPreferenceStore(db);
+const quietHours = new PostgresQuietHoursStore(db);
+```
+
+Con [postgres.js](https://github.com/porsager/postgres), `fromPostgresJs` lo adapta:
+
+```ts
+import postgres from 'postgres';
+import { fromPostgresJs, PostgresStore } from 'campanita';
+
+const store = new PostgresStore(fromPostgresJs(postgres(process.env.DATABASE_URL!)));
+```
+
+Las tablas se crean igual que en D1: `postgresSchema()` devuelve las sentencias para copiar a una
+migración, o `await store.createSchema()` las corre. Si escribís la migración a mano, la columna
+`id` de los avisos tiene que ser `TEXT COLLATE "C"`: la bandeja ordena por punto de código, y la
+colación por omisión de la base (`en_US` y parecidas) ordena distinto. El nombre de cada tabla
+se puede cambiar con `{ table }`, hasta 56 caracteres, para que el de sus índices entre en el
+límite de Postgres.
+
+Cada operación es una sola sentencia, así que no reserva una conexión para una transacción: sirve
+un pool o un driver por HTTP. Dos pedidos simultáneos con la misma `dedupeKey` dejan un solo aviso,
+y guardar varias preferencias es todo o nada. Se prueban con las mismas secuencias del spec contra
+un Postgres de verdad, por `pg` y por postgres.js.
 
 Para otra base, escribí un adaptador que cumpla `NotificationStore` y probalo con
 `runStoreVector`: ver [`docs/puertos.md`](../docs/puertos.md).

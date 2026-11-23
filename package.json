@@ -8,6 +8,7 @@
     "test": "pnpm --filter campanita test",
     "check:package": "pnpm --filter campanita check:package",
     "check:spec": "python3 tools/gen_vectors.py --check",
-    "test:d1": "pnpm --filter campanita test:d1"
+    "test:d1": "pnpm --filter campanita test:d1",
+    "test:pg": "pnpm --filter campanita test:pg"
   }
 }

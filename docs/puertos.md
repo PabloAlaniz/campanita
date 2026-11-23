@@ -31,6 +31,7 @@ Adaptadores incluidos:
 | En memoria | `campanita.stores.MemoryStore` | `MemoryStore` |
 | SQLite | `campanita.stores.SqliteStore` | todavía no |
 | Cloudflare D1 | no aplica | `D1Store` |
+| Postgres | `campanita.stores.PostgresStore` | `PostgresStore` |
 
 ## El almacén de preferencias
 
@@ -42,6 +43,7 @@ Su comportamiento está en la sección "Las preferencias guardadas" del spec y e
 | En memoria | `campanita.stores.MemoryPreferenceStore` | `MemoryPreferenceStore` |
 | SQLite | `campanita.stores.SqlitePreferenceStore` | todavía no |
 | Cloudflare D1 | no aplica | `D1PreferenceStore` |
+| Postgres | `campanita.stores.PostgresPreferenceStore` | `PostgresPreferenceStore` |
 
 ## El almacén de horarios
 
@@ -55,6 +57,7 @@ nadie está en silencio.
 | En memoria | `campanita.stores.MemoryQuietHoursStore` | `MemoryQuietHoursStore` |
 | SQLite | `campanita.stores.SqliteQuietHoursStore` | todavía no |
 | Cloudflare D1 | no aplica | `D1QuietHoursStore` |
+| Postgres | `campanita.stores.PostgresQuietHoursStore` | `PostgresQuietHoursStore` |
 
 Las tablas pueden vivir en la misma base o en bases distintas: los puertos son independientes.
 
@@ -200,5 +203,6 @@ Lo que las secuencias **no** pueden probar, y cada adaptador tiene que garantiza
 Un puerto no se da por estable hasta tener **dos adaptadores reales**. Con uno solo, el puerto
 termina teniendo la forma de ese adaptador y el segundo no entra.
 
-Los dos almacenes la cumplen en los dos lenguajes (en memoria y SQLite en Python; en memoria y D1
-en TypeScript), y el transporte de email también. El canal de entrega también: email y Slack.
+Los almacenes la cumplen en los dos lenguajes (en memoria, SQLite y Postgres en Python; en memoria,
+D1 y Postgres en TypeScript), y el transporte de email también. El canal de entrega también: email
+y Slack.
