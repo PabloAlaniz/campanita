@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/PabloAlaniz/campanita/compare/v0.7.0...v0.8.0) (2026-11-23)
+
+
+### Features
+
+* almacén Postgres para avisos, preferencias y horarios ([#14](https://github.com/PabloAlaniz/campanita/issues/14)) ([ecfee7b](https://github.com/PabloAlaniz/campanita/commit/ecfee7b45ea1554e826b27df19fb195ff1c4823e))
+
+
+### Bug Fixes
+
+* **deps:** forzar undici y sharp parcheados vía overrides ([#12](https://github.com/PabloAlaniz/campanita/issues/12)) ([8399bbc](https://github.com/PabloAlaniz/campanita/commit/8399bbc029970db517eaa09f1ffb6c2e3b4a7d85))
+
 ## [0.7.0](https://github.com/PabloAlaniz/campanita/compare/v0.6.0...v0.7.0) (2026-11-20)
 
 
