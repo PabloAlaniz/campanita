@@ -24,6 +24,16 @@ uv run mypy
 uv run ruff check . ../tools && uv run ruff format --check . ../tools
 ```
 
+Los almacenes de Postgres se prueban contra una base de verdad, en TypeScript y en Python. Sin
+`CAMPANITA_PG_URL`, esos tests se saltean:
+
+```bash
+docker run -d --name campanita-pg -e POSTGRES_PASSWORD=x -p 55432:5432 postgres:17
+export CAMPANITA_PG_URL=postgres://postgres:x@localhost:55432/postgres
+pnpm test:pg
+(cd python && uv run pytest tests/test_postgres.py)
+```
+
 ## Antes de proponer un cambio
 
 Leé [`docs/principios.md`](docs/principios.md). El más importante: el núcleo no nombra productos,

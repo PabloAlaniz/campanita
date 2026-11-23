@@ -18,7 +18,8 @@
 - No molestar: un horario por persona en el que los canales no interrumpen, salvo lo que la
   política marca como urgente.
 - Almacenes incluidos, para avisos, preferencias y horarios: en memoria (Python y TypeScript), SQLite
-  (Python) y Cloudflare D1 (TypeScript).
+  (Python), Cloudflare D1 (TypeScript) y Postgres (los dos: `pg`, Neon y postgres.js en
+  TypeScript; psycopg 3 en Python).
 - Vectores de conformidad, su generador independiente y un corredor de secuencias para quien
   escriba un adaptador.
 - Núcleo en Python y en TypeScript, sin dependencias, pasando los mismos vectores.
@@ -33,16 +34,15 @@
 2. **Registro y reintento de entregas.** Guardar qué pasó con cada entrega y volver a intentar
    las que fallaron.
 3. **Más de email.** SMTP en TypeScript, mensajes en HTML y qué hacer con los rebotes.
-4. **Más almacenes.** Postgres, en los dos lenguajes.
-5. **Avisos al instante.** Hoy la interfaz mira el contador cada tanto; después, Server-Sent
+4. **Avisos al instante.** Hoy la interfaz mira el contador cada tanto; después, Server-Sent
    Events sobre el mismo contrato.
-6. **Un servicio listo para desplegar.** El contrato HTTP en un proceso propio, con su base, para
+5. **Un servicio listo para desplegar.** El contrato HTTP en un proceso propio, con su base, para
    quien no quiera embeber la librería.
-7. **Avisos en varios idiomas.** El payload ya se guarda entero para poder redactar de nuevo.
-8. **Vencimiento y borrado** de avisos viejos.
-9. **Restablecer preferencias**: volver una celda al valor de la política.
-10. **Entregar después lo silenciado**: un resumen de lo que no salió durante el horario de no
-    molestar. Depende del registro de entregas.
+6. **Avisos en varios idiomas.** El payload ya se guarda entero para poder redactar de nuevo.
+7. **Vencimiento y borrado** de avisos viejos.
+8. **Restablecer preferencias**: volver una celda al valor de la política.
+9. **Entregar después lo silenciado**: un resumen de lo que no salió durante el horario de no
+   molestar. Depende del registro de entregas.
 
 ## Fuera de alcance
 

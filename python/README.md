@@ -81,8 +81,8 @@ lo que hacen es igual en todos los lenguajes.
 
 ## La bandeja
 
-Un almacén guarda los avisos y contesta la bandeja. Hay dos incluidos, y los dos pasan las mismas
-secuencias del spec:
+Un almacén guarda los avisos y contesta la bandeja. Hay tres incluidos (en memoria, SQLite y
+Postgres), y todos pasan las mismas secuencias del spec:
 
 ```python
 import sqlite3
@@ -108,6 +108,36 @@ await store.mark_all_read("user-7", before=page.items[0].created_at, read_at=dat
 
 `SqliteStore` usa `sqlite3` de la biblioteca estándar y bloquea mientras corre cada consulta:
 alcanza para aplicaciones chicas, herramientas y tests.
+
+### Postgres
+
+`PostgresStore`, `PostgresPreferenceStore` y `PostgresQuietHoursStore` guardan en Postgres con
+[psycopg 3](https://www.psycopg.org/psycopg3/) en modo asíncrono. campanita no depende de psycopg:
+se instala aparte (`pip install "psycopg[binary]" psycopg-pool`). Reciben una `AsyncConnection` o
+un `AsyncConnectionPool` y no los cierran:
+
+```python
+from psycopg_pool import AsyncConnectionPool
+from campanita.stores import PostgresPreferenceStore, PostgresQuietHoursStore, PostgresStore
+
+pool = AsyncConnectionPool("postgresql://…", open=False)
+await pool.open()
+store = PostgresStore(pool)
+preferences = PostgresPreferenceStore(pool)
+quiet_hours = PostgresQuietHoursStore(pool)
+await store.create_schema()  # o las sentencias de postgres_schema() en una migración
+```
+
+Con un pool, cada operación toma una conexión y la devuelve. Con una conexión, cada operación corre
+en su propia transacción, con autocommit o sin él; si la conexión ya está dentro de una transacción
+tuya, corre en un savepoint y se confirma o se deshace con ella. Una conexión hace una cosa por vez:
+las operaciones de los almacenes sobre la misma conexión se turnan, así que para atender pedidos a
+la vez conviene un pool. El `row_factory` y el `cursor_factory` de la conexión no importan.
+
+Si escribís la migración a mano, la columna `id` de los avisos tiene que ser `TEXT COLLATE "C"`: la
+bandeja ordena por punto de código, y la colación por omisión de la base ordena distinto. Postgres
+no guarda el carácter nulo (`\x00`) en una columna de texto: un aviso con uno en el título, el
+cuerpo o algún identificador falla con `psycopg.errors.DataError`. En el payload sí puede ir.
 
 Para otra base, escribí un adaptador que cumpla `campanita.ports.NotificationStore` y probalo con
 `campanita.conformance.run_store_vector`: ver [`docs/puertos.md`](../docs/puertos.md).
