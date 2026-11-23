@@ -3,3 +3,7 @@ packages:
 onlyBuiltDependencies:
   - esbuild
   - workerd
+overrides:
+  # miniflare fija versiones vulnerables (alertas de Dependabot); forzamos las parcheadas.
+  undici@>=7.0.0 <7.30.1: ^7.30.1
+  sharp@<0.35.5: ^0.35.5
