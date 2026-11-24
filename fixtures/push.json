@@ -1,0 +1,55 @@
+{
+  "mensaje": [
+    {
+      "note": "título, cuerpo y dirección",
+      "notification": { "id": "n1", "type": "comments.new", "title": "Ana comentó", "body": "¿Va con IVA?", "action_url": "https://example.com/doc/7" },
+      "message": {
+        "title": "Ana comentó",
+        "body": "¿Va con IVA?",
+        "url": "https://example.com/doc/7",
+        "thread": null,
+        "data": { "notification_id": "n1", "type": "comments.new" }
+      }
+    },
+    {
+      "note": "sólo el título",
+      "notification": { "id": "n2", "type": "nota", "title": "Listo", "body": null, "action_url": null },
+      "message": { "title": "Listo", "body": null, "url": null, "thread": null, "data": { "notification_id": "n2", "type": "nota" } }
+    },
+    {
+      "note": "un cuerpo vacío es como no tener cuerpo, y una dirección vacía como no tener dirección",
+      "notification": { "id": "n3", "type": "nota", "title": "Listo", "body": "", "action_url": "" },
+      "message": { "title": "Listo", "body": null, "url": null, "thread": null, "data": { "notification_id": "n3", "type": "nota" } }
+    },
+    {
+      "note": "cada tramo de caracteres de control del título es un espacio",
+      "notification": { "id": "n4", "type": "nota", "title": "  Uno\r\n\tdos  ", "body": null, "action_url": null },
+      "message": { "title": "Uno dos", "body": null, "url": null, "thread": null, "data": { "notification_id": "n4", "type": "nota" } }
+    },
+    {
+      "note": "el cuerpo conserva sus saltos de línea",
+      "notification": { "id": "n5", "type": "nota", "title": "Resumen", "body": "uno\ndos", "action_url": null },
+      "message": { "title": "Resumen", "body": "uno\ndos", "url": null, "thread": null, "data": { "notification_id": "n5", "type": "nota" } }
+    },
+    {
+      "note": "la dirección es opaca: una ruta relativa viaja como está",
+      "notification": { "id": "n6", "type": "nota", "title": "Informe", "body": null, "action_url": "/informes/7?a=1&b=2" },
+      "message": { "title": "Informe", "body": null, "url": "/informes/7?a=1&b=2", "thread": null, "data": { "notification_id": "n6", "type": "nota" } }
+    },
+    {
+      "note": "el texto no se escapa: lo muestra el sistema, no un intérprete de marcas",
+      "notification": { "id": "n7", "type": "nota", "title": "<b>A & B</b>", "body": "1 > 0", "action_url": null },
+      "message": { "title": "<b>A & B</b>", "body": "1 > 0", "url": null, "thread": null, "data": { "notification_id": "n7", "type": "nota" } }
+    }
+  ],
+  "resumen": [
+    { "note": "sin dispositivos no había a dónde entregar", "outcomes": [], "outcome": "skipped" },
+    { "note": "uno que recibe alcanza", "outcomes": ["sent"], "outcome": "sent" },
+    { "note": "si alguno recibió, el aviso salió", "outcomes": ["failed", "expired", "sent", "skipped"], "outcome": "sent" },
+    { "note": "ninguno recibió y alguno falló: reintentar puede servir", "outcomes": ["expired", "failed", "skipped"], "outcome": "failed" },
+    { "note": "todos vencidos", "outcomes": ["expired", "expired"], "outcome": "expired" },
+    { "note": "vencidos y sin transporte: lo que queda es olvidar", "outcomes": ["skipped", "expired"], "outcome": "expired" },
+    { "note": "ningún dispositivo tenía transporte", "outcomes": ["skipped", "skipped"], "outcome": "skipped" },
+    { "note": "un solo fallo", "outcomes": ["failed"], "outcome": "failed" }
+  ]
+}

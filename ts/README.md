@@ -379,6 +379,91 @@ const porAmbito = new SlackChannel({
 Está probado con un `fetch` de prueba, no contra Slack: conviene hacer una conexión real antes de
 confiar en la configuración.
 
+## Push
+
+`PushChannel` avisa en los dispositivos de cada persona. Separa a quién se le manda de por dónde:
+le pide los dispositivos a una función tuya y le pasa el mensaje, por cada uno, al **transporte**
+que le corresponde. Hay dos incluidos: `ApnsTransport`, para dispositivos de Apple, y
+`WebPushTransport`, para navegadores.
+
+```ts
+import { ApnsTransport, PushChannel, renderPush, WebPushTransport } from 'campanita';
+
+const push = new PushChannel({
+  transports: {
+    apns: new ApnsTransport({ key, keyId, teamId, topic: 'com.example.app', sound: 'default' }),
+    web: new WebPushTransport({ publicKey, privateKey, subject: 'mailto:avisos@example.com' }),
+  },
+  // Del aviso a sus dispositivos. `transport` es la clave de arriba; `target`, lo que ese
+  // transporte necesita.
+  resolveDevices: async (notification) => {
+    const rows = await db.devicesOf(notification.recipientId, notification.scope);
+    return rows.map((row) =>
+      row.kind === 'apple'
+        ? { transport: 'apns', target: { token: row.token, environment: row.environment } }
+        : { transport: 'web', target: { endpoint: row.endpoint, p256dh: row.p256dh, auth: row.auth } },
+    );
+  },
+  // Qué pasó con cada uno. `expired`: el dispositivo ya no existe.
+  onResult: async (device, result) => {
+    if (result.outcome === 'expired') await db.forget(device.target);
+  },
+});
+```
+
+- **Los dispositivos son tuyos.** campanita no los guarda: registrar uno cuando la app o el
+  navegador lo informa, y olvidarlo cuando la persona cierra sesión o cuando el servicio dice que
+  venció, es de tu aplicación. `resolveDevices` recibe el aviso entero, así que puede elegir según
+  el ámbito o la dirección a la que lleva.
+- **Un dispositivo roto no frena al resto.** Cada uno se resuelve por separado. El canal contesta
+  `sent` si alguno recibió; si ninguno, `failed` cuando alguno falló, `expired` cuando lo que hubo
+  fueron vencidos, y `skipped` cuando no había dispositivos o ninguno tenía transporte.
+- **Un transporte que falta se saltea.** Si en `transports` no está la clave de un dispositivo, ese
+  dispositivo cuenta como `skipped`: se puede configurar un servicio sin el otro.
+- **El mensaje por omisión** (`renderPush`) lleva el título, el cuerpo, la dirección del aviso como
+  `url` y, en `data`, `notification_id` y `type`, para que quien lo recibe pueda abrir el aviso o
+  marcarlo como leído. No lleva hilo: se agrega con `render`, por ejemplo
+  `render: (n) => ({ ...renderPush(n), thread: n.category })`.
+- **Otro servicio es otro transporte**: un objeto con `send(target, message)` que contesta como un
+  canal.
+
+### Dispositivos de Apple
+
+`ApnsTransport` le habla a APNs directo, con la clave .p8 del equipo. El destino es
+`{ token, environment }`: el token que el sistema le dio a la app, y `sandbox` o `production` según
+cómo se instaló. Ese dato lo sabe la app y lo tiene que mandar al registrarse, porque un token sólo
+vale contra su servicio.
+
+- **APNs sólo habla HTTP/2.** El transporte usa el `fetch` global o el que le pases en `fetch`;
+  comprobá que el de tu entorno lo negocie antes de confiar en la configuración.
+- **En el cuerpo**, los datos del mensaje van en la raíz, junto a `aps`; la dirección va en `url` y
+  el hilo en `thread-id`. Sin `sound`, el aviso no suena.
+- **`expired`** es lo que APNs contesta para un token que ya no existe o que no es de esta app
+  (`Unregistered`, `BadDeviceToken`, `DeviceTokenNotForTopic`, o un 410). Un token mandado al
+  entorno equivocado también cae acá.
+- **El «provider token» se reusa** 45 minutos por clave, también entre instancias: APNs rechaza
+  que se firme uno nuevo en cada pedido.
+- **Ningún error repite el token ni la clave.**
+
+### Navegadores
+
+`WebPushTransport` firma con VAPID y cifra el mensaje para el navegador (RFC 8291 y 8292). El
+destino es la suscripción, como la entrega `PushSubscription.toJSON()`:
+`{ endpoint, p256dh, auth }`.
+
+- **El mensaje llega como JSON** con `title`, `body`, `url`, `tag` (el hilo) y `data`, sin los
+  campos vacíos. Mostrarlo es de tu service worker; suscribir al navegador, de tu interfaz.
+- **El `endpoint` lo informa el navegador**, es decir quien usa tu app. Sólo se acepta una URL
+  `https:` y no se siguen redirecciones; con `acceptEndpoint` se limita a los servicios que
+  quieras.
+- **`expired`** es un 404 o un 410: la suscripción ya no existe.
+- **Un mensaje que no entra** en lo que un servicio está obligado a aceptar (4096 bytes ya cifrado)
+  es `failed`, sin salir a la red.
+- **`ttlSeconds`** es cuánto guarda el servicio un aviso que no pudo entregar. Por omisión, un día.
+
+Los dos transportes están probados con un `fetch` de prueba, no contra los servicios: conviene
+mandar un aviso real antes de confiar en la configuración.
+
 ## La campanita en tu app
 
 La bandeja, las preferencias y el horario de no molestar se sirven por HTTP con un contrato fijo

@@ -59,6 +59,12 @@ export type {
   SlackChannelOptions,
   SlackConnection,
 } from './channels/slack.js';
+export { PushChannel, renderPush, summarizePush } from './channels/push.js';
+export type { PushChannelOptions, PushDevice, PushMessage, PushTransport } from './channels/push.js';
+export { ApnsTransport } from './channels/apns.js';
+export type { ApnsTarget, ApnsTransportOptions } from './channels/apns.js';
+export { WebPushTransport } from './channels/webpush.js';
+export type { WebPushTarget, WebPushTransportOptions } from './channels/webpush.js';
 export { InvalidChannelsError, Notifier } from './core/notify.js';
 export type { Member, NotifierOptions, NotifyResult } from './core/notify.js';
 export { StoreError } from './core/inbox.js';

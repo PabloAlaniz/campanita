@@ -11,6 +11,8 @@
   canales que corresponden.
 - El canal de email, con transporte intercambiable: SMTP (Python), HTTP genérico y Resend.
 - El canal de Slack: cada persona conecta un canal con OAuth, sin tokens a la vista.
+- El canal de push: los dispositivos de cada persona, cada uno por su transporte, con uno para
+  dispositivos de Apple (APNs) y otro para navegadores (Web Push) en TypeScript.
 - Avisos para un grupo: un tipo declara si le habla a una persona o a un grupo; el de grupo sale
   una vez, al destino del grupo, y deja una copia en la bandeja de cada miembro.
 - Destinos por ámbito: los canales incluidos pueden elegir la dirección o el webhook a partir del
@@ -30,7 +32,8 @@
 
 ## Lo que sigue
 
-1. **Web push**, y después push nativo.
+1. **Más de push.** Los transportes en Python, uno para FCM, y del lado del navegador, suscribir
+   y mostrar el aviso desde el service worker.
 2. **Registro y reintento de entregas.** Guardar qué pasó con cada entrega y volver a intentar
    las que fallaron.
 3. **Más de email.** SMTP en TypeScript, mensajes en HTML y qué hacer con los rebotes.

@@ -9,7 +9,7 @@ Están declarados en [`python/src/campanita/ports.py`](../python/src/campanita/p
 | `NotificationStore` | Guardar avisos y leer la bandeja | Especificado, con secuencias de conformidad |
 | `PreferenceStore` | Guardar lo que cambió cada persona | Especificado, con secuencias de conformidad |
 | `QuietHoursStore` | Guardar el horario de no molestar de cada persona | Especificado, con secuencias de conformidad |
-| `DeliveryChannel` | Entregar un aviso fuera de la bandeja | Especificado dentro del recorrido; incluye email y Slack |
+| `DeliveryChannel` | Entregar un aviso fuera de la bandeja | Especificado dentro del recorrido; incluye email, Slack y push |
 
 La **bandeja** no es un puerto: es lo que se lee del `NotificationStore`. Cualquier superficie
 que la muestre (un panel web, una app, un bot) es un cliente de esa lectura, y para eso está el
@@ -144,6 +144,37 @@ Slack es un adaptador y no está en el spec. Lo que tiene que dar igual en los d
 mensaje por omisión, qué URL se acepta y cómo se lee la respuesta de la conexión) está en
 [`fixtures/slack.json`](../fixtures/slack.json), que leen los tests de los dos paquetes.
 
+### Push
+
+El canal de push (`PushChannel`) separa a quién se le manda de por dónde. Busca los dispositivos
+del aviso con una función de quien integra y le pasa el mensaje, por cada uno, a un
+**transporte**, que es un puerto más chico: `send(destino, mensaje)`.
+
+| Transporte | Python | TypeScript |
+|---|---|---|
+| APNs (dispositivos de Apple) | todavía no | `ApnsTransport` |
+| Web Push (navegadores) | todavía no | `WebPushTransport` |
+
+Los transportes firman con ES256 y, el de Web Push, cifran: en TypeScript eso es Web Crypto. En
+Python no está en la biblioteca estándar, y APNs pide además HTTP/2; por eso ahí van a ser un
+extra opcional y no parte del paquete base.
+
+- **Cada dispositivo se resuelve por separado**, y el canal resume: `sent` si alguno recibió; si
+  ninguno, `failed` cuando alguno falló, `expired` cuando lo que hubo fueron vencidos, y `skipped`
+  cuando no había a dónde mandar.
+- **El resultado de cada dispositivo llega por `onResult`** (`on_result`). Con `expired`, quien
+  integra olvida ese dispositivo.
+- **Un transporte que no está configurado se saltea**, sin impedir los demás.
+- **Ningún error repite un token, un endpoint ni una clave.** No se siguen redirecciones.
+- **Web Push sólo manda a una URL `https:`**: el endpoint lo informa el navegador de quien usa la
+  aplicación, y `acceptEndpoint` permite limitarlo a los servicios conocidos.
+
+Push es un adaptador y no está en el spec. Lo que tiene que dar igual en los dos lenguajes (el
+mensaje por omisión y cómo se resume un envío a varios dispositivos) está en
+[`fixtures/push.json`](../fixtures/push.json), que leen los tests de los dos paquetes.
+
+Los transportes están probados con un `fetch` de prueba, no contra los servicios.
+
 ## Escribir un adaptador
 
 Cada paquete trae el corredor de secuencias que usa para sus propios adaptadores:
@@ -204,5 +235,5 @@ Un puerto no se da por estable hasta tener **dos adaptadores reales**. Con uno s
 termina teniendo la forma de ese adaptador y el segundo no entra.
 
 Los almacenes la cumplen en los dos lenguajes (en memoria, SQLite y Postgres en Python; en memoria,
-D1 y Postgres en TypeScript), y el transporte de email también. El canal de entrega también: email
-y Slack.
+D1 y Postgres en TypeScript), y el transporte de email también. El canal de entrega también: email,
+Slack y push. El transporte de push, en TypeScript: APNs y Web Push.
