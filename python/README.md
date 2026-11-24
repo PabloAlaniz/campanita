@@ -445,6 +445,51 @@ por_ambito = SlackChannel(resolve_webhook_for=lambda n: buscar_webhook(n.recipie
 Está probado con un `POST` de prueba, no contra Slack: conviene hacer una conexión real antes de
 confiar en la configuración.
 
+## Push
+
+`PushChannel` avisa en los dispositivos de cada persona. Separa a quién se le manda de por dónde:
+le pide los dispositivos a una función tuya y le pasa el mensaje, por cada uno, al **transporte**
+que le corresponde.
+
+Este paquete trae el canal. Los transportes incluidos (dispositivos de Apple y navegadores) están,
+por ahora, sólo en el de TypeScript: acá se escribe uno propio, que es un objeto con
+`send(target, message)`.
+
+```python
+from campanita.channels import PushChannel, PushDevice, PushMessage
+from campanita.ports import DeliveryResult
+
+class MiServicio:
+    async def send(self, target: str, message: PushMessage) -> DeliveryResult:
+        ...  # mandar `message` a `target`
+        return DeliveryResult("sent")
+
+async def buscar_dispositivos(notification):
+    rows = await db.devices_of(notification.recipient_id, notification.scope)
+    return [PushDevice(transport="servicio", target=row.token) for row in rows]
+
+async def anotar(device, result, notification):
+    if result.outcome == "expired":      # el dispositivo ya no existe
+        await db.forget(device.target)
+
+push = PushChannel(
+    transports={"servicio": MiServicio()},
+    resolve_devices=buscar_dispositivos,
+    on_result=anotar,
+)
+```
+
+- **Los dispositivos son tuyos.** campanita no los guarda: registrar uno y olvidarlo es de tu
+  aplicación. `resolve_devices` recibe el aviso entero, así que puede elegir según el ámbito o la
+  dirección a la que lleva.
+- **Un dispositivo roto no frena al resto.** Cada uno se resuelve por separado. El canal contesta
+  `sent` si alguno recibió; si ninguno, `failed` cuando alguno falló, `expired` cuando lo que hubo
+  fueron vencidos, y `skipped` cuando no había dispositivos o ninguno tenía transporte.
+- **Un transporte que falta se saltea.** Si en `transports` no está la clave de un dispositivo, ese
+  dispositivo cuenta como `skipped`.
+- **El mensaje por omisión** (`render_push`) lleva el título, el cuerpo, la dirección del aviso
+  como `url` y, en `data`, `notification_id` y `type`. No lleva hilo: se agrega con `render`.
+
 ## Desarrollo
 
 ```bash

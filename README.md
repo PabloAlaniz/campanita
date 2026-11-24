@@ -14,8 +14,8 @@ npm install campanita
 
 > **Versión temprana.** El núcleo decide por qué canales sale un aviso, qué puede cambiar la
 > persona y cómo se arma un aviso, y guarda la bandeja y las preferencias sobre cualquier base.
-> Los canales de entrega incluidos son email (SMTP, HTTP o Resend) y Slack; los demás los escribe
-> quien integra. La bandeja se sirve por HTTP, con un cliente sin dependencias para la interfaz.
+> Los canales de entrega incluidos son email (SMTP, HTTP o Resend), Slack y push (a dispositivos
+> de Apple y a navegadores); los demás los escribe quien integra. La bandeja se sirve por HTTP, con un cliente sin dependencias para la interfaz.
 > Hasta la 1.0 la API puede cambiar entre versiones menores. La [hoja de ruta](docs/hoja-de-ruta.md) dice qué viene y el
 > [CHANGELOG](CHANGELOG.md), qué cambió.
 
@@ -88,6 +88,22 @@ los avisos le llegan ahí.
 from campanita.channels import SlackChannel
 
 slack = SlackChannel(resolve_webhook=buscar_webhook)   # tu función: None si no conectó
+```
+
+Y otro es push: el aviso llega a los dispositivos de cada persona, cada uno por el servicio que
+le corresponde. Qué dispositivos tiene una persona lo sabe tu aplicación; campanita no los guarda.
+
+```ts
+import { ApnsTransport, PushChannel, WebPushTransport } from 'campanita';
+
+const push = new PushChannel({
+  transports: {
+    apns: new ApnsTransport({ key, keyId, teamId, topic: 'com.example.app' }),
+    web: new WebPushTransport({ publicKey, privateKey, subject: 'mailto:avisos@example.com' }),
+  },
+  resolveDevices: buscarDispositivos,     // tu función: del aviso a sus dispositivos
+  onResult: anotarResultado,              // tu función: con `expired`, olvidar el dispositivo
+});
 ```
 
 Un aviso puede hablarle a una persona o a un **grupo** (un equipo, un proyecto). Uno de grupo
