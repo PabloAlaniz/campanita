@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/PabloAlaniz/campanita/compare/v0.8.0...v0.9.0) (2026-11-24)
+
+
+### Features
+
+* canal de push, con transportes para APNs y Web Push ([#15](https://github.com/PabloAlaniz/campanita/issues/15)) ([78ef461](https://github.com/PabloAlaniz/campanita/commit/78ef4611867028eb950e7e01f37f3bb6a1ac3a83))
+
 ## [0.8.0](https://github.com/PabloAlaniz/campanita/compare/v0.7.0...v0.8.0) (2026-11-23)
 
 
