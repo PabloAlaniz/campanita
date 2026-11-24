@@ -459,18 +459,22 @@ por ahora, sólo en el de TypeScript: acá se escribe uno propio, que es un obje
 from campanita.channels import PushChannel, PushDevice, PushMessage
 from campanita.ports import DeliveryResult
 
+
 class MiServicio:
     async def send(self, target: str, message: PushMessage) -> DeliveryResult:
         ...  # mandar `message` a `target`
         return DeliveryResult("sent")
 
+
 async def buscar_dispositivos(notification):
     rows = await db.devices_of(notification.recipient_id, notification.scope)
     return [PushDevice(transport="servicio", target=row.token) for row in rows]
 
+
 async def anotar(device, result, notification):
-    if result.outcome == "expired":      # el dispositivo ya no existe
+    if result.outcome == "expired":  # el dispositivo ya no existe
         await db.forget(device.target)
+
 
 push = PushChannel(
     transports={"servicio": MiServicio()},
