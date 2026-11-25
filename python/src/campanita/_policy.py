@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Iterator, Mapping
 from types import MappingProxyType
 from typing import final
 
-from ._types import INBOX, Cell, InvalidPolicy
+from ._types import ID, INBOX, Cell, InvalidPolicy
 
-_ID = re.compile(r"[a-z][a-z0-9_-]{0,63}")
 _CELL_KEYS = frozenset({"default", "locked", "urgent"})
 
 
@@ -76,7 +74,7 @@ def parse_policy(raw: object) -> Policy:
 
 
 def _check_id(value: object, what: str) -> None:
-    if not isinstance(value, str) or not _ID.fullmatch(value):
+    if not isinstance(value, str) or not ID.fullmatch(value):
         raise InvalidPolicy(
             f"{what} {value!r}: no es un identificador ([a-z][a-z0-9_-]*, hasta 64 caracteres)"
         )

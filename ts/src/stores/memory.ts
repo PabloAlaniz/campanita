@@ -3,6 +3,7 @@ import {
   byCodePoint,
   checkCap,
   checkLimit,
+  paginate,
   StoreError,
   toMs,
   type AddResult,
@@ -24,9 +25,8 @@ export class MemoryStore implements NotificationStore {
     const keys = this.#byKey.get(draft.recipientId);
     if (draft.dedupeKey !== null) {
       const existing = keys?.get(draft.dedupeKey);
-      if (existing !== undefined) {
-        return { notification: copy(this.#byId.get(existing)!), created: false };
-      }
+      const found = existing === undefined ? undefined : this.#byId.get(existing);
+      if (found !== undefined) return { notification: copy(found), created: false };
     }
     if (this.#byId.has(options.id)) throw new StoreError('duplicate_id');
 
@@ -58,13 +58,7 @@ export class MemoryStore implements NotificationStore {
       const edge = { createdAt: new Date(toMs(cursor.createdAt)), id: cursor.id };
       rows = rows.filter((item) => compare(item, edge) < 0);
     }
-    const page = rows.slice(0, limit);
-    const last = page.at(-1);
-    return {
-      items: page.map(copy),
-      nextCursor:
-        last !== undefined && rows.length > limit ? { createdAt: new Date(last.createdAt), id: last.id } : null,
-    };
+    return paginate(rows.slice(0, limit + 1).map(copy), limit);
   }
 
   async countUnread(

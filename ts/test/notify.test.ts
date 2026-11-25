@@ -444,9 +444,9 @@ describe('un horario guardado roto', () => {
       preferences: new MemoryPreferenceStore(),
       channels: [channel],
       // Lo que devolvería un almacén con una fila editada a mano: el almacén no valida.
+      // El Notifier sólo lee horarios: alcanza con `getQuietHours`.
       quietHours: {
         getQuietHours: async () => ({ enabled: true, start: '25:00', end: '08:00', timezone: 'UTC' }),
-        setQuietHours: async () => {},
       },
     });
     const result = await notifier.notify({ type: 'nota', recipient_id: 'ana' });

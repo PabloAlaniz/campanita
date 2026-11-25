@@ -17,7 +17,6 @@ Las tablas se crean con `create_schema()` o copiando las sentencias de
 from __future__ import annotations
 
 import asyncio
-import json
 import weakref
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, TypeAlias
@@ -30,10 +29,11 @@ from .._inbox import (
     StoreError,
     check_cap,
     check_limit,
-    from_ms,
+    paginate,
     to_ms,
 )
 from .._quiet import QuietHours
+from ._sql import COLUMNS, feed_filter, from_row, insert_values, read_all_filter, visible
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Sequence
@@ -51,10 +51,6 @@ if TYPE_CHECKING:
 _NOTIFICATIONS = "campanita_notifications"
 _PREFERENCES = "campanita_preferences"
 _QUIET_HOURS = "campanita_quiet_hours"
-_COLUMNS = (
-    "id, recipient_id, type, category, title, body, action_url, payload, scope, dedupe_key,"
-    " created_at_ms, read_at_ms"
-)
 
 
 #: Postgres corta los nombres en 63 bytes sin avisar. Con el sufijo más largo
@@ -215,63 +211,41 @@ class PostgresStore(_Base):
             # inserta. Si otro pedido está guardando la misma clave, Postgres
             # espera a que termine, así que la búsqueda de abajo encuentra su aviso.
             await cursor.execute(
-                f"INSERT INTO {self._table} ({_COLUMNS})"
+                f"INSERT INTO {self._table} ({COLUMNS})"
                 " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULL) ON CONFLICT DO NOTHING",
-                (
-                    item.id,
-                    item.recipient_id,
-                    item.type,
-                    item.category,
-                    item.title,
-                    item.body,
-                    item.action_url,
-                    json.dumps(dict(item.payload), ensure_ascii=False),
-                    item.scope,
-                    item.dedupe_key,
-                    to_ms(item.created_at),
-                ),
+                insert_values(item),
             )
             if cursor.rowcount > 0:
                 return AddResult(item, created=True)
             # No insertó. La clave repetida se revisa antes que el identificador.
             if draft.dedupe_key is not None:
                 await cursor.execute(
-                    f"SELECT {_COLUMNS} FROM {self._table} WHERE recipient_id = %s AND dedupe_key = %s",
+                    f"SELECT {COLUMNS} FROM {self._table} WHERE recipient_id = %s AND dedupe_key = %s",
                     (draft.recipient_id, draft.dedupe_key),
                 )
                 existing = await cursor.fetchone()
                 if existing is not None:
-                    return AddResult(_row(existing), created=False)
+                    return AddResult(from_row(existing), created=False)
         raise StoreError("duplicate_id")
 
     async def list_feed(self, query: FeedQuery) -> FeedPage:
         limit = check_limit(query.limit)
-        where, params = _visible(query.recipient_id, query.scope)
-        if query.unread_only:
-            where += " AND read_at_ms IS NULL"
-        if query.category is not None:
-            where += " AND category = %s"
-            params.append(query.category)
-        if query.cursor is not None:
-            where += " AND (created_at_ms, id) < (%s, %s)"
-            params += [to_ms(query.cursor[0]), query.cursor[1]]
+        where, params = feed_filter(query, "%s")
         async with self._cursor() as cursor:
             # Uno de más, para saber si queda otra página sin contar.
             await cursor.execute(
-                f"SELECT {_COLUMNS} FROM {self._table} WHERE {where}"
+                f"SELECT {COLUMNS} FROM {self._table} WHERE {where}"
                 " ORDER BY created_at_ms DESC, id DESC LIMIT %s",
                 (*params, limit + 1),
             )
             rows = await cursor.fetchall()
-        page = tuple(_row(row) for row in rows[:limit])
-        more = len(rows) > limit
-        return FeedPage(page, (page[-1].created_at, page[-1].id) if page and more else None)
+        return paginate([from_row(row) for row in rows], limit)
 
     async def count_unread(
         self, recipient_id: str, *, scope: str | None = None, cap: int | None = None
     ) -> int:
         cap = check_cap(cap)
-        where, params = _visible(recipient_id, scope)
+        where, params = visible(recipient_id, scope, "%s")
         inner = f"SELECT 1 FROM {self._table} WHERE {where} AND read_at_ms IS NULL"
         if cap is not None:
             inner += " LIMIT %s"
@@ -299,55 +273,13 @@ class PostgresStore(_Base):
         scope: str | None = None,
         category: str | None = None,
     ) -> int:
-        where, params = _visible(recipient_id, scope)
-        where += " AND read_at_ms IS NULL AND created_at_ms < %s"
-        params.append(to_ms(before))
-        if category is not None:
-            where += " AND category = %s"
-            params.append(category)
+        where, params = read_all_filter(recipient_id, before=before, scope=scope, category=category, ph="%s")
         async with self._cursor() as cursor:
             await cursor.execute(
                 f"UPDATE {self._table} SET read_at_ms = %s WHERE {where}",
                 (to_ms(read_at), *params),
             )
             return cursor.rowcount
-
-
-def _visible(recipient_id: str, scope: str | None) -> tuple[str, list[object]]:
-    if scope is None:
-        return "recipient_id = %s", [recipient_id]
-    return "recipient_id = %s AND (scope IS NULL OR scope = %s)", [recipient_id, scope]
-
-
-def _row(row: tuple[Any, ...]) -> Notification:
-    (
-        id,
-        recipient_id,
-        type_,
-        category,
-        title,
-        body,
-        action_url,
-        payload,
-        scope,
-        dedupe_key,
-        created,
-        read,
-    ) = row
-    return Notification(
-        id=id,
-        recipient_id=recipient_id,
-        type=type_,
-        category=category,
-        title=title,
-        body=body,
-        action_url=action_url,
-        payload=json.loads(payload),
-        scope=scope,
-        dedupe_key=dedupe_key,
-        created_at=from_ms(int(created)),
-        read_at=None if read is None else from_ms(int(read)),
-    )
 
 
 class PostgresPreferenceStore(_Base):

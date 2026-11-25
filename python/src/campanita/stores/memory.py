@@ -15,6 +15,7 @@ from .._inbox import (
     check_cap,
     check_limit,
     from_ms,
+    paginate,
     to_ms,
 )
 
@@ -63,12 +64,7 @@ class MemoryStore:
         if query.cursor is not None:
             edge = (to_ms(query.cursor[0]), query.cursor[1])
             rows = [item for item in rows if _position(item) < edge]
-        page = rows[:limit]
-        more = len(rows) > limit
-        return FeedPage(
-            items=tuple(page),
-            next_cursor=(page[-1].created_at, page[-1].id) if page and more else None,
-        )
+        return paginate(rows[: limit + 1], limit)
 
     async def count_unread(
         self, recipient_id: str, *, scope: str | None = None, cap: int | None = None

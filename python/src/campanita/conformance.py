@@ -10,6 +10,10 @@ quien escriba el suyo:
 `run_quiet_hours_vector` con `spec/vectors/silencio-guardado/`.
 
 Cada vector necesita un almacén vacío.
+
+También están acá las reglas que todo almacén comparte, para no copiarlas:
+`check_limit`, `check_cap`, `to_ms`/`from_ms` (milisegundos en UTC) y `paginate`
+(una página a partir de `limit + 1` avisos ordenados).
 """
 
 from __future__ import annotations
@@ -18,12 +22,35 @@ from collections.abc import Awaitable, Callable, Mapping
 from typing import TYPE_CHECKING, Any
 
 from ._catalog import Draft
-from ._inbox import FeedQuery, Notification, StoreError, from_ms, to_ms
+from ._inbox import (
+    FeedQuery,
+    Notification,
+    StoreError,
+    check_cap,
+    check_limit,
+    from_ms,
+    paginate,
+    to_ms,
+)
 from ._quiet import QuietHours, parse_quiet_hours
 from ._types import Change
 
 if TYPE_CHECKING:
     from .ports import NotificationStore, PreferenceStore, QuietHoursStore
+
+__all__ = [
+    "StoreError",
+    "check_cap",
+    "check_limit",
+    "from_ms",
+    "notification_to_wire",
+    "paginate",
+    "quiet_hours_to_wire",
+    "run_preference_vector",
+    "run_quiet_hours_vector",
+    "run_store_vector",
+    "to_ms",
+]
 
 
 def notification_to_wire(item: Notification) -> dict[str, Any]:

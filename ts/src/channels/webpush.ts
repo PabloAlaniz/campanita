@@ -9,6 +9,7 @@
  * sin los campos vacíos. Mostrarlo es del service worker de quien integra.
  */
 import type { DeliveryResult } from '../ports.js';
+import { failed } from './result.js';
 import { concat, fromBase64, jsonSegment, toBase64Url, utf8 } from './encoding.js';
 import type { Key } from './encoding.js';
 import type { PushMessage, PushTransport } from './push.js';
@@ -133,7 +134,7 @@ export class WebPushTransport implements PushTransport<WebPushTarget> {
       if (body.length > MAX_BODY) return { outcome: 'failed', error: 'el mensaje no entra en un aviso de web push' };
       authorization = `vapid t=${await this.#sign(endpoint.origin)}, k=${this.#options.publicKey}`;
     } catch (error) {
-      return { outcome: 'failed', error: `no se pudo armar el mensaje: ${error instanceof Error ? error.name : 'Error'}` };
+      return failed('no se pudo armar el mensaje', error);
     }
 
     let response: Response;
@@ -152,7 +153,7 @@ export class WebPushTransport implements PushTransport<WebPushTarget> {
       });
     } catch (error) {
       // Sólo el tipo: el mensaje de un error de red puede traer el endpoint.
-      return { outcome: 'failed', error: `web push: ${error instanceof Error ? error.name : 'Error'}` };
+      return failed('web push', error);
     }
     if (response.ok) return { outcome: 'sent' };
     return {

@@ -443,13 +443,13 @@ def test_disponibilidad_asincrona_con_destinatario_y_ambito() -> None:
 
 
 class _HorarioRoto:
-    """Un almacén que devuelve lo que tiene guardado, aunque esté roto (una fila editada a mano)."""
+    """Un almacén que devuelve lo que tiene guardado, aunque esté roto (una fila editada a mano).
+
+    El Notifier sólo lee horarios (`QuietHoursReader`): no hace falta `set_quiet_hours`.
+    """
 
     async def get_quiet_hours(self, recipient_id: str) -> QuietHours | None:
         return QuietHours(enabled=True, start="25:00", end="08:00", timezone="UTC")
-
-    async def set_quiet_hours(self, recipient_id: str, quiet_hours: QuietHours) -> None:
-        raise NotImplementedError
 
 
 def test_un_horario_que_no_cumple_el_spec_no_se_puede_construir() -> None:

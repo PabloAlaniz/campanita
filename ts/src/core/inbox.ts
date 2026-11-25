@@ -1,5 +1,6 @@
 /** La bandeja: el aviso guardado y lo que se le puede pedir a un almacén. */
 import type { Draft } from './types.js';
+export { byCodePoint } from './order.js';
 
 /** Un aviso guardado. `readAt` es lo único que cambia después de creado. */
 export interface Notification extends Draft {
@@ -35,6 +36,19 @@ export interface FeedPage {
   readonly items: readonly Notification[];
   /** `null` cuando no queda nada más. */
   readonly nextCursor: FeedCursor | null;
+}
+
+/**
+ * Una página a partir de hasta `limit + 1` avisos ya ordenados del más nuevo al
+ * más viejo. El de más sólo dice si queda otra página: así no hace falta contar.
+ */
+export function paginate(rows: readonly Notification[], limit: number): FeedPage {
+  const items = rows.slice(0, limit);
+  const last = items.at(-1);
+  return {
+    items,
+    nextCursor: last !== undefined && rows.length > limit ? { createdAt: new Date(last.createdAt), id: last.id } : null,
+  };
 }
 
 /** Por qué un almacén rechaza una operación. Son los literales del spec. */
@@ -80,19 +94,3 @@ export function toMs(moment: Date): number {
   return ms;
 }
 
-/**
- * Orden por punto de código Unicode: el desempate entre avisos de la misma
- * fecha. La comparación por defecto de JavaScript usa unidades UTF-16 y da otro
- * resultado fuera del plano básico.
- */
-export function byCodePoint(a: string, b: string): number {
-  const left = a[Symbol.iterator]();
-  const right = b[Symbol.iterator]();
-  for (;;) {
-    const x = left.next();
-    const y = right.next();
-    if (x.done || y.done) return (x.done ? 0 : 1) - (y.done ? 0 : 1);
-    const diff = x.value.codePointAt(0)! - y.value.codePointAt(0)!;
-    if (diff !== 0) return diff;
-  }
-}

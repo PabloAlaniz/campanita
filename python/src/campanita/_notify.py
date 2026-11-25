@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import inspect
-import re
 import uuid
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -12,14 +10,15 @@ from typing import TYPE_CHECKING
 from ._catalog import Catalog, build_notification, check_members
 from ._channels import resolve_channels
 from ._quiet import InvalidQuietHours, is_quiet, local_minute
-from ._types import INBOX, EventRejected
+from ._types import ID, INBOX, EventRejected, maybe_await
 from .ports import (
     ChannelAvailability,
     DeliveryChannel,
     DeliveryResult,
-    NotificationStore,
-    PreferenceStore,
-    QuietHoursStore,
+    NotificationWriter,
+    PreferenceReader,
+    QuietHoursReader,
+    is_delivery_result,
 )
 
 if TYPE_CHECKING:
@@ -27,9 +26,6 @@ if TYPE_CHECKING:
 
     from ._inbox import AddResult, Notification
     from ._policy import Policy
-
-_ID = re.compile(r"[a-z][a-z0-9_-]{0,63}")
-_OUTCOMES = frozenset({"sent", "expired", "failed", "skipped"})
 
 
 class InvalidChannels(ValueError):
@@ -60,11 +56,11 @@ class Notifier:
         *,
         policy: Policy,
         catalog: Catalog,
-        store: NotificationStore,
-        preferences: PreferenceStore,
+        store: NotificationWriter,
+        preferences: PreferenceReader,
         channels: Iterable[DeliveryChannel] = (),
         available: ChannelAvailability | None = None,
-        quiet_hours: QuietHoursStore | None = None,
+        quiet_hours: QuietHoursReader | None = None,
         local_minute: Callable[[str, datetime], int | None] = local_minute,
         new_id: Callable[[], str] = lambda: str(uuid.uuid4()),
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
@@ -156,7 +152,7 @@ class Notifier:
         if self._available is None:
             return list(self._channels)
         value = self._available(notification.recipient_id, notification.scope)
-        theirs = set(await value if inspect.isawaitable(value) else value)
+        theirs = set(await maybe_await(value))
         return [channel_id for channel_id in self._channels if channel_id in theirs]
 
     async def _is_quiet(self, recipient_id: str, moment: datetime) -> bool:
@@ -180,7 +176,7 @@ def check_channels(channels: Iterable[DeliveryChannel]) -> dict[str, DeliveryCha
     by_id: dict[str, DeliveryChannel] = {}
     for channel in channels:
         channel_id = channel.id
-        if not isinstance(channel_id, str) or not _ID.fullmatch(channel_id):
+        if not isinstance(channel_id, str) or not ID.fullmatch(channel_id):
             raise InvalidChannels(f"canal {channel_id!r}: no es un identificador")
         if channel_id == INBOX:
             raise InvalidChannels(f"`{INBOX}` es la bandeja, no un canal de entrega")
@@ -197,6 +193,6 @@ async def _deliver(channel: DeliveryChannel, notification: Notification) -> Deli
     # Un canal de terceros puede fallar de cualquier forma: el error queda como `failed`.
     except Exception as error:  # noqa: BLE001
         return DeliveryResult("failed", error=f"{type(error).__name__}: {error}")
-    if not isinstance(result, DeliveryResult) or result.outcome not in _OUTCOMES:
+    if not is_delivery_result(result):
         return DeliveryResult("failed", error="el canal no devolvió un resultado válido")
     return result

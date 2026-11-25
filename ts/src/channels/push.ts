@@ -12,9 +12,9 @@
  */
 import type { Notification } from '../core/inbox.js';
 import type { DeliveryChannel, DeliveryOutcome, DeliveryResult } from '../ports.js';
+import { CONTROL } from './encoding.js';
+import { failed } from './result.js';
 
-// biome-ignore lint/suspicious/noControlCharactersInRegex: busca justamente los caracteres de control.
-const CONTROL = /[\u0000-\u001f\u007f]+/g;
 
 /** Lo que un aviso dice en un dispositivo. Cada transporte lo traduce a su servicio. */
 export interface PushMessage {
@@ -115,7 +115,6 @@ export interface PushChannelOptions {
 }
 
 const OUTCOMES: ReadonlySet<unknown> = new Set(['sent', 'expired', 'failed', 'skipped']);
-const errorName = (error: unknown): string => (error instanceof Error ? error.name : 'Error');
 
 /**
  * Avisa en los dispositivos de cada persona.
@@ -142,7 +141,7 @@ export class PushChannel implements DeliveryChannel {
     try {
       devices = (await this.#options.resolveDevices(notification)) ?? [];
     } catch (error) {
-      return { outcome: 'failed', error: `no se pudieron buscar los dispositivos: ${errorName(error)}` };
+      return failed('no se pudieron buscar los dispositivos', error);
     }
     if (devices.length === 0) return { outcome: 'skipped', error: 'la persona no tiene dispositivos' };
 
@@ -150,7 +149,7 @@ export class PushChannel implements DeliveryChannel {
     try {
       message = (this.#options.render ?? renderPush)(notification);
     } catch (error) {
-      return { outcome: 'failed', error: `no se pudo armar el mensaje: ${errorName(error)}` };
+      return failed('no se pudo armar el mensaje', error);
     }
 
     const outcomes = await Promise.all(devices.map((device) => this.#deliver(device, message, notification)));
@@ -171,7 +170,7 @@ export class PushChannel implements DeliveryChannel {
         if (!OUTCOMES.has(result?.outcome)) result = { outcome: 'failed', error: 'el transporte no informó un resultado' };
       } catch (error) {
         // Sólo el tipo: el mensaje de un error de red puede traer el destino.
-        result = { outcome: 'failed', error: `el transporte rechazó: ${errorName(error)}` };
+        result = failed('el transporte rechazó', error);
       }
     }
     try {

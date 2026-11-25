@@ -2,23 +2,23 @@
 
 from __future__ import annotations
 
-import inspect
 import json
 import re
 from collections.abc import Awaitable, Callable, Mapping, MutableMapping
+from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar
 from urllib.parse import parse_qsl, unquote, unquote_to_bytes
 
 from .._channels import effective_matrix, validate_patch
 from .._inbox import Cursor, FeedQuery, from_ms
 from .._quiet import InvalidQuietHours, QuietHours, local_minute, parse_quiet_hours
-from .._types import PatchRejected
+from .._types import PatchRejected, maybe_await
 from ._wire import _MAX_DATETIME_MS, decode_cursor_parts, encode_cursor, from_iso, item_to_wire
 
 if TYPE_CHECKING:
     from .._policy import Policy
-    from ..ports import ChannelAvailability, NotificationStore, PreferenceStore, QuietHoursStore
+    from ..ports import ChannelAvailability, InboxReader, PreferenceStore, QuietHoursStore
 
 #: Los tipos de ASGI 3, sin depender de un paquete que los defina.
 Scope = MutableMapping[str, Any]
@@ -63,18 +63,32 @@ class _Response:
         self.body = body
 
 
+@dataclass(frozen=True, slots=True)
+class _Call:
+    """Un pedido ya ubicado: quién pide, cómo, con qué consulta y qué cuerpo."""
+
+    who: str
+    method: str
+    params: Mapping[str, str]
+    body: Any
+    #: El `id` de `/feed/{id}/read`, ya decodificado.
+    path_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _Route:
+    methods: tuple[str, ...]
+    handle: Callable[[_Call], Awaitable[_Response]]
+    #: Los métodos que traen cuerpo: sólo con ellos se lee.
+    with_body: tuple[str, ...] = ()
+
+
 def _ok(body: Mapping[str, Any]) -> _Response:
     return _Response(200, body)
 
 
 def _fail(status: int, code: str, message: str | None = None, **where: Any) -> _Response:
     return _Response(status, {"error": {"code": code, "message": message or _MENSAJES[code], **where}})
-
-
-async def _resolve(value: MaybeAwaitable[_T]) -> _T:
-    if inspect.isawaitable(value):
-        return await cast("Awaitable[_T]", value)
-    return value
 
 
 def _bounded_int(text: str | None, fallback: int, maximum: int) -> int | None:
@@ -108,6 +122,17 @@ def _relative_path(scope: Scope) -> str:
         return path
     rest = segments[len(root_segments) :]
     return "/" + "/".join(rest) if rest else ""
+
+
+def _parse_query(scope: Scope) -> dict[str, str] | None:
+    """La consulta como diccionario, o `None` si una clave se repite."""
+    query_string = bytes(scope.get("query_string", b"")).decode("utf-8", "replace")
+    params: dict[str, str] = {}
+    for key, value in parse_qsl(query_string, keep_blank_values=True):
+        if key in params:
+            return None
+        params[key] = value
+    return params
 
 
 def _decode_segment(segment: str) -> str | None:
@@ -150,7 +175,7 @@ class InboxApp:
     def __init__(  # noqa: PLR0913 — dependencias inyectadas, solo por nombre
         self,
         *,
-        store: NotificationStore,
+        store: InboxReader,
         resolve_recipient: Callable[[Scope], MaybeAwaitable[str | None]],
         policy: Policy | None = None,
         preferences: PreferenceStore | None = None,
@@ -175,6 +200,8 @@ class InboxApp:
         self._available = available
         self._quiet_hours = quiet_hours
         self._now = now or (lambda: datetime.now(UTC))
+        self._fixed = self._routes()
+        self._read_route = _Route(("POST",), self._mark_read)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         kind = scope.get("type")
@@ -205,58 +232,58 @@ class InboxApp:
         else:
             raise ValueError(f"InboxApp no atiende el tipo de ASGI {kind!r}")
 
-    # TODO(sprint-3): una tabla de rutas reemplaza esta cadena de if y saca el noqa.
-    async def _handle(self, scope: Scope, receive: Receive) -> _Response:  # noqa: C901, PLR0911, PLR0912
-        path = _relative_path(scope)
-        method = str(scope.get("method", "GET")).upper()
+    def _routes(self) -> dict[str, _Route]:
+        """Las rutas fijas que sirve esta instalación: las opcionales sólo si tienen con qué."""
+        routes = {
+            "/feed": _Route(("GET",), lambda call: self._feed(call.who, call.params)),
+            "/unread-count": _Route(("GET",), lambda call: self._count(call.who, call.params)),
+            "/feed/read-all": _Route(
+                ("POST",), lambda call: self._read_all(call.who, call.body), with_body=("POST",)
+            ),
+        }
+        if self._policy is not None and self._preferences is not None:
+            routes["/preferences"] = _Route(
+                ("GET", "PATCH"),
+                lambda call: self._prefs(call.who, call.method, call.body, call.params.get("scope")),
+                with_body=("PATCH",),
+            )
+        if self._quiet_hours is not None:
+            routes["/quiet-hours"] = _Route(
+                ("GET", "PUT"), lambda call: self._quiet(call.who, call.method, call.body), with_body=("PUT",)
+            )
+        return routes
 
-        # 1. La ruta. 2. El método.
-        read_id: str | None = None
+    def _match(self, path: str) -> tuple[_Route, str | None] | None:
+        """La ruta de `path` y, para `/feed/{id}/read`, el `id`. `None` si no hay ruta."""
         match = _READ.fullmatch(path)
-        if match is not None:
-            read_id = _decode_segment(match.group(1))
-            if read_id is None:
-                return _fail(404, "not_found")
-            allowed: tuple[str, ...] = ("POST",)
-        elif path in ("/feed", "/unread-count"):
-            allowed = ("GET",)
-        elif path == "/feed/read-all":
-            allowed = ("POST",)
-        elif path == "/preferences" and self._policy is not None and self._preferences is not None:
-            allowed = ("GET", "PATCH")
-        elif path == "/quiet-hours" and self._quiet_hours is not None:
-            allowed = ("GET", "PUT")
-        else:
-            return _fail(404, "not_found")
-        if method not in allowed:
-            return _fail(405, "method_not_allowed")
+        if match is None:
+            route = self._fixed.get(path)
+            return None if route is None else (route, None)
+        read_id = _decode_segment(match.group(1))
+        return None if read_id is None else (self._read_route, read_id)
 
-        # 3. Quién pide.
-        who = await _resolve(self._resolve_recipient(scope))
+    async def _handle(self, scope: Scope, receive: Receive) -> _Response:
+        # El orden de las respuestas es el del spec: ruta, método, quién pide, consulta, cuerpo.
+        matched = self._match(_relative_path(scope))
+        if matched is None:
+            return _fail(404, "not_found")
+        route, path_id = matched
+        method = str(scope.get("method", "GET")).upper()
+        if method not in route.methods:
+            return _fail(405, "method_not_allowed")
+        who = await maybe_await(self._resolve_recipient(scope))
         if who is None:
             return _fail(401, "unauthenticated")
+        params = _parse_query(scope)
+        if params is None:
+            return _fail(400, "invalid_query")
+        body = await _read_body(receive) if method in route.with_body else _NO_BODY
+        return await route.handle(_Call(who, method, params, body, path_id))
 
-        # 4 y 5. La consulta, el cuerpo y la operación.
-        query_string = bytes(scope.get("query_string", b"")).decode("utf-8", "replace")
-        params: dict[str, str] = {}
-        for key, value in parse_qsl(query_string, keep_blank_values=True):
-            if key in params:
-                return _fail(400, "invalid_query")
-            params[key] = value
-
-        if read_id is not None:
-            return _ok({"changed": await self._store.mark_read(read_id, who, self._now())})
-        if path == "/feed":
-            return await self._feed(who, params)
-        if path == "/unread-count":
-            return await self._count(who, params)
-        if path == "/feed/read-all":
-            return await self._read_all(who, await _read_body(receive))
-        if path == "/preferences":
-            body = await _read_body(receive) if method == "PATCH" else _NO_BODY
-            return await self._prefs(who, method, body, params.get("scope"))
-        body = await _read_body(receive) if method == "PUT" else _NO_BODY
-        return await self._quiet(who, method, body)
+    async def _mark_read(self, call: _Call) -> _Response:
+        if call.path_id is None:  # pragma: no cover - `_match` siempre lo pone
+            return _fail(404, "not_found")
+        return _ok({"changed": await self._store.mark_read(call.path_id, call.who, self._now())})
 
     async def _feed(self, who: str, params: Mapping[str, str]) -> _Response:
         limit = _bounded_int(params.get("limit"), 20, 100)
@@ -312,7 +339,7 @@ class InboxApp:
 
     async def _channels_for(self, who: str, scope: str | None) -> list[str]:
         if self._available is not None:
-            return list(await _resolve(self._available(who, scope)))
+            return list(await maybe_await(self._available(who, scope)))
         channels: dict[str, None] = {}
         for cells in (self._policy or {}).values():
             channels.update(dict.fromkeys(cells))

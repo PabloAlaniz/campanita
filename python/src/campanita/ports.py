@@ -14,9 +14,9 @@ El núcleo no conoce la base, el canal ni la superficie que muestra la bandeja.
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Iterable
+from collections.abc import Awaitable, Callable, Collection, Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias, TypeGuard, get_args
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -28,9 +28,14 @@ if TYPE_CHECKING:
     from ._types import Change, Overrides
 
 
-class NotificationStore(Protocol):
-    """Cualquier base. Todas las lecturas piden `recipient_id`: es el único
-    alcance de seguridad, y por eso es un parámetro obligatorio."""
+# Cada almacén tiene dos lados: lo que necesita quien entrega (el Notifier escribe avisos y
+# lee preferencias y horarios) y lo que necesita la bandeja. Los puertos chicos dejan pedir sólo
+# lo que se usa; los grandes (`NotificationStore`, `PreferenceStore`, `QuietHoursStore`) son la
+# suma, y es lo que implementan los adaptadores incluidos.
+
+
+class NotificationWriter(Protocol):
+    """Lo que el Notifier necesita del almacén de avisos: guardar."""
 
     async def add(self, draft: Draft, *, id: str, created_at: datetime) -> AddResult:
         """Guarda el aviso, salvo que su clave ya exista para esa persona.
@@ -39,6 +44,11 @@ class NotificationStore(Protocol):
         con la misma clave dejan un solo aviso. Lanza `StoreError("duplicate_id")`.
         """
         ...
+
+
+class InboxReader(Protocol):
+    """Lo que la bandeja necesita: leer, contar y marcar como leído. Todas las operaciones
+    piden `recipient_id`: es el único alcance de seguridad, y por eso es obligatorio."""
 
     async def list_feed(self, query: FeedQuery) -> FeedPage:
         """La bandeja, del más nuevo al más viejo. Lanza `StoreError("invalid_limit")`."""
@@ -68,17 +78,25 @@ class NotificationStore(Protocol):
         ...
 
 
-class PreferenceStore(Protocol):
+class NotificationStore(NotificationWriter, InboxReader, Protocol):
+    """Cualquier base: guarda avisos y sirve la bandeja."""
+
+
+class PreferenceReader(Protocol):
+    """Lo que el Notifier necesita de las preferencias: leerlas."""
+
+    async def get_overrides(self, recipient_id: str, *, scope: str | None = None) -> Overrides:
+        """Lo guardado para esa persona en ese ámbito. Los ámbitos no se heredan."""
+        ...
+
+
+class PreferenceStore(PreferenceReader, Protocol):
     """Lo que cambió cada persona. Guarda SÓLO los cambios: sin nada guardado,
     valen los valores de la política.
 
     El almacén no conoce la política. Qué se puede cambiar lo decide
     `validate_patch` antes de guardar.
     """
-
-    async def get_overrides(self, recipient_id: str, *, scope: str | None = None) -> Overrides:
-        """Lo guardado para esa persona en ese ámbito. Los ámbitos no se heredan."""
-        ...
 
     async def save_changes(
         self, recipient_id: str, changes: Sequence[Change], *, scope: str | None = None
@@ -87,16 +105,20 @@ class PreferenceStore(Protocol):
         ...
 
 
-class QuietHoursStore(Protocol):
+class QuietHoursReader(Protocol):
+    """Lo que el Notifier necesita de los horarios: leerlos."""
+
+    async def get_quiet_hours(self, recipient_id: str) -> QuietHours | None:
+        """El horario de esa persona, o `None` si nunca definió uno."""
+        ...
+
+
+class QuietHoursStore(QuietHoursReader, Protocol):
     """El horario de no molestar de cada persona. Es de la persona, no de un ámbito.
 
     El almacén guarda el horario que le pasen: lo valida `parse_quiet_hours`
     antes. Su comportamiento es el de `spec/vectors/silencio-guardado/`.
     """
-
-    async def get_quiet_hours(self, recipient_id: str) -> QuietHours | None:
-        """El horario de esa persona, o `None` si nunca definió uno."""
-        ...
 
     async def set_quiet_hours(self, recipient_id: str, quiet_hours: QuietHours) -> None:
         """Lo guarda, reemplazando el que hubiera."""
@@ -124,6 +146,22 @@ class DeliveryResult:
     #: Identificador del mensaje en el proveedor, si lo dio.
     provider_message_id: str | None = None
     error: str | None = None
+
+
+#: Todos los resultados de una entrega.
+DELIVERY_OUTCOMES: frozenset[str] = frozenset(get_args(DeliveryOutcome))
+#: Los que puede informar un canal: `silenced` no, porque lo anota el Notifier.
+CHANNEL_OUTCOMES: frozenset[str] = DELIVERY_OUTCOMES - {"silenced"}
+
+
+def is_delivery_result(
+    value: object, allowed: Collection[str] = CHANNEL_OUTCOMES
+) -> TypeGuard[DeliveryResult]:
+    """Si `value` es un `DeliveryResult` con uno de los resultados `allowed`.
+
+    Lo usan el Notifier y los canales para no confiar en lo que devuelve código ajeno.
+    """
+    return isinstance(value, DeliveryResult) and value.outcome in allowed
 
 
 class DeliveryChannel(Protocol):

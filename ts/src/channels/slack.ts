@@ -11,28 +11,17 @@
  */
 import type { Notification } from '../core/inbox.js';
 import type { DeliveryChannel, DeliveryResult } from '../ports.js';
+import { CONTROL } from './encoding.js';
+import { failed } from './result.js';
+import { isSlackWebhookUrl, SLACK_ERROR } from './slack-common.js';
+
+export { isSlackWebhookUrl } from './slack-common.js';
 
 type Fetch = (input: string, init: RequestInit) => Promise<Response>;
 
-const WEBHOOK = /^https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9/_-]{1,200}$/;
-// biome-ignore lint/suspicious/noControlCharactersInRegex: busca justamente los caracteres de control.
-const CONTROL = /[\u0000-\u001f\u007f]+/g;
 /** Un enlace que Slack puede mostrar: http o https, sin lo que cierra o parte la marca. */
 // biome-ignore lint/suspicious/noControlCharactersInRegex: busca justamente los caracteres de control.
 const LINK = /^https?:\/\/[^\u0000-\u0020\u007f<>|]+$/;
-/** Los errores de Slack son una palabra en minúsculas: sólo eso se repite. */
-const SLACK_ERROR = /^[a-z0-9_]{1,60}$/;
-
-/**
- * ¿Es la URL de un webhook de Slack?
- *
- * Estricta a propósito: sólo `https://hooks.slack.com/services/…`, sin
- * usuario, puerto, consulta ni fragmento. Así una URL guardada no sirve para
- * hacer pedidos a otro servidor.
- */
-export function isSlackWebhookUrl(url: unknown): url is string {
-  return typeof url === 'string' && WEBHOOK.test(url);
-}
 
 /** Lo que Slack pide escapar en un texto: `&`, `<` y `>`. */
 export function escapeSlackText(text: string): string {
@@ -104,6 +93,7 @@ export interface SlackChannelOptions {
 export class SlackChannel implements DeliveryChannel {
   readonly id: string;
   readonly #options: SlackChannelOptions;
+  readonly #resolve: (notification: Notification) => Found;
 
   constructor(options: SlackChannelOptions) {
     if ((options.resolveWebhook === undefined) === (options.resolveWebhookFor === undefined)) {
@@ -111,16 +101,17 @@ export class SlackChannel implements DeliveryChannel {
     }
     this.id = options.id ?? 'slack';
     this.#options = options;
+    const { resolveWebhook, resolveWebhookFor } = options;
+    // El constructor ya comprobó que hay una de las dos.
+    this.#resolve = resolveWebhookFor ?? (resolveWebhook ? (n) => resolveWebhook(n.recipientId) : () => null);
   }
 
   async send(notification: Notification): Promise<DeliveryResult> {
     let url: string | null | undefined;
     try {
-      const { resolveWebhook, resolveWebhookFor } = this.#options;
-      url = await (resolveWebhookFor ? resolveWebhookFor(notification) : resolveWebhook!(notification.recipientId));
+      url = await this.#resolve(notification);
     } catch (error) {
-      const kind = error instanceof Error ? error.name : 'Error';
-      return { outcome: 'failed', error: `no se pudo buscar la conexión de Slack: ${kind}` };
+      return failed('no se pudo buscar la conexión de Slack', error);
     }
     if (url === null || url === undefined) {
       return { outcome: 'skipped', error: 'la persona no conectó Slack' };
@@ -133,7 +124,7 @@ export class SlackChannel implements DeliveryChannel {
     try {
       body = JSON.stringify((this.#options.render ?? renderSlack)(notification));
     } catch (error) {
-      return { outcome: 'failed', error: `no se pudo armar el mensaje: ${error instanceof Error ? error.name : 'Error'}` };
+      return failed('no se pudo armar el mensaje', error);
     }
 
     let response: Response;
@@ -147,7 +138,7 @@ export class SlackChannel implements DeliveryChannel {
       });
     } catch (error) {
       // Sólo el tipo: el mensaje de un error de red puede traer la URL.
-      return { outcome: 'failed', error: `Slack: ${error instanceof Error ? error.name : 'Error'}` };
+      return failed('Slack', error);
     }
     if (response.ok) return { outcome: 'sent' };
 
@@ -163,130 +154,4 @@ export class SlackChannel implements DeliveryChannel {
       error: `Slack ${response.status}${detail}`,
     };
   }
-}
-
-// --- conectar con OAuth ---------------------------------------------------------
-
-/** El único permiso que hace falta: publicar en el canal que la persona elija. */
-const SCOPE = 'incoming-webhook';
-
-/**
- * La URL de Slack a la que se manda a la persona para que elija un canal.
- *
- * `state` es un valor de quien integra, atado a la sesión de la persona e
- * imposible de adivinar: al volver hay que comprobar que es el mismo. Sin eso,
- * otra persona podría conectar su canal a una cuenta ajena.
- */
-export function slackAuthorizeUrl(options: {
-  readonly clientId: string;
-  readonly redirectUri: string;
-  readonly state: string;
-}): string {
-  for (const [name, value] of Object.entries(options)) {
-    if (typeof value !== 'string' || value === '') throw new TypeError(`falta \`${name}\``);
-  }
-  const query = new URLSearchParams({
-    client_id: options.clientId,
-    scope: SCOPE,
-    redirect_uri: options.redirectUri,
-    state: options.state,
-  });
-  return `https://slack.com/oauth/v2/authorize?${query.toString()}`;
-}
-
-/** Lo que queda de una conexión. `webhookUrl` es un secreto. */
-export interface SlackConnection {
-  readonly webhookUrl: string;
-  /** El nombre del canal elegido, como lo muestra Slack (`#general`). */
-  readonly channel: string | null;
-  readonly channelId: string | null;
-  readonly teamId: string | null;
-  readonly teamName: string | null;
-  /** Dónde la persona administra o quita el webhook en Slack. */
-  readonly configurationUrl: string | null;
-}
-
-/**
- * No se pudo terminar la conexión.
- *
- * `reason` es el error que dio Slack (`invalid_code`, `access_denied`…) o uno
- * propio: `network`, `http`, `invalid_response` o `no_webhook`.
- */
-export class SlackOAuthError extends Error {
-  readonly reason: string;
-  constructor(reason: string) {
-    super(`no se pudo conectar con Slack: ${reason}`);
-    this.name = 'SlackOAuthError';
-    this.reason = reason;
-  }
-}
-
-const text = (value: unknown): string | null => (typeof value === 'string' && value !== '' ? value : null);
-const field = (value: unknown, key: string): unknown =>
-  typeof value === 'object' && value !== null ? (value as Record<string, unknown>)[key] : undefined;
-
-/** De la respuesta de `oauth.v2.access` a una conexión. Rechaza con `SlackOAuthError`. */
-export function parseSlackOAuthResponse(response: unknown): SlackConnection {
-  if (typeof response !== 'object' || response === null) throw new SlackOAuthError('invalid_response');
-  if (field(response, 'ok') !== true) {
-    const reason = field(response, 'error');
-    throw new SlackOAuthError(typeof reason === 'string' && SLACK_ERROR.test(reason) ? reason : 'invalid_response');
-  }
-  const webhook = field(response, 'incoming_webhook');
-  const url = field(webhook, 'url');
-  if (!isSlackWebhookUrl(url)) throw new SlackOAuthError('no_webhook');
-  const team = field(response, 'team');
-  return {
-    webhookUrl: url,
-    channel: text(field(webhook, 'channel')),
-    channelId: text(field(webhook, 'channel_id')),
-    teamId: text(field(team, 'id')),
-    teamName: text(field(team, 'name')),
-    configurationUrl: text(field(webhook, 'configuration_url')),
-  };
-}
-
-/**
- * Cambia el `code` con el que Slack devuelve a la persona por su conexión.
- *
- * `redirectUri` tiene que ser el mismo que se usó en `slackAuthorizeUrl`.
- * Rechaza con `SlackOAuthError`; ningún error repite el secreto ni el código.
- */
-export async function exchangeSlackCode(options: {
-  readonly clientId: string;
-  readonly clientSecret: string;
-  readonly code: string;
-  readonly redirectUri: string;
-  readonly timeoutMs?: number;
-  readonly fetch?: Fetch;
-}): Promise<SlackConnection> {
-  const { clientId, clientSecret, code, redirectUri } = options;
-  for (const [name, value] of Object.entries({ clientId, clientSecret, code, redirectUri })) {
-    if (typeof value !== 'string' || value === '') throw new TypeError(`falta \`${name}\``);
-  }
-  let response: Response;
-  try {
-    response = await (options.fetch ?? fetch)('https://slack.com/api/oauth.v2.access', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code,
-        redirect_uri: redirectUri,
-      }).toString(),
-      redirect: 'manual',
-      signal: AbortSignal.timeout(options.timeoutMs ?? 10_000),
-    });
-  } catch {
-    throw new SlackOAuthError('network');
-  }
-  if (!response.ok) throw new SlackOAuthError('http');
-  let json: unknown;
-  try {
-    json = await response.json();
-  } catch {
-    throw new SlackOAuthError('invalid_response');
-  }
-  return parseSlackOAuthResponse(json);
 }

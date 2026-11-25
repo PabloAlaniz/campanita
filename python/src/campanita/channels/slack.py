@@ -12,67 +12,29 @@ https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks
 from __future__ import annotations
 
 import asyncio
-import inspect
 import json
 import re
-import urllib.error
-import urllib.request
 from collections.abc import Awaitable, Callable, Mapping
-from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlencode, urlsplit
 
 from .._inbox import Notification
+from .._types import maybe_await
 from ..ports import DeliveryResult
+from ._http import HttpPost, http_post, is_success
+from ._slack_common import SLACK_ERROR, is_slack_webhook_url
+from ._text import CONTROL
 
-_WEBHOOK = re.compile(r"https://hooks\.slack\.com/services/[A-Za-z0-9/_-]{1,200}")
-_CONTROL = re.compile(r"[\x00-\x1f\x7f]+")
+# Lo de OAuth vive en `slack_oauth`; se sigue pudiendo importar desde acá.
+from .slack_oauth import (
+    SlackConnection,
+    SlackOAuthError,
+    exchange_slack_code,
+    parse_slack_oauth_response,
+    slack_authorize_url,
+)
+
 #: Un enlace que Slack puede mostrar: http o https, sin lo que cierra o parte la marca.
 _LINK = re.compile(r"https?://[^\x00-\x20\x7f<>|]+")
-#: Los errores de Slack son una palabra en minúsculas: sólo eso se repite.
-_SLACK_ERROR = re.compile(r"[a-z0-9_]{1,60}")
-_SCOPE = "incoming-webhook"
-_AUTHORIZE = "https://slack.com/oauth/v2/authorize"
-_ACCESS = "https://slack.com/api/oauth.v2.access"
-
-#: Cómo se hace un `POST`: `(url, cuerpo, cabeceras, segundos) -> (código, cuerpo)`.
-#: Se puede reemplazar por un cliente HTTP propio.
-_HTTP_OK, _HTTP_REDIRECT = 200, 300
-
-HttpPost = Callable[[str, bytes, Mapping[str, str], float], "tuple[int, bytes]"]
-
-
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, *_args: Any, **_kwargs: Any) -> None:
-        return None
-
-
-_OPENER = urllib.request.build_opener(_NoRedirect)
-
-
-def http_post(url: str, data: bytes, headers: Mapping[str, str], timeout: float) -> tuple[int, bytes]:
-    """El `POST` por omisión, con la biblioteca estándar. No sigue redirecciones.
-
-    Sólo acepta URLs http o https: `urllib` también abriría `file:` y otros esquemas.
-    """
-    if urlsplit(url).scheme not in ("https", "http"):
-        raise ValueError("`url` tiene que ser una URL http o https")
-    request = urllib.request.Request(url, data=data, headers=dict(headers), method="POST")  # noqa: S310
-    try:
-        with _OPENER.open(request, timeout=timeout) as response:
-            return response.status, response.read()
-    except urllib.error.HTTPError as error:
-        return error.code, error.read()
-
-
-def is_slack_webhook_url(url: object) -> bool:
-    """¿Es la URL de un webhook de Slack?
-
-    Estricta a propósito: sólo `https://hooks.slack.com/services/…`, sin
-    usuario, puerto, consulta ni fragmento. Así una URL guardada no sirve para
-    hacer pedidos a otro servidor.
-    """
-    return isinstance(url, str) and _WEBHOOK.fullmatch(url) is not None
 
 
 def escape_slack_text(text: str) -> str:
@@ -89,7 +51,7 @@ def render_slack(notification: Notification) -> dict[str, Any]:
 
     El texto del aviso sale escapado: no puede armar menciones ni enlaces.
     """
-    title = escape_slack_text(_CONTROL.sub(" ", notification.title).strip(" "))
+    title = escape_slack_text(CONTROL.sub(" ", notification.title).strip(" "))
     lines = [f"*{title}*"] if title else []
     if notification.body:
         lines.append(escape_slack_text(notification.body))
@@ -146,7 +108,7 @@ class SlackChannel:
     async def send(self, notification: Notification) -> DeliveryResult:
         try:
             found = self._resolve(notification)
-            url = await found if inspect.isawaitable(found) else found
+            url = await maybe_await(found)
         except Exception as error:
             return DeliveryResult(
                 "failed", error=f"no se pudo buscar la conexión de Slack: {type(error).__name__}"
@@ -171,135 +133,30 @@ class SlackChannel:
         return _webhook_result(status, raw)
 
 
-def _is_success(status: int) -> bool:
-    return _HTTP_OK <= status < _HTTP_REDIRECT
-
-
 def _webhook_result(status: int, raw: bytes) -> DeliveryResult:
-    if _is_success(status):
+    if is_success(status):
         return DeliveryResult("sent")
     text = raw.decode("utf-8", "replace").strip(" \t\r\n")
-    detail = f" {text}" if _SLACK_ERROR.fullmatch(text) else ""
+    detail = f" {text}" if SLACK_ERROR.fullmatch(text) else ""
     return DeliveryResult("expired" if status in (404, 410) else "failed", error=f"Slack {status}{detail}")
-
-
-# --- conectar con OAuth -------------------------------------------------------
-
-
-def slack_authorize_url(*, client_id: str, redirect_uri: str, state: str) -> str:
-    """La URL de Slack a la que se manda a la persona para que elija un canal.
-
-    `state` es un valor de quien integra, atado a la sesión de la persona e
-    imposible de adivinar: al volver hay que comprobar que es el mismo. Sin eso,
-    otra persona podría conectar su canal a una cuenta ajena.
-    """
-    for name, value in (("client_id", client_id), ("redirect_uri", redirect_uri), ("state", state)):
-        if not isinstance(value, str) or not value:
-            raise ValueError(f"falta `{name}`")
-    query = urlencode({"client_id": client_id, "scope": _SCOPE, "redirect_uri": redirect_uri, "state": state})
-    return f"{_AUTHORIZE}?{query}"
-
-
-@dataclass(frozen=True, slots=True)
-class SlackConnection:
-    """Lo que queda de una conexión. `webhook_url` es un secreto."""
-
-    webhook_url: str
-    #: El nombre del canal elegido, como lo muestra Slack (`#general`).
-    channel: str | None = None
-    channel_id: str | None = None
-    team_id: str | None = None
-    team_name: str | None = None
-    #: Dónde la persona administra o quita el webhook en Slack.
-    configuration_url: str | None = None
-
-    def __repr__(self) -> str:
-        return f"SlackConnection(channel={self.channel!r}, team_name={self.team_name!r})"
-
-
-class SlackOAuthError(Exception):
-    """No se pudo terminar la conexión.
-
-    `reason` es el error que dio Slack (`invalid_code`, `access_denied`…) o uno
-    propio: `network`, `http`, `invalid_response` o `no_webhook`.
-    """
-
-    def __init__(self, reason: str) -> None:
-        super().__init__(f"no se pudo conectar con Slack: {reason}")
-        self.reason = reason
-
-
-def _text(container: object, key: str) -> str | None:
-    value = container.get(key) if isinstance(container, dict) else None
-    return value if isinstance(value, str) and value else None
-
-
-def parse_slack_oauth_response(response: object) -> SlackConnection:
-    """De la respuesta de `oauth.v2.access` a una conexión. Lanza `SlackOAuthError`."""
-    if not isinstance(response, dict):
-        raise SlackOAuthError("invalid_response")
-    if response.get("ok") is not True:
-        reason = response.get("error")
-        if isinstance(reason, str) and _SLACK_ERROR.fullmatch(reason):
-            raise SlackOAuthError(reason)
-        raise SlackOAuthError("invalid_response")
-    webhook = response.get("incoming_webhook")
-    url = webhook.get("url") if isinstance(webhook, dict) else None
-    if not isinstance(url, str) or not is_slack_webhook_url(url):
-        raise SlackOAuthError("no_webhook")
-    team = response.get("team")
-    return SlackConnection(
-        webhook_url=url,
-        channel=_text(webhook, "channel"),
-        channel_id=_text(webhook, "channel_id"),
-        team_id=_text(team, "id"),
-        team_name=_text(team, "name"),
-        configuration_url=_text(webhook, "configuration_url"),
-    )
-
-
-async def exchange_slack_code(
-    *,
-    client_id: str,
-    client_secret: str,
-    code: str,
-    redirect_uri: str,
-    # Es el plazo de cada pedido HTTP, que corre en un hilo; no el de la corrutina.
-    timeout: float = 10.0,  # noqa: ASYNC109
-    post: HttpPost = http_post,
-) -> SlackConnection:
-    """Cambia el `code` con el que Slack devuelve a la persona por su conexión.
-
-    `redirect_uri` tiene que ser el mismo que se usó en `slack_authorize_url`.
-    Lanza `SlackOAuthError`; ningún error repite el secreto ni el código.
-    """
-    fields = {
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "code": code,
-        "redirect_uri": redirect_uri,
-    }
-    for name, value in fields.items():
-        if not isinstance(value, str) or not value:
-            raise ValueError(f"falta `{name}`")
-    try:
-        status, raw = await asyncio.to_thread(
-            post,
-            _ACCESS,
-            urlencode(fields).encode("ascii"),
-            {"Content-Type": "application/x-www-form-urlencoded"},
-            timeout,
-        )
-    except Exception:
-        raise SlackOAuthError("network") from None
-    if not _is_success(status):
-        raise SlackOAuthError("http")
-    try:
-        parsed = json.loads(raw)
-    except Exception:
-        raise SlackOAuthError("invalid_response") from None
-    return parse_slack_oauth_response(parsed)
 
 
 def _by_recipient(resolve: WebhookResolver) -> NotificationWebhookResolver:
     return lambda notification: resolve(notification.recipient_id)
+
+
+__all__ = [
+    "HttpPost",
+    "NotificationWebhookResolver",
+    "SlackChannel",
+    "SlackConnection",
+    "SlackOAuthError",
+    "WebhookResolver",
+    "escape_slack_text",
+    "exchange_slack_code",
+    "http_post",
+    "is_slack_webhook_url",
+    "parse_slack_oauth_response",
+    "render_slack",
+    "slack_authorize_url",
+]

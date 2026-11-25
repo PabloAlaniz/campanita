@@ -14,16 +14,27 @@
 import {
   checkCap,
   checkLimit,
+  paginate,
   StoreError,
   toMs,
   type AddResult,
   type FeedPage,
   type FeedQuery,
-  type Notification,
 } from '../core/inbox.js';
 import type { QuietHours } from '../core/quiet.js';
 import type { Change, Draft, Overrides } from '../core/types.js';
 import type { NotificationStore, PreferenceStore, QuietHoursStore } from '../ports.js';
+import {
+  COLUMNS,
+  feedFilter,
+  fromRow,
+  insertValues,
+  Params,
+  readAllFilter,
+  type Row,
+  stored,
+  visible,
+} from './sql-common.js';
 
 /**
  * Lo que los almacenes usan de una conexión a Postgres. El `Pool` y el `Client`
@@ -64,9 +75,6 @@ const TABLE = /^[A-Za-z_][A-Za-z0-9_]{0,55}$/;
 const NOTIFICATIONS = 'campanita_notifications';
 const PREFERENCES = 'campanita_preferences';
 const QUIET_HOURS = 'campanita_quiet_hours';
-const COLUMNS =
-  'id, recipient_id, type, category, title, body, action_url, payload, scope, dedupe_key, created_at_ms, read_at_ms';
-
 function checkTable(table: string): string {
   if (!TABLE.test(table)) {
     throw new TypeError('el nombre de la tabla tiene que ser un identificador de hasta 56 caracteres');
@@ -171,55 +179,6 @@ async function runAll(db: PostgresLike, statements: string[]): Promise<void> {
   for (const sql of statements) await db.query(sql);
 }
 
-interface Row {
-  id: string;
-  recipient_id: string;
-  type: string;
-  category: string;
-  title: string;
-  body: string | null;
-  action_url: string | null;
-  payload: string;
-  scope: string | null;
-  dedupe_key: string | null;
-  // `pg` y postgres.js devuelven BIGINT como texto, salvo que se configuren
-  // para devolver `bigint`. `Number` sirve para los tres.
-  created_at_ms: string | number | bigint;
-  read_at_ms: string | number | bigint | null;
-}
-
-function fromRow(row: Row): Notification {
-  return {
-    id: row.id,
-    recipientId: row.recipient_id,
-    type: row.type,
-    category: row.category,
-    title: row.title,
-    body: row.body,
-    actionUrl: row.action_url,
-    payload: JSON.parse(row.payload) as Record<string, unknown>,
-    scope: row.scope,
-    dedupeKey: row.dedupe_key,
-    createdAt: new Date(Number(row.created_at_ms)),
-    readAt: row.read_at_ms === null ? null : new Date(Number(row.read_at_ms)),
-  };
-}
-
-/** `recipient_id = $n` y, con ámbito, también el filtro de ámbito del spec. */
-function visible(recipientId: string, scope: string | null, params: unknown[]): string {
-  params.push(recipientId);
-  const recipient = `recipient_id = $${params.length}`;
-  if (scope === null) return recipient;
-  params.push(scope);
-  return `${recipient} AND (scope IS NULL OR scope = $${params.length})`;
-}
-
-/** Agrega un parámetro y devuelve su marcador. */
-function param(params: unknown[], value: unknown): string {
-  params.push(value);
-  return `$${params.length}`;
-}
-
 /** Los avisos, sobre Postgres. */
 export class PostgresStore implements NotificationStore {
   readonly #db: PostgresLike;
@@ -242,31 +201,9 @@ export class PostgresStore implements NotificationStore {
     // que termine, así que la búsqueda de abajo encuentra su aviso.
     const inserted = await this.#db.query(
       `INSERT INTO ${this.#table} (${COLUMNS}) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NULL) ON CONFLICT DO NOTHING`,
-      [
-        options.id,
-        draft.recipientId,
-        draft.type,
-        draft.category,
-        draft.title,
-        draft.body,
-        draft.actionUrl,
-        JSON.stringify(draft.payload),
-        draft.scope,
-        draft.dedupeKey,
-        createdAtMs,
-      ],
+      insertValues(draft, options.id, createdAtMs),
     );
-    if (changed(inserted) > 0) {
-      const notification: Notification = {
-        ...draft,
-        // Lo que se devuelve es lo que quedó guardado, no el objeto de quien llama.
-        payload: JSON.parse(JSON.stringify(draft.payload)) as Record<string, unknown>,
-        id: options.id,
-        createdAt: new Date(createdAtMs),
-        readAt: null,
-      };
-      return { notification, created: true };
-    }
+    if (changed(inserted) > 0) return { notification: stored(draft, options.id, createdAtMs), created: true };
     // No insertó. La clave repetida se revisa antes que el identificador.
     if (draft.dedupeKey !== null) {
       const existing = await this.#db.query(
@@ -281,27 +218,14 @@ export class PostgresStore implements NotificationStore {
 
   async listFeed(query: FeedQuery): Promise<FeedPage> {
     const limit = checkLimit(query.limit);
-    const params: unknown[] = [];
-    let filter = visible(query.recipientId, query.scope ?? null, params);
-    if (query.unreadOnly) filter += ' AND read_at_ms IS NULL';
-    if ((query.category ?? null) !== null) filter += ` AND category = ${param(params, query.category)}`;
-    const cursor = query.cursor ?? null;
-    if (cursor !== null) {
-      filter += ` AND (created_at_ms, id) < (${param(params, toMs(cursor.createdAt))}, ${param(params, cursor.id)})`;
-    }
+    const params = new Params(true);
+    const filter = feedFilter(query, params);
     // Uno de más, para saber si queda otra página sin contar.
     const found = await this.#db.query(
-      `SELECT ${COLUMNS} FROM ${this.#table} WHERE ${filter} ORDER BY created_at_ms DESC, id DESC LIMIT ${param(params, limit + 1)}`,
-      params,
+      `SELECT ${COLUMNS} FROM ${this.#table} WHERE ${filter} ORDER BY created_at_ms DESC, id DESC LIMIT ${params.add(limit + 1)}`,
+      params.values,
     );
-    const rows = found.rows as Row[];
-    const items = rows.slice(0, limit).map(fromRow);
-    const last = items.at(-1);
-    return {
-      items,
-      nextCursor:
-        last !== undefined && rows.length > limit ? { createdAt: new Date(last.createdAt), id: last.id } : null,
-    };
+    return paginate((found.rows as Row[]).map(fromRow), limit);
   }
 
   async countUnread(
@@ -309,10 +233,10 @@ export class PostgresStore implements NotificationStore {
     options: { scope?: string | null; cap?: number | null } = {},
   ): Promise<number> {
     const cap = checkCap(options.cap);
-    const params: unknown[] = [];
+    const params = new Params(true);
     let inner = `SELECT 1 FROM ${this.#table} WHERE ${visible(recipientId, options.scope ?? null, params)} AND read_at_ms IS NULL`;
-    if (cap !== null) inner += ` LIMIT ${param(params, cap)}`;
-    const counted = await this.#db.query(`SELECT COUNT(*) AS total FROM (${inner}) AS unread`, params);
+    if (cap !== null) inner += ` LIMIT ${params.add(cap)}`;
+    const counted = await this.#db.query(`SELECT COUNT(*) AS total FROM (${inner}) AS unread`, params.values);
     const row = counted.rows[0] as { total: string | number | bigint } | undefined;
     return Number(row?.total ?? 0);
   }
@@ -329,11 +253,9 @@ export class PostgresStore implements NotificationStore {
     recipientId: string,
     options: { before: Date; readAt: Date; scope?: string | null; category?: string | null },
   ): Promise<number> {
-    const params: unknown[] = [toMs(options.readAt)];
-    let filter = visible(recipientId, options.scope ?? null, params);
-    filter += ` AND read_at_ms IS NULL AND created_at_ms < ${param(params, toMs(options.before))}`;
-    if ((options.category ?? null) !== null) filter += ` AND category = ${param(params, options.category)}`;
-    const updated = await this.#db.query(`UPDATE ${this.#table} SET read_at_ms = $1 WHERE ${filter}`, params);
+    const params = new Params(true, [toMs(options.readAt)]);
+    const filter = readAllFilter(recipientId, options, params);
+    const updated = await this.#db.query(`UPDATE ${this.#table} SET read_at_ms = $1 WHERE ${filter}`, params.values);
     return changed(updated);
   }
 }

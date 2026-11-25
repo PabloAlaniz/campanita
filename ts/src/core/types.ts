@@ -4,6 +4,9 @@
  */
 export const INBOX = 'inapp';
 
+/** Un identificador de categoría o de canal. */
+export const ID = /^[a-z][a-z0-9_-]{0,63}$/;
+
 /** La política de un canal para una categoría. */
 export interface Cell {
   /** Qué pasa si el usuario nunca tocó esta celda. */

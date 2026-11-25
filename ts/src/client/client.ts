@@ -140,6 +140,7 @@ export function createInboxClient(options: InboxClientOptions): InboxClient {
     getQuietHours: async (o = {}) =>
       (await call<QuietHoursResponse>('GET', '/quiet-hours', {}, undefined, o.signal)).quiet_hours,
     setQuietHours: async (quietHours, o = {}) =>
-      (await call<QuietHoursResponse>('PUT', '/quiet-hours', {}, quietHours, o.signal)).quiet_hours!,
+      // Después de guardar, el servidor siempre devuelve el horario.
+      (await call<{ quiet_hours: QuietHours }>('PUT', '/quiet-hours', {}, quietHours, o.signal)).quiet_hours,
   };
 }

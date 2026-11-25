@@ -44,21 +44,15 @@ export type {
 } from './channels/email.js';
 export { defaultBody, HttpEmailTransport, ResendTransport } from './channels/http.js';
 export type { HttpEmailTransportOptions } from './channels/http.js';
+export { escapeSlackText, isSlackWebhookUrl, renderSlack, SlackChannel } from './channels/slack.js';
+export type { RenderedSlack, SlackChannelOptions } from './channels/slack.js';
 export {
-  escapeSlackText,
   exchangeSlackCode,
-  isSlackWebhookUrl,
   parseSlackOAuthResponse,
-  renderSlack,
-  SlackChannel,
   slackAuthorizeUrl,
   SlackOAuthError,
-} from './channels/slack.js';
-export type {
-  RenderedSlack,
-  SlackChannelOptions,
-  SlackConnection,
-} from './channels/slack.js';
+} from './channels/slack-oauth.js';
+export type { SlackConnection } from './channels/slack-oauth.js';
 export { PushChannel, renderPush, summarizePush } from './channels/push.js';
 export type { PushChannelOptions, PushDevice, PushMessage, PushTransport } from './channels/push.js';
 export { ApnsTransport } from './channels/apns.js';
@@ -77,6 +71,7 @@ export type {
   Notification,
   StoreReason,
 } from './core/inbox.js';
+// También en `campanita/testing`, junto con las reglas compartidas de los almacenes.
 export {
   notificationToWire,
   quietHoursToWire,
@@ -99,12 +94,16 @@ export {
 } from './stores/postgres.js';
 export type { PostgresJsLike, PostgresLike } from './stores/postgres.js';
 export type {
-  DeliveryChannel,
   ChannelAvailability,
+  DeliveryChannel,
   DeliveryOutcome,
   DeliveryResult,
+  InboxReader,
   NotificationStore,
+  NotificationWriter,
+  PreferenceReader,
   PreferenceStore,
+  QuietHoursReader,
   QuietHoursStore,
 } from './ports.js';
 

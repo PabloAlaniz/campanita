@@ -2,13 +2,28 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import inspect
+import re
+from collections.abc import Awaitable, Mapping
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, TypeVar, cast
+
+_T = TypeVar("_T")
+
+
+async def maybe_await(value: _T | Awaitable[_T]) -> _T:
+    """El valor de una función que puede ser `async` o no: quien integra elige."""
+    if inspect.isawaitable(value):
+        return await cast("Awaitable[_T]", value)
+    return value
+
 
 #: La bandeja. Está en la política y en la matriz de preferencias, pero no es un
 #: canal de entrega: la notificación guardada ES la entrega in-app.
 INBOX = "inapp"
+
+#: Un identificador de categoría o de canal.
+ID = re.compile(r"[a-z][a-z0-9_-]{0,63}")
 
 #: Las celdas que el usuario cambió: categoría → canal → habilitado.
 Overrides = Mapping[str, Mapping[str, bool]]

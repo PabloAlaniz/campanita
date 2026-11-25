@@ -11,6 +11,13 @@ Están declarados en [`python/src/campanita/ports.py`](../python/src/campanita/p
 | `QuietHoursStore` | Guardar el horario de no molestar de cada persona | Especificado, con secuencias de conformidad |
 | `DeliveryChannel` | Entregar un aviso fuera de la bandeja | Especificado dentro del recorrido; incluye email, Slack y push |
 
+Cada almacén se puede pedir por partes. `Notifier` sólo necesita escribir avisos y leer
+preferencias y horarios: pide `NotificationWriter`, `PreferenceReader` y `QuietHoursReader`. La
+bandeja por HTTP pide `InboxReader` (leer, contar y marcar como leído). Los puertos de la tabla son
+la suma de sus partes, y es lo que implementan los adaptadores incluidos. Así, una instalación
+donde los avisos los guarda otro (un trigger, otro servicio) puede entregar con `deliver` sin
+escribir un almacén completo.
+
 La **bandeja** no es un puerto: es lo que se lee del `NotificationStore`. Cualquier superficie
 que la muestre (un panel web, una app, un bot) es un cliente de esa lectura, y para eso está el
 contrato de la sección "La bandeja por HTTP" del [spec](../spec/SPEC.md): un adaptador que lo sirve

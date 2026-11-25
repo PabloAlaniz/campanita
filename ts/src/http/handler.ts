@@ -16,7 +16,7 @@ import { effectiveMatrix, validatePatch } from '../core/channels.js';
 import { checkCap } from '../core/inbox.js';
 import { InvalidQuietHoursError, localMinute, parseQuietHours, type QuietHours } from '../core/quiet.js';
 import { type Change, PatchRejectedError, type Policy } from '../core/types.js';
-import type { ChannelAvailability, NotificationStore, PreferenceStore, QuietHoursStore } from '../ports.js';
+import type { ChannelAvailability, InboxReader, PreferenceStore, QuietHoursStore } from '../ports.js';
 import {
   decodeCursor,
   encodeCursor,
@@ -29,7 +29,7 @@ type MaybePromise<T> = T | Promise<T>;
 
 export interface InboxHandlerOptions {
   /** De dónde se lee la bandeja. */
-  readonly store: NotificationStore;
+  readonly store: InboxReader;
   /**
    * Quién hace el pedido: su `recipientId`, o `null` si no se sabe (responde
    * 401). Es la única fuente del destinatario: el pedido nunca lo elige.
@@ -104,9 +104,17 @@ async function readJson(request: Request): Promise<unknown> {
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-type Route =
-  | { name: 'feed' | 'count' | 'readAll' | 'preferences' | 'quietHours'; methods: readonly string[] }
-  | { name: 'read'; methods: readonly string[]; id: string };
+/** Un pedido ya ubicado: quién pide, el pedido y su consulta. */
+interface Call {
+  readonly who: string;
+  readonly request: Request;
+  readonly params: ReadonlyMap<string, string>;
+}
+
+interface Route {
+  readonly methods: readonly string[];
+  readonly handle: (call: Call) => Promise<Response>;
+}
 
 export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
   const base = (options.basePath ?? '').replace(/\/+$/, '');
@@ -115,21 +123,22 @@ export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
   // Lo que necesita cada ruta opcional, ya comprobado: si falta, la ruta no existe.
   const prefsDeps = policy !== undefined && preferences !== undefined ? { policy, preferences } : null;
 
-  function route(path: string): Route | null {
-    if (path === '/feed') return { name: 'feed', methods: ['GET'] };
-    if (path === '/unread-count') return { name: 'count', methods: ['GET'] };
-    if (path === '/feed/read-all') return { name: 'readAll', methods: ['POST'] };
-    if (path === '/preferences' && prefsDeps) return { name: 'preferences', methods: ['GET', 'PATCH'] };
-    if (path === '/quiet-hours' && quietHours) return { name: 'quietHours', methods: ['GET', 'PUT'] };
+  /** La ruta de `path`: las fijas, y `/feed/{id}/read` con su `id` ya decodificado. */
+  function match(path: string): Route | null {
+    const fixed = routes.get(path);
+    if (fixed !== undefined) return fixed;
     const encoded = /^\/feed\/([^/]+)\/read$/.exec(path)?.[1];
-    if (encoded !== undefined) {
-      try {
-        return { name: 'read', methods: ['POST'], id: decodeURIComponent(encoded) };
-      } catch {
-        return null;
-      }
+    if (encoded === undefined) return null;
+    let id: string;
+    try {
+      id = decodeURIComponent(encoded);
+    } catch {
+      return null;
     }
-    return null;
+    return {
+      methods: ['POST'],
+      handle: async ({ who }) => json(200, { changed: await store.markRead(id, who, now()) }),
+    };
   }
 
   async function availableFor(recipientId: string, scope: string | null): Promise<string[]> {
@@ -139,7 +148,7 @@ export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
     return [...channels];
   }
 
-  async function feed(who: string, params: Map<string, string>): Promise<Response> {
+  async function feed(who: string, params: ReadonlyMap<string, string>): Promise<Response> {
     const limit = boundedInt(params.get('limit'), 20, 100);
     if (limit === null) return fail(400, 'invalid_limit');
     const unreadOnly = params.get('unread_only') ?? 'false';
@@ -164,7 +173,7 @@ export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
     });
   }
 
-  async function count(who: string, params: Map<string, string>): Promise<Response> {
+  async function count(who: string, params: ReadonlyMap<string, string>): Promise<Response> {
     const cap = boundedInt(params.get('cap'), 99, 1000);
     if (cap === null) return fail(400, 'invalid_cap');
     const n = await store.countUnread(who, { scope: params.get('scope') ?? null, cap: checkCap(cap + 1) });
@@ -231,12 +240,33 @@ export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
     return json(200, { quiet_hours: await hours.getQuietHours(who) });
   }
 
+  // Las rutas fijas que sirve esta instalación: las opcionales sólo si tienen con qué.
+  const routes = new Map<string, Route>([
+    ['/feed', { methods: ['GET'], handle: ({ who, params }) => feed(who, params) }],
+    ['/unread-count', { methods: ['GET'], handle: ({ who, params }) => count(who, params) }],
+    ['/feed/read-all', { methods: ['POST'], handle: ({ who, request }) => readAll(who, request) }],
+  ]);
+  if (prefsDeps) {
+    routes.set('/preferences', {
+      methods: ['GET', 'PATCH'],
+      handle: ({ who, request, params }) =>
+        prefs(prefsDeps, who, request.method, request, params.get('scope') ?? null),
+    });
+  }
+  if (quietHours) {
+    routes.set('/quiet-hours', {
+      methods: ['GET', 'PUT'],
+      handle: ({ who, request }) => quiet(quietHours, who, request.method, request),
+    });
+  }
+
+  // El orden de las respuestas es el del spec: ruta, método, quién pide y consulta.
   return async (request) => {
     const url = new URL(request.url);
     if (!url.pathname.startsWith(`${base}/`)) return null;
-    const target = route(url.pathname.slice(base.length));
-    if (target === null) return null;
-    if (!target.methods.includes(request.method)) return fail(405, 'method_not_allowed');
+    const route = match(url.pathname.slice(base.length));
+    if (route === null) return null;
+    if (!route.methods.includes(request.method)) return fail(405, 'method_not_allowed');
     const who = await options.resolveRecipient(request);
     if (who === null) return fail(401, 'unauthenticated');
 
@@ -245,20 +275,6 @@ export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
       if (params.has(key)) return fail(400, 'invalid_query');
       params.set(key, value);
     }
-    switch (target.name) {
-      case 'feed':
-        return feed(who, params);
-      case 'count':
-        return count(who, params);
-      case 'read':
-        return json(200, { changed: await store.markRead(target.id, who, now()) });
-      case 'readAll':
-        return readAll(who, request);
-      case 'preferences':
-        // `route` sólo la ofrece con política y preferencias.
-        return prefsDeps ? prefs(prefsDeps, who, request.method, request, params.get('scope') ?? null) : null;
-      case 'quietHours':
-        return quietHours ? quiet(quietHours, who, request.method, request) : null;
-    }
+    return route.handle({ who, request, params });
   };
 }
