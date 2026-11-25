@@ -15,6 +15,7 @@ import {
   type Policy,
   type TypeSpec,
 } from './types.js';
+import { byCodePoint } from './order.js';
 
 const TYPE_ID = /^[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)*$/;
 const MAX_TYPE_ID = 128;
@@ -190,19 +191,6 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function own<T>(object: Readonly<Record<string, T>>, key: string): T | undefined {
   return Object.hasOwn(object, key) ? object[key] : undefined;
-}
-
-/** Orden por punto de código Unicode, como pide el spec. */
-function byCodePoint(a: string, b: string): number {
-  const left = a[Symbol.iterator]();
-  const right = b[Symbol.iterator]();
-  for (;;) {
-    const x = left.next();
-    const y = right.next();
-    if (x.done || y.done) return (x.done ? 0 : 1) - (y.done ? 0 : 1);
-    const diff = x.value.codePointAt(0)! - y.value.codePointAt(0)!;
-    if (diff !== 0) return diff;
-  }
 }
 
 /** Un miembro de un grupo: a quién le queda la copia y con qué `id`. */

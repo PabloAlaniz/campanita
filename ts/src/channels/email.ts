@@ -7,9 +7,9 @@
  */
 import type { Notification } from '../core/inbox.js';
 import type { DeliveryChannel, DeliveryResult } from '../ports.js';
+import { CONTROL } from './encoding.js';
+import { failed } from './result.js';
 
-// biome-ignore lint/suspicious/noControlCharactersInRegex: busca justamente los caracteres de control.
-const CONTROL = /[\u0000-\u001f\u007f]+/g;
 // biome-ignore lint/suspicious/noControlCharactersInRegex: busca justamente los caracteres de control.
 const HAS_CONTROL = /[\u0000-\u001f\u007f]/;
 /** Sólo ASCII visible, sin los caracteres que arman una lista o un nombre. */
@@ -106,6 +106,7 @@ export class EmailChannel implements DeliveryChannel {
   readonly id: string;
   readonly #options: EmailChannelOptions;
   readonly #senderName: string | null;
+  readonly #resolve: (notification: Notification) => Found;
 
   constructor(options: EmailChannelOptions) {
     if ((options.resolveAddress === undefined) === (options.resolveAddressFor === undefined)) {
@@ -123,16 +124,17 @@ export class EmailChannel implements DeliveryChannel {
     this.id = options.id ?? 'email';
     this.#options = options;
     this.#senderName = name;
+    const { resolveAddress, resolveAddressFor } = options;
+    // El constructor ya comprobó que hay una de las dos.
+    this.#resolve = resolveAddressFor ?? (resolveAddress ? (n) => resolveAddress(n.recipientId) : () => null);
   }
 
   async send(notification: Notification): Promise<DeliveryResult> {
     let address: string | null | undefined;
     try {
-      const { resolveAddress, resolveAddressFor } = this.#options;
-      address = await (resolveAddressFor ? resolveAddressFor(notification) : resolveAddress!(notification.recipientId));
+      address = await this.#resolve(notification);
     } catch (error) {
-      const kind = error instanceof Error ? error.name : 'Error';
-      return { outcome: 'failed', error: `no se pudo buscar la dirección: ${kind}` };
+      return failed('no se pudo buscar la dirección', error);
     }
     if (address === null || address === undefined) {
       return { outcome: 'skipped', error: 'la persona no tiene dirección de email' };

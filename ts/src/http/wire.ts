@@ -2,6 +2,7 @@
  * La forma de la bandeja en el cable: lo que viaja entre el adaptador HTTP y la
  * interfaz. Está en la sección "La bandeja por HTTP" del spec.
  */
+import { toBase64Url } from '../core/base64.js';
 import type { Notification } from '../core/inbox.js';
 import type { QuietHours } from '../core/quiet.js';
 import type { Matrix } from '../core/types.js';
@@ -110,15 +111,9 @@ export function itemToWire(n: Notification): InboxItem {
 const B64URL = /^[A-Za-z0-9_-]*$/;
 const DECIMAL = /^(0|[1-9][0-9]*)$/;
 
-function base64url(bytes: Uint8Array): string {
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
 /** El base64url sin relleno de `<created_at_ms>:<id>`. */
 export function encodeCursor(cursor: { readonly createdAt: Date; readonly id: string }): string {
-  return base64url(new TextEncoder().encode(`${cursor.createdAt.getTime()}:${cursor.id}`));
+  return toBase64Url(new TextEncoder().encode(`${cursor.createdAt.getTime()}:${cursor.id}`));
 }
 
 /** `null` si el texto no es exactamente un cursor que devolvería `encodeCursor`. */

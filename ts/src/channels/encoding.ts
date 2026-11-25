@@ -1,10 +1,8 @@
 /** Base64 para los transportes que firman o cifran. Sin dependencias: `btoa` y `atob`. */
 
-export function toBase64Url(bytes: Uint8Array): string {
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
+import { toBase64Url } from '../core/base64.js';
+
+export { toBase64Url };
 
 /** Acepta los dos alfabetos (el común y el de URL), con o sin relleno. Rechaza lo que no es base64. */
 export function fromBase64(text: string): Uint8Array<ArrayBuffer> {
@@ -15,6 +13,10 @@ export function fromBase64(text: string): Uint8Array<ArrayBuffer> {
 }
 
 const UTF8 = new TextEncoder();
+
+/** Los caracteres de control, que no pueden ir en una cabecera ni en un texto plano. */
+// biome-ignore lint/suspicious/noControlCharactersInRegex: busca justamente los caracteres de control.
+export const CONTROL = /[\u0000-\u001f\u007f]+/g;
 
 export const utf8 = (text: string): Uint8Array<ArrayBuffer> => UTF8.encode(text) as Uint8Array<ArrayBuffer>;
 

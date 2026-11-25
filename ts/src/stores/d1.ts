@@ -10,16 +10,27 @@
 import {
   checkCap,
   checkLimit,
+  paginate,
   StoreError,
   toMs,
   type AddResult,
   type FeedPage,
   type FeedQuery,
-  type Notification,
 } from '../core/inbox.js';
 import type { QuietHours } from '../core/quiet.js';
 import type { Change, Draft, Overrides } from '../core/types.js';
 import type { NotificationStore, PreferenceStore, QuietHoursStore } from '../ports.js';
+import {
+  COLUMNS,
+  feedFilter,
+  fromRow,
+  insertValues,
+  Params,
+  readAllFilter,
+  type Row,
+  stored,
+  visible,
+} from './sql-common.js';
 
 /** Lo que los almacenes usan de una sentencia preparada de D1. */
 export interface D1StatementLike {
@@ -39,9 +50,6 @@ const TABLE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const NOTIFICATIONS = 'campanita_notifications';
 const PREFERENCES = 'campanita_preferences';
 const QUIET_HOURS = 'campanita_quiet_hours';
-const COLUMNS =
-  'id, recipient_id, type, category, title, body, action_url, payload, scope, dedupe_key, created_at_ms, read_at_ms';
-
 function checkTable(table: string): string {
   if (!TABLE.test(table)) throw new TypeError('el nombre de la tabla tiene que ser un identificador');
   return table;
@@ -124,45 +132,6 @@ export function d1Schema(
   return [...byTable.notifications, ...byTable.preferences, ...byTable.quietHours];
 }
 
-interface Row {
-  id: string;
-  recipient_id: string;
-  type: string;
-  category: string;
-  title: string;
-  body: string | null;
-  action_url: string | null;
-  payload: string;
-  scope: string | null;
-  dedupe_key: string | null;
-  created_at_ms: number;
-  read_at_ms: number | null;
-}
-
-function fromRow(row: Row): Notification {
-  return {
-    id: row.id,
-    recipientId: row.recipient_id,
-    type: row.type,
-    category: row.category,
-    title: row.title,
-    body: row.body,
-    actionUrl: row.action_url,
-    payload: JSON.parse(row.payload) as Record<string, unknown>,
-    scope: row.scope,
-    dedupeKey: row.dedupe_key,
-    createdAt: new Date(row.created_at_ms),
-    readAt: row.read_at_ms === null ? null : new Date(row.read_at_ms),
-  };
-}
-
-/** `recipient_id = ?` y, con ámbito, también el filtro de ámbito del spec. */
-function visible(recipientId: string, scope: string | null): { where: string; params: unknown[] } {
-  return scope === null
-    ? { where: 'recipient_id = ?', params: [recipientId] }
-    : { where: 'recipient_id = ? AND (scope IS NULL OR scope = ?)', params: [recipientId, scope] };
-}
-
 /** Los avisos, sobre D1. */
 export class D1Store implements NotificationStore {
   readonly #db: D1Like;
@@ -185,31 +154,9 @@ export class D1Store implements NotificationStore {
     // inserta. Así dos pedidos a la vez con la misma clave dejan un solo aviso.
     const inserted = await this.#db
       .prepare(`INSERT INTO ${this.#table} (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL) ON CONFLICT DO NOTHING`)
-      .bind(
-        options.id,
-        draft.recipientId,
-        draft.type,
-        draft.category,
-        draft.title,
-        draft.body,
-        draft.actionUrl,
-        JSON.stringify(draft.payload),
-        draft.scope,
-        draft.dedupeKey,
-        createdAtMs,
-      )
+      .bind(...insertValues(draft, options.id, createdAtMs))
       .run();
-    if ((inserted.meta.changes ?? 0) > 0) {
-      const notification: Notification = {
-        ...draft,
-        // Lo que se devuelve es lo que quedó guardado, no el objeto de quien llama.
-        payload: JSON.parse(JSON.stringify(draft.payload)) as Record<string, unknown>,
-        id: options.id,
-        createdAt: new Date(createdAtMs),
-        readAt: null,
-      };
-      return { notification, created: true };
-    }
+    if ((inserted.meta.changes ?? 0) > 0) return { notification: stored(draft, options.id, createdAtMs), created: true };
     // No insertó. La clave repetida se revisa antes que el identificador.
     if (draft.dedupeKey !== null) {
       const existing = await this.#db
@@ -224,32 +171,14 @@ export class D1Store implements NotificationStore {
 
   async listFeed(query: FeedQuery): Promise<FeedPage> {
     const limit = checkLimit(query.limit);
-    const { where, params } = visible(query.recipientId, query.scope ?? null);
-    let filter = where;
-    if (query.unreadOnly) filter += ' AND read_at_ms IS NULL';
-    if ((query.category ?? null) !== null) {
-      filter += ' AND category = ?';
-      params.push(query.category);
-    }
-    const cursor = query.cursor ?? null;
-    if (cursor !== null) {
-      filter += ' AND (created_at_ms, id) < (?, ?)';
-      params.push(toMs(cursor.createdAt), cursor.id);
-    }
+    const params = new Params(false);
+    const filter = feedFilter(query, params);
     // Uno de más, para saber si queda otra página sin contar.
     const found = await this.#db
       .prepare(`SELECT ${COLUMNS} FROM ${this.#table} WHERE ${filter} ORDER BY created_at_ms DESC, id DESC LIMIT ?`)
-      .bind(...params, limit + 1)
+      .bind(...params.values, limit + 1)
       .all<Row>();
-    const items = found.results.slice(0, limit).map(fromRow);
-    const last = items.at(-1);
-    return {
-      items,
-      nextCursor:
-        last !== undefined && found.results.length > limit
-          ? { createdAt: new Date(last.createdAt), id: last.id }
-          : null,
-    };
+    return paginate(found.results.map(fromRow), limit);
   }
 
   async countUnread(
@@ -257,15 +186,12 @@ export class D1Store implements NotificationStore {
     options: { scope?: string | null; cap?: number | null } = {},
   ): Promise<number> {
     const cap = checkCap(options.cap);
-    const { where, params } = visible(recipientId, options.scope ?? null);
-    let inner = `SELECT 1 FROM ${this.#table} WHERE ${where} AND read_at_ms IS NULL`;
-    if (cap !== null) {
-      inner += ' LIMIT ?';
-      params.push(cap);
-    }
+    const params = new Params(false);
+    let inner = `SELECT 1 FROM ${this.#table} WHERE ${visible(recipientId, options.scope ?? null, params)} AND read_at_ms IS NULL`;
+    if (cap !== null) inner += ` LIMIT ${params.add(cap)}`;
     const counted = await this.#db
       .prepare(`SELECT COUNT(*) AS total FROM (${inner})`)
-      .bind(...params)
+      .bind(...params.values)
       .all<{ total: number }>();
     return counted.results[0]?.total ?? 0;
   }
@@ -282,16 +208,11 @@ export class D1Store implements NotificationStore {
     recipientId: string,
     options: { before: Date; readAt: Date; scope?: string | null; category?: string | null },
   ): Promise<number> {
-    const { where, params } = visible(recipientId, options.scope ?? null);
-    let filter = `${where} AND read_at_ms IS NULL AND created_at_ms < ?`;
-    params.push(toMs(options.before));
-    if ((options.category ?? null) !== null) {
-      filter += ' AND category = ?';
-      params.push(options.category);
-    }
+    const params = new Params(false, [toMs(options.readAt)]);
+    const filter = readAllFilter(recipientId, options, params);
     const updated = await this.#db
       .prepare(`UPDATE ${this.#table} SET read_at_ms = ? WHERE ${filter}`)
-      .bind(toMs(options.readAt), ...params)
+      .bind(...params.values)
       .run();
     return updated.meta.changes ?? 0;
   }

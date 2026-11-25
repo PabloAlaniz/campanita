@@ -9,7 +9,8 @@ import urllib.request
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
-from ..ports import DeliveryResult
+from ..ports import CHANNEL_OUTCOMES, DeliveryResult, is_delivery_result
+from ._http import build_opener
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -30,15 +31,8 @@ def default_body(message: EmailMessage) -> dict[str, Any]:
     return body
 
 
-_READABLE_OUTCOMES = frozenset({"sent", "failed", "skipped"})
-
-
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    """Una redirección se informa como error en vez de seguirse: seguirla
-    reenviaría las cabeceras, con sus credenciales, a otro servidor."""
-
-    def redirect_request(self, *_args: Any, **_kwargs: Any) -> None:
-        return None
+#: Lo que puede leerse de la respuesta de un servicio de email: no sabe si un destino expiró.
+_READABLE_OUTCOMES = CHANNEL_OUTCOMES - {"expired"}
 
 
 class HttpEmailTransport:
@@ -81,7 +75,7 @@ class HttpEmailTransport:
         self._read_id = read_id
         self._read_result = read_result
         self._timeout = timeout
-        self._opener = urllib.request.build_opener(_NoRedirect)
+        self._opener = build_opener()
 
     async def send(self, message: EmailMessage) -> DeliveryResult:
         return await asyncio.to_thread(self._send, message)
@@ -111,7 +105,7 @@ class HttpEmailTransport:
             result = read_result(json.loads(raw))
         except Exception:
             return DeliveryResult("failed", error="respuesta ilegible")
-        if not isinstance(result, DeliveryResult) or result.outcome not in _READABLE_OUTCOMES:
+        if not is_delivery_result(result, _READABLE_OUTCOMES):
             return DeliveryResult("failed", error="respuesta ilegible")
         return result
 

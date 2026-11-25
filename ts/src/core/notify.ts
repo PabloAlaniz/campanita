@@ -3,17 +3,16 @@ import type {
   ChannelAvailability,
   DeliveryChannel,
   DeliveryResult,
-  NotificationStore,
-  PreferenceStore,
-  QuietHoursStore,
+  NotificationWriter,
+  PreferenceReader,
+  QuietHoursReader,
 } from '../ports.js';
 import { buildNotification, checkMembers, type Member } from './catalog.js';
 import { resolveChannels } from './channels.js';
 import type { AddResult, Notification } from './inbox.js';
 import { isQuiet, isValidQuietHours, localMinute } from './quiet.js';
-import { EventRejectedError, INBOX, type Catalog, type Policy } from './types.js';
+import { EventRejectedError, ID, INBOX, type Catalog, type Policy } from './types.js';
 
-const ID = /^[a-z][a-z0-9_-]{0,63}$/;
 const OUTCOMES = new Set(['sent', 'expired', 'failed', 'skipped']);
 
 /** Los canales configurados no cumplen el spec. Se detecta al armar el `Notifier`. */
@@ -40,8 +39,8 @@ export interface NotifyResult {
 export interface NotifierOptions {
   readonly policy: Policy;
   readonly catalog: Catalog;
-  readonly store: NotificationStore;
-  readonly preferences: PreferenceStore;
+  readonly store: NotificationWriter;
+  readonly preferences: PreferenceReader;
   readonly channels?: Iterable<DeliveryChannel>;
   /**
    * Qué canales tiene cada destinatario: los que activó y para los que hay a
@@ -50,7 +49,7 @@ export interface NotifierOptions {
    */
   readonly available?: ChannelAvailability;
   /** Los horarios de no molestar. Sin almacén, nadie está en silencio. */
-  readonly quietHours?: QuietHoursStore;
+  readonly quietHours?: QuietHoursReader;
   /**
    * De una zona horaria y un instante al minuto local, o `null` si la zona no
    * se conoce. Por omisión, `localMinute`, que usa `Intl`.
@@ -70,10 +69,14 @@ export interface NotifierOptions {
 export class Notifier {
   readonly #options: NotifierOptions;
   readonly #channels: Map<string, DeliveryChannel>;
+  readonly #clock: () => Date;
+  readonly #newId: () => string;
 
   constructor(options: NotifierOptions) {
     this.#options = options;
     this.#channels = checkChannels(options.channels ?? []);
+    this.#clock = options.clock ?? (() => new Date());
+    this.#newId = options.newId ?? (() => crypto.randomUUID());
   }
 
   /**
@@ -89,10 +92,10 @@ export class Notifier {
   ): Promise<NotifyResult> {
     const { catalog, store } = this.#options;
     const draft = buildNotification(catalog, event);
-    const members = checkMembers(options.members, catalog[draft.type]!.audience === 'group');
-    const createdAt = options.createdAt ?? (this.#options.clock ?? (() => new Date()))();
+    const members = checkMembers(options.members, catalog[draft.type]?.audience === 'group');
+    const createdAt = options.createdAt ?? this.#clock();
     const added = await store.add(draft, {
-      id: options.id ?? (this.#options.newId ?? (() => crypto.randomUUID()))(),
+      id: options.id ?? this.#newId(),
       createdAt,
     });
     // El aviso ya existía: no se copia ni se vuelve a entregar. Reintentar una
@@ -125,7 +128,7 @@ export class Notifier {
     if (!Object.hasOwn(this.#options.policy, notification.category)) {
       throw new EventRejectedError('invalid_field', 'category');
     }
-    return this.#deliver(notification, (this.#options.clock ?? (() => new Date()))());
+    return this.#deliver(notification, this.#clock());
   }
 
   /** Los pasos 6 a 9 del recorrido. `moment` es el instante para el horario de no molestar. */
@@ -138,11 +141,13 @@ export class Notifier {
     const targets = resolveChannels(policy, notification.category, overrides, usable);
     const silent = targets.length > 0 && (await this.#isQuiet(notification.recipientId, moment));
     for (const channelId of targets) {
-      if (silent && !policy[notification.category]![channelId]!.urgent) {
+      if (silent && policy[notification.category]?.[channelId]?.urgent !== true) {
         deliveries.set(channelId, { outcome: 'silenced' });
         continue;
       }
-      deliveries.set(channelId, await deliver(this.#channels.get(channelId)!, notification));
+      // `targets` sale de los canales configurados: siempre está.
+      const channel = this.#channels.get(channelId);
+      if (channel !== undefined) deliveries.set(channelId, await deliver(channel, notification));
     }
     return deliveries;
   }

@@ -7,16 +7,15 @@ dirección de la persona y arma el mensaje; el envío lo hace un `EmailTransport
 
 from __future__ import annotations
 
-import inspect
-import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Protocol
 
 from .._inbox import Notification
+from .._types import maybe_await
 from ..ports import DeliveryResult
+from ._text import CONTROL
 
-_CONTROL = re.compile(r"[\x00-\x1f\x7f]+")
 #: Lo que una dirección no puede tener además de espacios, controles y no ASCII.
 _FORBIDDEN = frozenset('<>,;:"()[]\\')
 _MIN_ADDRESS = 3  # `a@b`
@@ -51,7 +50,7 @@ def render_email(notification: Notification) -> RenderedEmail:
     """
     parts = [part for part in (notification.body, notification.action_url) if part]
     return RenderedEmail(
-        subject=_CONTROL.sub(" ", notification.title),
+        subject=CONTROL.sub(" ", notification.title),
         text="\n\n".join(parts) if parts else notification.title,
     )
 
@@ -114,7 +113,7 @@ class EmailChannel:
         if not is_valid_address(sender):
             raise ValueError("`sender` no es una dirección válida")
         if sender_name is not None and (
-            not sender_name.strip() or _CONTROL.search(sender_name) or _FORBIDDEN & set(sender_name)
+            not sender_name.strip() or CONTROL.search(sender_name) or _FORBIDDEN & set(sender_name)
         ):
             raise ValueError(
                 "`sender_name` no puede estar vacío ni tener caracteres de control o de dirección"
@@ -131,7 +130,7 @@ class EmailChannel:
     async def send(self, notification: Notification) -> DeliveryResult:
         try:
             found = self._resolve(notification)
-            address = await found if inspect.isawaitable(found) else found
+            address = await maybe_await(found)
         except Exception as error:
             return DeliveryResult("failed", error=f"no se pudo buscar la dirección: {type(error).__name__}")
         if address is None:
@@ -147,7 +146,7 @@ class EmailChannel:
                 sender_name=self._sender_name,
                 # El asunto va a una cabecera: nunca sale con saltos de línea,
                 # tampoco si lo armó una función propia.
-                subject=_CONTROL.sub(" ", rendered.subject),
+                subject=CONTROL.sub(" ", rendered.subject),
                 text=rendered.text,
                 html=rendered.html,
                 idempotency_key=notification.id,

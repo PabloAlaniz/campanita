@@ -1,5 +1,6 @@
 /** Transportes de email por HTTP, con `fetch`. */
 import type { DeliveryResult } from '../ports.js';
+import { failed } from './result.js';
 import { formatSender, type EmailMessage, type EmailTransport } from './email.js';
 
 type Fetch = (input: string, init: RequestInit) => Promise<Response>;
@@ -82,7 +83,7 @@ export class HttpEmailTransport implements EmailTransport {
       });
     } catch (error) {
       // Sólo el tipo: el mensaje de un error de red no lo controlamos.
-      return { outcome: 'failed', error: `HTTP: ${error instanceof Error ? error.name : 'Error'}` };
+      return failed('HTTP', error);
     }
     if (!response.ok) {
       // Sólo el código: el cuerpo del error es del servicio y puede repetir datos del pedido.

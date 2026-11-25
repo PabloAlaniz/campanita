@@ -8,6 +8,7 @@
  * https://developer.apple.com/documentation/usernotifications/sending-notification-requests-to-apns
  */
 import type { DeliveryResult } from '../ports.js';
+import { failed } from './result.js';
 import { fromBase64, jsonSegment, toBase64Url, utf8 } from './encoding.js';
 import type { Key } from './encoding.js';
 import type { PushMessage, PushTransport } from './push.js';
@@ -110,7 +111,7 @@ export class ApnsTransport implements PushTransport<ApnsTarget> {
     try {
       body = JSON.stringify(this.#payload(message));
     } catch (error) {
-      return { outcome: 'failed', error: `no se pudo armar el mensaje: ${error instanceof Error ? error.name : 'Error'}` };
+      return failed('no se pudo armar el mensaje', error);
     }
 
     try {
@@ -130,7 +131,7 @@ export class ApnsTransport implements PushTransport<ApnsTarget> {
       };
     } catch (error) {
       // Sólo el tipo: el mensaje de un error de red puede traer el token.
-      return { outcome: 'failed', error: `APNs: ${error instanceof Error ? error.name : 'Error'}` };
+      return failed('APNs', error);
     }
   }
 

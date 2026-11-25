@@ -16,11 +16,14 @@ import type { AddResult, FeedPage, FeedQuery, Notification } from './core/inbox.
 import type { QuietHours } from './core/quiet.js';
 import type { Change, Draft, Overrides } from './core/types.js';
 
-/**
- * Cualquier base. Todas las lecturas piden `recipientId`: es el único alcance
- * de seguridad, y por eso es un parámetro obligatorio.
- */
-export interface NotificationStore {
+// Cada almacén tiene dos lados: lo que necesita quien entrega (el Notifier
+// escribe avisos y lee preferencias y horarios) y lo que necesita la bandeja.
+// Los puertos chicos dejan pedir sólo lo que se usa; los grandes
+// (`NotificationStore`, `PreferenceStore`, `QuietHoursStore`) son la suma, y es
+// lo que implementan los adaptadores incluidos.
+
+/** Lo que el Notifier necesita del almacén de avisos: guardar. */
+export interface NotificationWriter {
   /**
    * Guarda el aviso, salvo que su clave ya exista para esa persona.
    *
@@ -28,6 +31,14 @@ export interface NotificationStore {
    * la misma clave dejan un solo aviso. Rechaza con `StoreError('duplicate_id')`.
    */
   add(draft: Draft, options: { id: string; createdAt: Date }): Promise<AddResult>;
+}
+
+/**
+ * Lo que la bandeja necesita: leer, contar y marcar como leído. Todas las
+ * operaciones piden `recipientId`: es el único alcance de seguridad, y por eso
+ * es obligatorio.
+ */
+export interface InboxReader {
   /** La bandeja, del más nuevo al más viejo. Rechaza con `StoreError('invalid_limit')`. */
   listFeed(query: FeedQuery): Promise<FeedPage>;
   /** Cuántos sin leer. Con `cap`, deja de contar al llegar a ese número. */
@@ -44,6 +55,15 @@ export interface NotificationStore {
   ): Promise<number>;
 }
 
+/** Cualquier base: guarda avisos y sirve la bandeja. */
+export interface NotificationStore extends NotificationWriter, InboxReader {}
+
+/** Lo que el Notifier necesita de las preferencias: leerlas. */
+export interface PreferenceReader {
+  /** Lo guardado para esa persona en ese ámbito. Los ámbitos no se heredan. */
+  getOverrides(recipientId: string, options?: { scope?: string | null }): Promise<Overrides>;
+}
+
 /**
  * Lo que cambió cada persona. Guarda SÓLO los cambios: sin nada guardado, valen
  * los valores de la política.
@@ -51,11 +71,15 @@ export interface NotificationStore {
  * El almacén no conoce la política. Qué se puede cambiar lo decide
  * `validatePatch` antes de guardar.
  */
-export interface PreferenceStore {
-  /** Lo guardado para esa persona en ese ámbito. Los ámbitos no se heredan. */
-  getOverrides(recipientId: string, options?: { scope?: string | null }): Promise<Overrides>;
+export interface PreferenceStore extends PreferenceReader {
   /** Guarda los cambios, todos o ninguno. Si una celda se repite, vale la última. */
   saveChanges(recipientId: string, changes: readonly Change[], options?: { scope?: string | null }): Promise<void>;
+}
+
+/** Lo que el Notifier necesita de los horarios: leerlos. */
+export interface QuietHoursReader {
+  /** El horario de esa persona, o `null` si nunca definió uno. */
+  getQuietHours(recipientId: string): Promise<QuietHours | null>;
 }
 
 /**
@@ -64,9 +88,7 @@ export interface PreferenceStore {
  * El almacén guarda el horario que le pasen: lo valida `parseQuietHours` antes.
  * Su comportamiento es el de `spec/vectors/silencio-guardado/`.
  */
-export interface QuietHoursStore {
-  /** El horario de esa persona, o `null` si nunca definió uno. */
-  getQuietHours(recipientId: string): Promise<QuietHours | null>;
+export interface QuietHoursStore extends QuietHoursReader {
   /** Lo guarda, reemplazando el que hubiera. */
   setQuietHours(recipientId: string, quietHours: QuietHours): Promise<void>;
 }

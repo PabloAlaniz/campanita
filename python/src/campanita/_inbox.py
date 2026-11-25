@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
     from ._catalog import Draft
 
@@ -89,6 +89,16 @@ class FeedPage:
     items: tuple[Notification, ...]
     #: `None` cuando no queda nada más.
     next_cursor: Cursor | None
+
+
+def paginate(rows: Sequence[Notification], limit: int) -> FeedPage:
+    """Una página a partir de hasta `limit + 1` avisos ya ordenados del más nuevo al más viejo.
+
+    El de más sólo dice si queda otra página: así no hace falta contar.
+    """
+    page = tuple(rows[:limit])
+    more = len(rows) > limit
+    return FeedPage(page, (page[-1].created_at, page[-1].id) if page and more else None)
 
 
 #: Por qué un almacén rechaza una operación. Son los literales del spec.

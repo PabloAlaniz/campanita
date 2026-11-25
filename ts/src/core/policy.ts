@@ -1,6 +1,4 @@
-import { INBOX, InvalidPolicyError, type Cell, type Policy } from './types.js';
-
-const ID = /^[a-z][a-z0-9_-]{0,63}$/;
+import { ID, INBOX, InvalidPolicyError, type Cell, type Policy } from './types.js';
 
 /**
  * Valida una política con forma de JSON y la devuelve inmutable.

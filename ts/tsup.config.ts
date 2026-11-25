@@ -6,6 +6,7 @@ export default defineConfig({
     http: 'src/http/index.ts',
     client: 'src/client/index.ts',
     react: 'src/react/index.ts',
+    testing: 'src/testing/index.ts',
   },
   format: ['esm', 'cjs'],
   dts: true,

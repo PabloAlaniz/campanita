@@ -61,8 +61,12 @@ Las reglas están en `[tool.importlinter]` de `python/pyproject.toml` y en
 `ts/.dependency-cruiser.cjs`. Si una regla te frena, lo más probable es que la pieza esté en la
 capa equivocada: moverla suele ser mejor que abrir una excepción.
 
-Ruff y Biome también miden complejidad, argumentos y `except`/`any` a ciegas. Un `noqa` o un
-`biome-ignore` lleva siempre el motivo al lado.
+Ruff y Biome también miden complejidad, argumentos y `except`/`any` a ciegas, y en TypeScript no
+se usan aserciones `!`. Un `noqa` o un `biome-ignore` lleva siempre el motivo al lado.
+
+Quien escribe un adaptador propio encuentra las secuencias de conformidad y las reglas que comparten
+los almacenes (límites, tope, milisegundos, paginado) en `campanita.conformance` y en
+`campanita/testing`.
 
 ## Cambiar el comportamiento
 

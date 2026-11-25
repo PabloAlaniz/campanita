@@ -8,7 +8,6 @@ secuencias (`campanita.conformance`).
 
 from __future__ import annotations
 
-import json
 import sqlite3
 from contextlib import contextmanager
 from typing import TYPE_CHECKING
@@ -21,10 +20,11 @@ from .._inbox import (
     StoreError,
     check_cap,
     check_limit,
-    from_ms,
+    paginate,
     to_ms,
 )
 from .._quiet import QuietHours
+from ._sql import COLUMNS, feed_filter, from_row, insert_values, read_all_filter, visible
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
@@ -55,10 +55,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS {table}_dedupe
 CREATE INDEX IF NOT EXISTS {table}_feed
     ON {table} (recipient_id, created_at_ms DESC, id DESC);
 """
-_COLUMNS = (
-    "id, recipient_id, type, category, title, body, action_url, payload, scope, dedupe_key,"
-    " created_at_ms, read_at_ms"
-)
 
 
 @contextmanager
@@ -107,28 +103,16 @@ class SqliteStore:
         with _atomic(self._db):
             if draft.dedupe_key is not None:
                 existing = self._db.execute(
-                    f"SELECT {_COLUMNS} FROM {self._table} WHERE recipient_id = ? AND dedupe_key = ?",
+                    f"SELECT {COLUMNS} FROM {self._table} WHERE recipient_id = ? AND dedupe_key = ?",
                     (draft.recipient_id, draft.dedupe_key),
                 ).fetchone()
                 if existing is not None:
-                    return AddResult(_row(existing), created=False)
+                    return AddResult(from_row(existing), created=False)
             item = Notification.from_draft(draft, id=id, created_at=created_at)
             try:
                 self._db.execute(
-                    f"INSERT INTO {self._table} ({_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)",
-                    (
-                        item.id,
-                        item.recipient_id,
-                        item.type,
-                        item.category,
-                        item.title,
-                        item.body,
-                        item.action_url,
-                        json.dumps(dict(item.payload), ensure_ascii=False),
-                        item.scope,
-                        item.dedupe_key,
-                        to_ms(item.created_at),
-                    ),
+                    f"INSERT INTO {self._table} ({COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)",
+                    insert_values(item),
                 )
             except sqlite3.IntegrityError as error:
                 raise StoreError("duplicate_id") from error
@@ -136,30 +120,19 @@ class SqliteStore:
 
     async def list_feed(self, query: FeedQuery) -> FeedPage:
         limit = check_limit(query.limit)
-        where, params = self._visible(query.recipient_id, query.scope)
-        if query.unread_only:
-            where += " AND read_at_ms IS NULL"
-        if query.category is not None:
-            where += " AND category = ?"
-            params.append(query.category)
-        if query.cursor is not None:
-            where += " AND (created_at_ms, id) < (?, ?)"
-            params += [to_ms(query.cursor[0]), query.cursor[1]]
+        where, params = feed_filter(query, "?")
         # Uno de más, para saber si queda otra página sin contar.
         rows = self._db.execute(
-            f"SELECT {_COLUMNS} FROM {self._table} WHERE {where}"
-            " ORDER BY created_at_ms DESC, id DESC LIMIT ?",
+            f"SELECT {COLUMNS} FROM {self._table} WHERE {where} ORDER BY created_at_ms DESC, id DESC LIMIT ?",
             (*params, limit + 1),
         ).fetchall()
-        page = tuple(_row(row) for row in rows[:limit])
-        more = len(rows) > limit
-        return FeedPage(page, (page[-1].created_at, page[-1].id) if page and more else None)
+        return paginate([from_row(row) for row in rows], limit)
 
     async def count_unread(
         self, recipient_id: str, *, scope: str | None = None, cap: int | None = None
     ) -> int:
         cap = check_cap(cap)
-        where, params = self._visible(recipient_id, scope)
+        where, params = visible(recipient_id, scope, "?")
         inner = f"SELECT 1 FROM {self._table} WHERE {where} AND read_at_ms IS NULL"
         if cap is not None:
             inner += " LIMIT ?"
@@ -185,54 +158,12 @@ class SqliteStore:
         scope: str | None = None,
         category: str | None = None,
     ) -> int:
-        where, params = self._visible(recipient_id, scope)
-        where += " AND read_at_ms IS NULL AND created_at_ms < ?"
-        params.append(to_ms(before))
-        if category is not None:
-            where += " AND category = ?"
-            params.append(category)
+        where, params = read_all_filter(recipient_id, before=before, scope=scope, category=category, ph="?")
         with _atomic(self._db):
             cursor = self._db.execute(
                 f"UPDATE {self._table} SET read_at_ms = ? WHERE {where}", (to_ms(read_at), *params)
             )
         return cursor.rowcount
-
-    @staticmethod
-    def _visible(recipient_id: str, scope: str | None) -> tuple[str, list[object]]:
-        if scope is None:
-            return "recipient_id = ?", [recipient_id]
-        return "recipient_id = ? AND (scope IS NULL OR scope = ?)", [recipient_id, scope]
-
-
-def _row(row: tuple[object, ...]) -> Notification:
-    (
-        id,
-        recipient_id,
-        type_,
-        category,
-        title,
-        body,
-        action_url,
-        payload,
-        scope,
-        dedupe_key,
-        created,
-        read,
-    ) = row
-    return Notification(
-        id=str(id),
-        recipient_id=str(recipient_id),
-        type=str(type_),
-        category=str(category),
-        title=str(title),
-        body=None if body is None else str(body),
-        action_url=None if action_url is None else str(action_url),
-        payload=json.loads(str(payload)),
-        scope=None if scope is None else str(scope),
-        dedupe_key=None if dedupe_key is None else str(dedupe_key),
-        created_at=from_ms(int(str(created))),
-        read_at=None if read is None else from_ms(int(str(read))),
-    )
 
 
 # "Sin ámbito" y "ámbito de texto vacío" son cosas distintas, y en SQL un NULL

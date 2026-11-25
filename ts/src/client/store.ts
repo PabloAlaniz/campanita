@@ -31,6 +31,8 @@ export interface InboxStoreOptions {
   readonly pollMs?: number;
   /** El tope del contador. Por omisión, 99. */
   readonly cap?: number;
+  /** La hora para marcar como leído mientras llega la respuesta. Para pruebas. */
+  readonly now?: () => Date;
 }
 
 export interface InboxStore {
@@ -63,6 +65,7 @@ export function createInboxStore(client: InboxClient, options: InboxStoreOptions
   const pageSize = options.pageSize ?? 20;
   const pollMs = options.pollMs ?? 30_000;
   const cap = options.cap ?? 99;
+  const now = options.now ?? (() => new Date());
 
   let snapshot = INITIAL;
   let cursor: string | null = null;
@@ -178,10 +181,10 @@ export function createInboxStore(client: InboxClient, options: InboxStoreOptions
     async markRead(id) {
       const target = snapshot.items.find((item) => item.id === id);
       if (target === undefined || target.read_at !== null) return;
-      const now = new Date().toISOString();
+      const readAt = now().toISOString();
       await optimistic(
         () => ({
-          items: snapshot.items.map((item) => (item.id === id ? { ...item, read_at: now } : item)),
+          items: snapshot.items.map((item) => (item.id === id ? { ...item, read_at: readAt } : item)),
           unread: snapshot.unread.capped
             ? snapshot.unread
             : { count: Math.max(0, snapshot.unread.count - 1), capped: false },
@@ -194,10 +197,10 @@ export function createInboxStore(client: InboxClient, options: InboxStoreOptions
       const newest = snapshot.items[0];
       if (newest === undefined) return;
       const before = afterMs(newest.created_at);
-      const now = new Date().toISOString();
+      const readAt = now().toISOString();
       await optimistic(
         () => ({
-          items: snapshot.items.map((item) => (item.read_at === null ? { ...item, read_at: now } : item)),
+          items: snapshot.items.map((item) => (item.read_at === null ? { ...item, read_at: readAt } : item)),
           unread: { count: 0, capped: false },
         }),
         () => client.markAllRead({ before, scope }),

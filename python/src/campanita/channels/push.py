@@ -16,18 +16,14 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-import inspect
-import re
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Protocol, get_args
+from typing import Any, Protocol
 
 from .._inbox import Notification
-from ..ports import DeliveryOutcome, DeliveryResult
-
-_CONTROL = re.compile(r"[\x00-\x1f\x7f]+")
-#: Lo que puede informar un transporte: todo menos `silenced`, que lo decide el Notifier.
-_OUTCOMES = frozenset(get_args(DeliveryOutcome)) - {"silenced"}
+from .._types import maybe_await
+from ..ports import DeliveryOutcome, DeliveryResult, is_delivery_result
+from ._text import CONTROL
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,7 +75,7 @@ def render_push(notification: Notification) -> PushMessage:
     El texto no se escapa: lo muestra el sistema, no un intérprete de marcas.
     """
     return PushMessage(
-        title=_CONTROL.sub(" ", notification.title).strip(" "),
+        title=CONTROL.sub(" ", notification.title).strip(" "),
         body=notification.body or None,
         url=notification.action_url or None,
         thread=None,
@@ -144,8 +140,8 @@ class PushChannel:
 
     async def send(self, notification: Notification) -> DeliveryResult:
         try:
-            found = self._resolve(notification)
-            devices = list((await found if inspect.isawaitable(found) else found) or ())
+            found: Sequence[PushDevice] | None = await maybe_await(self._resolve(notification))
+            devices = list(found or ())
         except Exception as error:
             return DeliveryResult(
                 "failed", error=f"no se pudieron buscar los dispositivos: {type(error).__name__}"
@@ -173,7 +169,7 @@ class PushChannel:
         else:
             try:
                 result = await transport.send(device.target, message)
-                if getattr(result, "outcome", None) not in _OUTCOMES:
+                if not is_delivery_result(result):
                     result = DeliveryResult("failed", error="el transporte no informó un resultado")
             except Exception as error:
                 # Sólo el tipo: el mensaje de un error de red puede traer el destino.
@@ -181,7 +177,5 @@ class PushChannel:
         if self._on_result is not None:
             # Anotar el resultado es de quien integra: si falla, el aviso igual salió o no salió.
             with contextlib.suppress(Exception):
-                noted = self._on_result(device, result, notification)
-                if inspect.isawaitable(noted):
-                    await noted
+                await maybe_await(self._on_result(device, result, notification))
         return result.outcome

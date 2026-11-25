@@ -14,6 +14,7 @@ import {
   type Overrides,
   type Policy,
 } from './types.js';
+import { byCodePoint } from './order.js';
 
 const NO_OVERRIDES: Overrides = Object.freeze({});
 
@@ -33,8 +34,9 @@ export function resolveChannels(
   if (cells === undefined) return [];
   const can = new Set(available);
   const mine = own(overrides, category);
-  return Object.keys(cells)
-    .filter((channel) => channel !== INBOX && can.has(channel) && enabled(cells[channel]!, mine, channel))
+  return Object.entries(cells)
+    .filter(([channel, cell]) => channel !== INBOX && can.has(channel) && enabled(cell, mine, channel))
+    .map(([channel]) => channel)
     .sort(byCodePoint);
 }
 
@@ -51,12 +53,10 @@ export function effectiveMatrix(
 ): Matrix {
   const can = new Set(available);
   const matrix: Matrix = Object.create(null);
-  for (const category of Object.keys(policy)) {
-    const cells = policy[category]!;
+  for (const [category, cells] of Object.entries(policy)) {
     const mine = own(overrides, category);
     const row: Record<string, MatrixCell> = Object.create(null);
-    for (const channel of Object.keys(cells)) {
-      const cell = cells[channel]!;
+    for (const [channel, cell] of Object.entries(cells)) {
       row[channel] = {
         enabled: enabled(cell, mine, channel),
         locked: cell.locked || (channel !== INBOX && !can.has(channel)),
@@ -84,7 +84,7 @@ export function validatePatch(
   for (const category of Object.keys(patch).sort(byCodePoint)) {
     const cells = own(policy, category);
     if (cells === undefined) throw new PatchRejectedError(category, null, 'unknown_category');
-    const wanted = patch[category]!;
+    const wanted = own(patch, category) ?? {};
     for (const channel of Object.keys(wanted).sort(byCodePoint)) {
       const value = wanted[channel];
       const cell = own(cells, channel);
@@ -115,18 +115,3 @@ function own<T>(object: Readonly<Record<string, T>>, key: string): T | undefined
   return Object.hasOwn(object, key) ? object[key] : undefined;
 }
 
-/**
- * Orden por punto de código Unicode, como pide el spec. El `sort()` por defecto
- * compara unidades UTF-16 y da otro resultado fuera del plano básico.
- */
-function byCodePoint(a: string, b: string): number {
-  const left = a[Symbol.iterator]();
-  const right = b[Symbol.iterator]();
-  for (;;) {
-    const x = left.next();
-    const y = right.next();
-    if (x.done || y.done) return (x.done ? 0 : 1) - (y.done ? 0 : 1);
-    const diff = x.value.codePointAt(0)! - y.value.codePointAt(0)!;
-    if (diff !== 0) return diff;
-  }
-}
