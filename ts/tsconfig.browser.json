@@ -1,0 +1,11 @@
+{
+  // Lo que corre en el navegador (client/, react/) se revisa sin los tipos de Node:
+  // así `Buffer` o `process` no compilan ahí. Lo que importan de http/ y core/ se
+  // revisa con las mismas reglas, porque viaja en el mismo bundle.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": []
+  },
+  "include": ["src/client", "src/react"]
+}

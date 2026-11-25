@@ -9,6 +9,8 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "isolatedModules": true,

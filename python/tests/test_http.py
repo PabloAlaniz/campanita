@@ -5,10 +5,9 @@ from __future__ import annotations
 import asyncio
 import json
 import sqlite3
-from collections.abc import Callable, MutableMapping
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 from urllib.parse import urlencode
 
 import pytest
@@ -16,7 +15,6 @@ import pytest
 from campanita import Draft, parse_policy
 from campanita._inbox import from_ms
 from campanita.http import InboxApp, decode_cursor, decode_cursor_parts, encode_cursor, from_iso, to_iso
-from campanita.ports import NotificationStore, PreferenceStore, QuietHoursStore
 from campanita.stores import (
     MemoryPreferenceStore,
     MemoryQuietHoursStore,
@@ -25,6 +23,11 @@ from campanita.stores import (
     SqliteQuietHoursStore,
     SqliteStore,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, MutableMapping
+
+    from campanita.ports import NotificationStore, PreferenceStore, QuietHoursStore
 
 VECTORS = sorted((Path(__file__).resolve().parents[2] / "spec" / "vectors" / "http").glob("*.json"))
 ROOT = "/api/avisos"

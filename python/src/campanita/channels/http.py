@@ -6,12 +6,15 @@ import asyncio
 import json
 import urllib.error
 import urllib.request
-from collections.abc import Callable, Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
 from ..ports import DeliveryResult
-from .email import EmailMessage
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping
+
+    from .email import EmailMessage
 
 
 def default_body(message: EmailMessage) -> dict[str, Any]:
@@ -34,7 +37,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
     """Una redirección se informa como error en vez de seguirse: seguirla
     reenviaría las cabeceras, con sus credenciales, a otro servidor."""
 
-    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
+    def redirect_request(self, *_args: Any, **_kwargs: Any) -> None:
         return None
 
 
@@ -57,7 +60,7 @@ class HttpEmailTransport:
     Una respuesta 2xx es `sent`; cualquier otra cosa, `failed`.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 — dependencias inyectadas, solo por nombre
         self,
         url: str,
         *,
@@ -88,7 +91,8 @@ class HttpEmailTransport:
             headers = {**self._headers, **(self._build_headers(message) if self._build_headers else {})}
             headers["Content-Type"] = "application/json"
             data = json.dumps(self._build_body(message), ensure_ascii=False).encode("utf-8")
-            request = urllib.request.Request(self._url, data=data, headers=headers, method="POST")
+            # La URL se validó en el constructor: sólo http o https.
+            request = urllib.request.Request(self._url, data=data, headers=headers, method="POST")  # noqa: S310
             with self._opener.open(request, timeout=self._timeout) as response:
                 raw = response.read()
         except urllib.error.HTTPError as error:

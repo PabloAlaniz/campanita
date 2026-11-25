@@ -8,7 +8,9 @@
 import type { Notification } from '../core/inbox.js';
 import type { DeliveryChannel, DeliveryResult } from '../ports.js';
 
+// biome-ignore lint/suspicious/noControlCharactersInRegex: busca justamente los caracteres de control.
 const CONTROL = /[\u0000-\u001f\u007f]+/g;
+// biome-ignore lint/suspicious/noControlCharactersInRegex: busca justamente los caracteres de control.
 const HAS_CONTROL = /[\u0000-\u001f\u007f]/;
 /** Sólo ASCII visible, sin los caracteres que arman una lista o un nombre. */
 const ADDRESS_CHARS = /^[!-~]+$/;

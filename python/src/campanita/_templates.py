@@ -7,9 +7,12 @@ Lo que una plantilla puede hacer es igual en todos los lenguajes.
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 from ._types import InvalidTemplate, TemplateError
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 _VAR = re.compile(r"[a-z][a-z0-9_]{0,63}")
 _MAX_SAFE = 2**53 - 1

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-from ._catalog import Draft
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from ._catalog import Draft
 
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 _MS = timedelta(milliseconds=1)

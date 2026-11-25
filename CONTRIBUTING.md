@@ -10,6 +10,7 @@ Hace falta Node 20+, pnpm, Python 3.11+ y [uv](https://docs.astral.sh/uv/).
 pnpm install
 pnpm test           # los vectores contra el paquete de TypeScript
 pnpm typecheck
+pnpm lint           # biome, límites entre capas y el código del navegador sin Node
 pnpm build
 pnpm check:package  # publint y arethetypeswrong
 pnpm check:spec     # los vectores del repo coinciden con el generador
@@ -22,6 +23,7 @@ uv sync
 uv run pytest       # los mismos vectores contra el paquete de Python
 uv run mypy
 uv run ruff check . ../tools && uv run ruff format --check . ../tools
+uv run lint-imports # límites entre capas
 ```
 
 Los almacenes de Postgres se prueban contra una base de verdad, en TypeScript y en Python. Sin
@@ -38,6 +40,29 @@ pnpm test:pg
 
 Leé [`docs/principios.md`](docs/principios.md). El más importante: el núcleo no nombra productos,
 proveedores ni bases, y lo que es particular de un caso entra como dato o como adaptador.
+
+## Límites entre capas
+
+Los dos paquetes tienen la misma forma, y el CI la hace cumplir:
+
+| Capa | Python | TypeScript | Puede importar |
+|---|---|---|---|
+| Núcleo | `_*.py`, `ports.py`, `conformance.py` | `core/`, `ports.ts` | sólo el núcleo |
+| Canales | `channels/` | `channels/` | el núcleo |
+| Almacenes | `stores/` | `stores/` | el núcleo |
+| HTTP | `http/` | `http/` | el núcleo |
+| Navegador | — | `client/`, `react/` | `client/`; de `http/` y `core/`, sólo tipos |
+
+Los adaptadores no se importan entre sí: un canal no sabe de almacenes, y el handler HTTP recibe
+los almacenes por parámetro. El código del navegador se revisa sin los tipos de Node
+(`tsconfig.browser.json`), así que `Buffer` o `process` no compilan ahí.
+
+Las reglas están en `[tool.importlinter]` de `python/pyproject.toml` y en
+`ts/.dependency-cruiser.cjs`. Si una regla te frena, lo más probable es que la pieza esté en la
+capa equivocada: moverla suele ser mejor que abrir una excepción.
+
+Ruff y Biome también miden complejidad, argumentos y `except`/`any` a ciegas. Un `noqa` o un
+`biome-ignore` lleva siempre el motivo al lado.
 
 ## Cambiar el comportamiento
 

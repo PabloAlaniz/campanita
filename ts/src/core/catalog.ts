@@ -46,54 +46,75 @@ export function parseCatalog(raw: unknown, policy: Policy): Catalog {
     if (typeId.length > MAX_TYPE_ID || !TYPE_ID.test(typeId)) {
       throw new InvalidCatalogError(`tipo ${JSON.stringify(typeId)}: no es un identificador de tipo`);
     }
-    const entry = raw[typeId];
-    if (!isObject(entry)) {
-      throw new InvalidCatalogError(`${typeId}: tiene que ser un objeto`);
-    }
-    const extra = Object.keys(entry)
-      .filter((key) => !ENTRY_KEYS.has(key))
-      .sort();
-    if (extra[0] !== undefined) {
-      throw new InvalidCatalogError(`${typeId}: clave desconocida \`${extra[0]}\``);
-    }
-
-    const category = own(entry, 'category');
-    if (typeof category !== 'string' || !Object.hasOwn(policy, category)) {
-      throw new InvalidCatalogError(`${typeId}: \`category\` tiene que ser una categoría de la política`);
-    }
-    if (!Object.hasOwn(entry, 'title')) {
-      throw new InvalidCatalogError(`${typeId}: falta \`title\``);
-    }
-    const title = entry['title'];
-    const hasBody = Object.hasOwn(entry, 'body');
-    const body = hasBody ? entry['body'] : null;
-    let titleParts: Parsed;
-    let bodyParts: Parsed | null;
-    try {
-      titleParts = parseTemplate(title);
-      bodyParts = hasBody ? parseTemplate(body) : null;
-    } catch (error) {
-      if (error instanceof InvalidTemplateError) {
-        throw new InvalidCatalogError(`${typeId}: ${error.message}`);
-      }
-      throw error;
-    }
-    if (titleParts.length === 0) {
-      throw new InvalidCatalogError(`${typeId}: \`title\` no puede ser vacío`);
-    }
-
-    const audience = Object.hasOwn(entry, 'audience') ? entry['audience'] : 'person';
-    if (audience !== 'person' && audience !== 'group') {
-      throw new InvalidCatalogError(`${typeId}: \`audience\` tiene que ser \`person\` o \`group\``);
-    }
-
-    types[typeId] = Object.freeze({ category, title: title as string, body: body as string | null, audience });
-    parsed.set(typeId, { title: titleParts, body: bodyParts });
+    const { spec, title, body } = parseEntry(typeId, raw[typeId], policy);
+    types[typeId] = spec;
+    parsed.set(typeId, { title, body });
   }
 
   const catalog = Object.freeze(types) as Catalog;
   templates.set(catalog, parsed);
   return catalog;
+}
+
+/** Valida un tipo del catálogo. Los errores salen en el orden que fija el spec. */
+function parseEntry(
+  typeId: string,
+  entry: unknown,
+  policy: Policy,
+): { spec: TypeSpec; title: Parsed; body: Parsed | null } {
+  if (!isObject(entry)) {
+    throw new InvalidCatalogError(`${typeId}: tiene que ser un objeto`);
+  }
+  const extra = Object.keys(entry)
+    .filter((key) => !ENTRY_KEYS.has(key))
+    .sort();
+  if (extra[0] !== undefined) {
+    throw new InvalidCatalogError(`${typeId}: clave desconocida \`${extra[0]}\``);
+  }
+
+  const category = own(entry, 'category');
+  if (typeof category !== 'string' || !Object.hasOwn(policy, category)) {
+    throw new InvalidCatalogError(`${typeId}: \`category\` tiene que ser una categoría de la política`);
+  }
+  if (!Object.hasOwn(entry, 'title')) {
+    throw new InvalidCatalogError(`${typeId}: falta \`title\``);
+  }
+  const title = entry['title'];
+  const hasBody = Object.hasOwn(entry, 'body');
+  const body = hasBody ? entry['body'] : null;
+  const { titleParts, bodyParts } = parseTexts(typeId, title, hasBody, body);
+
+  const audience = Object.hasOwn(entry, 'audience') ? entry['audience'] : 'person';
+  if (audience !== 'person' && audience !== 'group') {
+    throw new InvalidCatalogError(`${typeId}: \`audience\` tiene que ser \`person\` o \`group\``);
+  }
+
+  const spec = Object.freeze({ category, title: title as string, body: body as string | null, audience });
+  return { spec, title: titleParts, body: bodyParts };
+}
+
+/** Separa título y cuerpo. El título no puede quedar vacío. */
+function parseTexts(
+  typeId: string,
+  title: unknown,
+  hasBody: boolean,
+  body: unknown,
+): { titleParts: Parsed; bodyParts: Parsed | null } {
+  let titleParts: Parsed;
+  let bodyParts: Parsed | null;
+  try {
+    titleParts = parseTemplate(title);
+    bodyParts = hasBody ? parseTemplate(body) : null;
+  } catch (error) {
+    if (error instanceof InvalidTemplateError) {
+      throw new InvalidCatalogError(`${typeId}: ${error.message}`);
+    }
+    throw error;
+  }
+  if (titleParts.length === 0) {
+    throw new InvalidCatalogError(`${typeId}: \`title\` no puede ser vacío`);
+  }
+  return { titleParts, bodyParts };
 }
 
 /**

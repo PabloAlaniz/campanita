@@ -15,8 +15,10 @@ import type { DeliveryChannel, DeliveryResult } from '../ports.js';
 type Fetch = (input: string, init: RequestInit) => Promise<Response>;
 
 const WEBHOOK = /^https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9/_-]{1,200}$/;
+// biome-ignore lint/suspicious/noControlCharactersInRegex: busca justamente los caracteres de control.
 const CONTROL = /[\u0000-\u001f\u007f]+/g;
 /** Un enlace que Slack puede mostrar: http o https, sin lo que cierra o parte la marca. */
+// biome-ignore lint/suspicious/noControlCharactersInRegex: busca justamente los caracteres de control.
 const LINK = /^https?:\/\/[^\u0000-\u0020\u007f<>|]+$/;
 /** Los errores de Slack son una palabra en minúsculas: sólo eso se repite. */
 const SLACK_ERROR = /^[a-z0-9_]{1,60}$/;

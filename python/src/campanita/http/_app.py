@@ -7,16 +7,18 @@ import json
 import re
 from collections.abc import Awaitable, Callable, Iterable, Mapping, MutableMapping
 from datetime import UTC, datetime
-from typing import Any, Final, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, cast
 from urllib.parse import parse_qsl, unquote, unquote_to_bytes
 
 from .._channels import effective_matrix, validate_patch
 from .._inbox import Cursor, FeedQuery, from_ms
-from .._policy import Policy
 from .._quiet import InvalidQuietHours, QuietHours, local_minute, parse_quiet_hours
 from .._types import PatchRejected
-from ..ports import NotificationStore, PreferenceStore, QuietHoursStore
 from ._wire import _MAX_DATETIME_MS, decode_cursor_parts, encode_cursor, from_iso, item_to_wire
+
+if TYPE_CHECKING:
+    from .._policy import Policy
+    from ..ports import NotificationStore, PreferenceStore, QuietHoursStore
 
 #: Los tipos de ASGI 3, sin depender de un paquete que los defina.
 Scope = MutableMapping[str, Any]
@@ -50,6 +52,7 @@ _READ = re.compile(r"/feed/([^/]+)/read")
 _PERCENT = re.compile(r"%(?![0-9A-Fa-f]{2})")
 _READ_ALL_KEYS = frozenset({"before", "scope", "category"})
 _NO_BODY: Final = object()
+_ASCII_END: Final = 0x80
 
 
 class _Response:
@@ -70,7 +73,7 @@ def _fail(status: int, code: str, message: str | None = None, **where: Any) -> _
 
 async def _resolve(value: MaybeAwaitable[_T]) -> _T:
     if inspect.isawaitable(value):
-        return await cast(Awaitable[_T], value)
+        return await cast("Awaitable[_T]", value)
     return value
 
 
@@ -92,7 +95,7 @@ def _relative_path(scope: Scope) -> str:
     if isinstance(raw_path, bytes | bytearray):
         raw = bytes(raw_path).split(b"?", 1)[0]
         # Un byte que no es ASCII llegó sin codificar: se codifica, como haría un cliente.
-        path = "".join(chr(byte) if byte < 0x80 else f"%{byte:02X}" for byte in raw)
+        path = "".join(chr(byte) if byte < _ASCII_END else f"%{byte:02X}" for byte in raw)
     else:
         path = str(scope.get("path", ""))
     root = str(scope.get("root_path", "")).rstrip("/")
@@ -144,7 +147,7 @@ class InboxApp:
     aplicación entera, una ruta que no es del contrato contesta `404 not_found`.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 — dependencias inyectadas, solo por nombre
         self,
         *,
         store: NotificationStore,
@@ -201,7 +204,8 @@ class InboxApp:
         else:
             raise ValueError(f"InboxApp no atiende el tipo de ASGI {kind!r}")
 
-    async def _handle(self, scope: Scope, receive: Receive) -> _Response:
+    # TODO(sprint-3): una tabla de rutas reemplaza esta cadena de if y saca el noqa.
+    async def _handle(self, scope: Scope, receive: Receive) -> _Response:  # noqa: C901, PLR0911, PLR0912
         path = _relative_path(scope)
         method = str(scope.get("method", "GET")).upper()
 
@@ -315,7 +319,8 @@ class InboxApp:
 
     async def _prefs(self, who: str, method: str, body: Any, scope: str | None) -> _Response:
         policy, preferences = self._policy, self._preferences
-        assert policy is not None and preferences is not None
+        if policy is None or preferences is None:
+            raise RuntimeError("_prefs sin política o sin almacén de preferencias")
         available = await self._channels_for(who)
         if method == "PATCH":
             if not isinstance(body, dict) or not all(isinstance(v, dict) for v in body.values()):
@@ -347,7 +352,8 @@ class InboxApp:
 
     async def _quiet(self, who: str, method: str, body: Any) -> _Response:
         store = self._quiet_hours
-        assert store is not None
+        if store is None:
+            raise RuntimeError("_quiet sin almacén de horarios")
         if method == "PUT":
             if body is _NO_BODY:
                 return _fail(400, "invalid_body")

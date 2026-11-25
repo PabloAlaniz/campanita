@@ -5,11 +5,10 @@ from __future__ import annotations
 import asyncio
 import json
 import threading
-from collections.abc import Iterator, Mapping
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -28,6 +27,9 @@ from campanita.channels import (
     slack_authorize_url,
 )
 from campanita.stores import MemoryPreferenceStore, MemoryStore
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping
 
 CASES: dict[str, list[dict[str, Any]]] = json.loads(
     (Path(__file__).resolve().parents[2] / "fixtures" / "slack.json").read_text(encoding="utf-8")
@@ -400,3 +402,8 @@ def test_la_conexion_no_muestra_el_webhook() -> None:
     connection = parse_slack_oauth_response(CASES["oauth"][0]["response"])
     assert "hooks.slack.com" not in repr(connection)
     assert "hooks.slack.com" not in str(connection)
+
+
+def test_http_post_solo_acepta_http_o_https() -> None:
+    with pytest.raises(ValueError, match="http o https"):
+        http_post("file:///etc/passwd", b"{}", {}, 5.0)

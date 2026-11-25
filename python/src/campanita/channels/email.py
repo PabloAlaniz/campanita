@@ -19,13 +19,14 @@ from ..ports import DeliveryResult
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]+")
 #: Lo que una dirección no puede tener además de espacios, controles y no ASCII.
 _FORBIDDEN = frozenset('<>,;:"()[]\\')
+_MIN_ADDRESS = 3  # `a@b`
 _MAX_ADDRESS = 254
 
 
 def is_valid_address(address: object) -> bool:
     """La regla del spec. Es estricta a propósito: una dirección que pasa no
     puede partir una cabecera ni esconder un segundo destinatario."""
-    if not isinstance(address, str) or not 3 <= len(address) <= _MAX_ADDRESS:
+    if not isinstance(address, str) or not _MIN_ADDRESS <= len(address) <= _MAX_ADDRESS:
         return False
     if any(not "!" <= char <= "~" or char in _FORBIDDEN for char in address):
         return False
@@ -97,7 +98,7 @@ NotificationAddressResolver = Callable[[Notification], "str | Awaitable[str | No
 class EmailChannel:
     """Avisa por email. Cumple `campanita.ports.DeliveryChannel`."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 — dependencias inyectadas, solo por nombre
         self,
         *,
         transport: EmailTransport,

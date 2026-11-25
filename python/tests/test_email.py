@@ -10,14 +10,12 @@ import shutil
 import ssl
 import subprocess
 import threading
-from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from email import message_from_bytes, policy
-from email.message import EmailMessage as MimeMessage
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -35,6 +33,10 @@ from campanita.channels import (
 )
 from campanita.ports import DeliveryResult
 from campanita.stores import MemoryPreferenceStore, MemoryStore
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Iterator
+    from email.message import EmailMessage as MimeMessage
 
 VECTORS = Path(__file__).resolve().parents[2] / "spec" / "vectors" / "email"
 

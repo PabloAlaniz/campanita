@@ -15,13 +15,15 @@ Cada vector necesita un almacén vacío.
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ._catalog import Draft
 from ._inbox import FeedQuery, Notification, StoreError, from_ms, to_ms
 from ._quiet import QuietHours, parse_quiet_hours
 from ._types import Change
-from .ports import NotificationStore, PreferenceStore, QuietHoursStore
+
+if TYPE_CHECKING:
+    from .ports import NotificationStore, PreferenceStore, QuietHoursStore
 
 
 def notification_to_wire(item: Notification) -> dict[str, Any]:

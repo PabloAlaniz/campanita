@@ -5,10 +5,9 @@ from __future__ import annotations
 import asyncio
 import functools
 import json
-from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -16,6 +15,9 @@ from campanita import Notification, Notifier, parse_catalog, parse_policy
 from campanita.channels import PushChannel, PushDevice, PushMessage, render_push, summarize_push
 from campanita.ports import DeliveryResult
 from campanita.stores import MemoryPreferenceStore, MemoryStore
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine
 
 CASES: dict[str, list[dict[str, Any]]] = json.loads(
     (Path(__file__).resolve().parents[2] / "fixtures" / "push.json").read_text(encoding="utf-8")
