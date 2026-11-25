@@ -79,6 +79,7 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
+    "lint": "biome lint && depcruise src && tsc -p tsconfig.browser.json --noEmit",
     "test": "vitest run --exclude test/d1 --exclude test/postgres",
     "check:package": "pnpm build && publint --strict && attw --pack . --profile node16",
     "prepack": "cp ../LICENSE ./LICENSE && pnpm build",
@@ -96,9 +97,11 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
+    "@biomejs/biome": "^2.6.9",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.23.1",
     "@types/react": "^18.3.12",
+    "dependency-cruiser": "^18.9.0",
     "miniflare": "^4.20260730.0",
     "pg": "^8.23.1",
     "postgres": "^4.1.1",

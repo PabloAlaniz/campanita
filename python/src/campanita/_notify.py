@@ -8,14 +8,17 @@ import uuid
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from ._catalog import Catalog, build_notification
 from ._channels import resolve_channels
-from ._inbox import AddResult, Notification
-from ._policy import Policy
 from ._quiet import is_quiet, local_minute
 from ._types import INBOX, EventRejected
 from .ports import DeliveryChannel, DeliveryResult, NotificationStore, PreferenceStore, QuietHoursStore
+
+if TYPE_CHECKING:
+    from ._inbox import AddResult, Notification
+    from ._policy import Policy
 
 _ID = re.compile(r"[a-z][a-z0-9_-]{0,63}")
 _OUTCOMES = frozenset({"sent", "expired", "failed", "skipped"})
@@ -44,7 +47,7 @@ class Notifier:
     Es lo único que hace falta para avisar: `await notifier.notify(evento)`.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 — dependencias inyectadas, solo por nombre
         self,
         *,
         policy: Policy,
@@ -205,7 +208,8 @@ async def _deliver(channel: DeliveryChannel, notification: Notification) -> Deli
     """Un canal no debería lanzar, pero si lanza no puede cortar a los demás."""
     try:
         result = await channel.send(notification)
-    except Exception as error:
+    # Un canal de terceros puede fallar de cualquier forma: el error queda como `failed`.
+    except Exception as error:  # noqa: BLE001
         return DeliveryResult("failed", error=f"{type(error).__name__}: {error}")
     if not isinstance(result, DeliveryResult) or result.outcome not in _OUTCOMES:
         return DeliveryResult("failed", error="el canal no devolvió un resultado válido")

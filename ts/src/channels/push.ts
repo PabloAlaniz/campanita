@@ -13,6 +13,7 @@
 import type { Notification } from '../core/inbox.js';
 import type { DeliveryChannel, DeliveryOutcome, DeliveryResult } from '../ports.js';
 
+// biome-ignore lint/suspicious/noControlCharactersInRegex: busca justamente los caracteres de control.
 const CONTROL = /[\u0000-\u001f\u007f]+/g;
 
 /** Lo que un aviso dice en un dispositivo. Cada transporte lo traduce a su servicio. */
@@ -95,7 +96,7 @@ export interface PushChannelOptions {
    * configurar no impide avisar por los demás.
    */
   // Cada transporte recibe el destino que le armó quien integra: el canal no lo puede comprobar.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: cada transporte tiene su propio tipo de destino.
   readonly transports: Readonly<Record<string, PushTransport<any>>>;
   /**
    * Del aviso a los dispositivos que lo tienen que recibir. La escribe quien

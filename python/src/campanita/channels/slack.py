@@ -20,7 +20,7 @@ import urllib.request
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 from .._inbox import Notification
 from ..ports import DeliveryResult
@@ -37,11 +37,13 @@ _ACCESS = "https://slack.com/api/oauth.v2.access"
 
 #: Cómo se hace un `POST`: `(url, cuerpo, cabeceras, segundos) -> (código, cuerpo)`.
 #: Se puede reemplazar por un cliente HTTP propio.
+_HTTP_OK, _HTTP_REDIRECT = 200, 300
+
 HttpPost = Callable[[str, bytes, Mapping[str, str], float], "tuple[int, bytes]"]
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
+    def redirect_request(self, *_args: Any, **_kwargs: Any) -> None:
         return None
 
 
@@ -49,8 +51,13 @@ _OPENER = urllib.request.build_opener(_NoRedirect)
 
 
 def http_post(url: str, data: bytes, headers: Mapping[str, str], timeout: float) -> tuple[int, bytes]:
-    """El `POST` por omisión, con la biblioteca estándar. No sigue redirecciones."""
-    request = urllib.request.Request(url, data=data, headers=dict(headers), method="POST")
+    """El `POST` por omisión, con la biblioteca estándar. No sigue redirecciones.
+
+    Sólo acepta URLs http o https: `urllib` también abriría `file:` y otros esquemas.
+    """
+    if urlsplit(url).scheme not in ("https", "http"):
+        raise ValueError("`url` tiene que ser una URL http o https")
+    request = urllib.request.Request(url, data=data, headers=dict(headers), method="POST")  # noqa: S310
     try:
         with _OPENER.open(request, timeout=timeout) as response:
             return response.status, response.read()
@@ -161,14 +168,19 @@ class SlackChannel:
         except Exception as error:
             # Sólo el tipo: el mensaje de un error de red puede traer la URL.
             return DeliveryResult("failed", error=f"Slack: {type(error).__name__}")
-        if 200 <= status < 300:
-            return DeliveryResult("sent")
+        return _webhook_result(status, raw)
 
-        text = raw.decode("utf-8", "replace").strip(" \t\r\n")
-        detail = f" {text}" if _SLACK_ERROR.fullmatch(text) else ""
-        return DeliveryResult(
-            "expired" if status in (404, 410) else "failed", error=f"Slack {status}{detail}"
-        )
+
+def _is_success(status: int) -> bool:
+    return _HTTP_OK <= status < _HTTP_REDIRECT
+
+
+def _webhook_result(status: int, raw: bytes) -> DeliveryResult:
+    if _is_success(status):
+        return DeliveryResult("sent")
+    text = raw.decode("utf-8", "replace").strip(" \t\r\n")
+    detail = f" {text}" if _SLACK_ERROR.fullmatch(text) else ""
+    return DeliveryResult("expired" if status in (404, 410) else "failed", error=f"Slack {status}{detail}")
 
 
 # --- conectar con OAuth -------------------------------------------------------
@@ -252,7 +264,8 @@ async def exchange_slack_code(
     client_secret: str,
     code: str,
     redirect_uri: str,
-    timeout: float = 10.0,
+    # Es el plazo de cada pedido HTTP, que corre en un hilo; no el de la corrutina.
+    timeout: float = 10.0,  # noqa: ASYNC109
     post: HttpPost = http_post,
 ) -> SlackConnection:
     """Cambia el `code` con el que Slack devuelve a la persona por su conexión.
@@ -279,7 +292,7 @@ async def exchange_slack_code(
         )
     except Exception:
         raise SlackOAuthError("network") from None
-    if not 200 <= status < 300:
+    if not _is_success(status):
         raise SlackOAuthError("http")
     try:
         parsed = json.loads(raw)

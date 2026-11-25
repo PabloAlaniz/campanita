@@ -6,10 +6,14 @@ prueban como una tabla de casos (los vectores de `spec/vectors/`).
 
 from __future__ import annotations
 
-from collections.abc import Collection, Mapping
+from typing import TYPE_CHECKING
 
-from ._policy import Policy
 from ._types import INBOX, Cell, Change, MatrixCell, Overrides, PatchRejected
+
+if TYPE_CHECKING:
+    from collections.abc import Collection, Mapping
+
+    from ._policy import Policy
 
 _NO_OVERRIDES: Overrides = {}
 

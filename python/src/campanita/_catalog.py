@@ -10,11 +10,13 @@ import re
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Literal, final
+from typing import TYPE_CHECKING, Literal, final
 
-from ._policy import Policy
 from ._templates import Parsed, parse_template, render_parsed
 from ._types import EventRejected, InvalidCatalog, InvalidTemplate, TemplateError
+
+if TYPE_CHECKING:
+    from ._policy import Policy
 
 _TYPE_ID = re.compile(r"[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)*")
 _MAX_TYPE_ID = 128
@@ -108,37 +110,46 @@ def parse_catalog(raw: object, policy: Policy) -> Catalog:
     for type_id, entry in raw.items():
         if not isinstance(type_id, str) or len(type_id) > _MAX_TYPE_ID or not _TYPE_ID.fullmatch(type_id):
             raise InvalidCatalog(f"tipo {type_id!r}: no es un identificador de tipo")
-        if not isinstance(entry, Mapping):
-            raise InvalidCatalog(f"{type_id}: tiene que ser un objeto")
-        extra = sorted(str(key) for key in entry.keys() - _ENTRY_KEYS)
-        if extra:
-            raise InvalidCatalog(f"{type_id}: clave desconocida `{extra[0]}`")
-
-        category = entry.get("category")
-        if not isinstance(category, str) or category not in policy:
-            raise InvalidCatalog(f"{type_id}: `category` tiene que ser una categoría de la política")
-        if "title" not in entry:
-            raise InvalidCatalog(f"{type_id}: falta `title`")
-        title, body = entry["title"], entry.get("body")
-        try:
-            title_parts = parse_template(title)
-            body_parts = parse_template(body) if "body" in entry else None
-        except InvalidTemplate as error:
-            raise InvalidCatalog(f"{type_id}: {error}") from error
-        if not title_parts:
-            raise InvalidCatalog(f"{type_id}: `title` no puede ser vacío")
-
-        audience = entry.get("audience", "person")
-        if not isinstance(audience, str) or audience not in _AUDIENCES:
-            raise InvalidCatalog(f"{type_id}: `audience` tiene que ser `person` o `group`")
-
-        assert isinstance(title, str) and (body is None or isinstance(body, str))
-        types[type_id] = TypeSpec(
-            category=category, title=title, body=body, audience="group" if audience == "group" else "person"
-        )
-        parsed[type_id] = (title_parts, body_parts)
+        types[type_id], parsed[type_id] = _parse_entry(type_id, entry, policy)
 
     return Catalog(types, parsed, _validated=True)
+
+
+def _parse_entry(
+    type_id: str, entry: object, policy: Policy
+) -> tuple[TypeSpec, tuple[Parsed, Parsed | None]]:
+    """Valida un tipo del catálogo. Los errores salen en el orden que fija el spec."""
+    if not isinstance(entry, Mapping):
+        raise InvalidCatalog(f"{type_id}: tiene que ser un objeto")
+    extra = sorted(str(key) for key in entry.keys() - _ENTRY_KEYS)
+    if extra:
+        raise InvalidCatalog(f"{type_id}: clave desconocida `{extra[0]}`")
+
+    category = entry.get("category")
+    if not isinstance(category, str) or category not in policy:
+        raise InvalidCatalog(f"{type_id}: `category` tiene que ser una categoría de la política")
+    if "title" not in entry:
+        raise InvalidCatalog(f"{type_id}: falta `title`")
+    title, body = entry["title"], entry.get("body")
+    try:
+        title_parts = parse_template(title)
+        body_parts = parse_template(body) if "body" in entry else None
+    except InvalidTemplate as error:
+        raise InvalidCatalog(f"{type_id}: {error}") from error
+    if not title_parts:
+        raise InvalidCatalog(f"{type_id}: `title` no puede ser vacío")
+
+    audience = entry.get("audience", "person")
+    if not isinstance(audience, str) or audience not in _AUDIENCES:
+        raise InvalidCatalog(f"{type_id}: `audience` tiene que ser `person` o `group`")
+
+    # parse_template ya rechazó lo que no es texto; esto sólo se lo dice al tipado.
+    if not isinstance(title, str) or not (body is None or isinstance(body, str)):
+        raise InvalidCatalog(f"{type_id}: `title` y `body` tienen que ser texto")
+    spec = TypeSpec(
+        category=category, title=title, body=body, audience="group" if audience == "group" else "person"
+    )
+    return spec, (title_parts, body_parts)
 
 
 def build_notification(catalog: Catalog, event: Mapping[str, object]) -> Draft:

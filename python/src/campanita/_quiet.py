@@ -5,11 +5,16 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 _TIME = re.compile(r"[0-9]{2}:[0-9]{2}", re.ASCII)
 _ZONE = re.compile(r"[A-Za-z0-9_+/-]{1,64}", re.ASCII)
+_HOURS_PER_DAY = 24
+_MINUTES_PER_HOUR = 60
 _KEYS = frozenset({"enabled", "start", "end", "timezone"})
 _DAY = 24 * 60
 
@@ -88,4 +93,6 @@ def _minute_of(text: object) -> int | None:
     if not isinstance(text, str) or not _TIME.fullmatch(text):
         return None
     hours, minutes = int(text[:2]), int(text[3:])
-    return hours * 60 + minutes if hours < 24 and minutes < 60 else None
+    if hours >= _HOURS_PER_DAY or minutes >= _MINUTES_PER_HOUR:
+        return None
+    return hours * _MINUTES_PER_HOUR + minutes

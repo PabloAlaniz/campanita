@@ -14,8 +14,8 @@
  */
 import { effectiveMatrix, validatePatch } from '../core/channels.js';
 import { checkCap } from '../core/inbox.js';
-import { InvalidQuietHoursError, localMinute, parseQuietHours } from '../core/quiet.js';
-import { PatchRejectedError, type Policy } from '../core/types.js';
+import { InvalidQuietHoursError, localMinute, parseQuietHours, type QuietHours } from '../core/quiet.js';
+import { type Change, PatchRejectedError, type Policy } from '../core/types.js';
 import type { NotificationStore, PreferenceStore, QuietHoursStore } from '../ports.js';
 import {
   decodeCursor,
@@ -191,7 +191,7 @@ export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
     if (method === 'PATCH') {
       const body = await readJson(request);
       if (!isObject(body) || !Object.values(body).every(isObject)) return fail(400, 'invalid_body');
-      let changes;
+      let changes: Change[];
       try {
         changes = validatePatch(policy!, body as Record<string, Record<string, boolean>>, available);
       } catch (error) {
@@ -208,7 +208,7 @@ export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
     if (method === 'PUT') {
       const body = await readJson(request);
       if (body === NO_BODY) return fail(400, 'invalid_body');
-      let parsed;
+      let parsed: QuietHours;
       try {
         parsed = parseQuietHours(body);
       } catch (error) {

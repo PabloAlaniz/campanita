@@ -19,12 +19,9 @@ from __future__ import annotations
 import asyncio
 import json
 import weakref
-from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, TypeAlias
 
-from .._catalog import Draft
 from .._inbox import (
     AddResult,
     FeedPage,
@@ -37,11 +34,16 @@ from .._inbox import (
     to_ms,
 )
 from .._quiet import QuietHours
-from .._types import Change, Overrides
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Sequence
+    from datetime import datetime
+
     from psycopg import AsyncConnection, AsyncCursor
     from psycopg_pool import AsyncConnectionPool
+
+    from .._catalog import Draft
+    from .._types import Change, Overrides
 
     #: Lo que reciben los almacenes: una conexión o un pool de psycopg 3.
     PostgresConnection: TypeAlias = AsyncConnection[Any] | AsyncConnectionPool[Any]
@@ -147,8 +149,8 @@ class _Base:
     async def _cursor(self) -> AsyncIterator[AsyncCursor[tuple[Any, ...]]]:
         """Un cursor que devuelve tuplas, dentro de una transacción."""
         # Se importa acá: quien llega hasta una consulta ya tiene psycopg.
-        from psycopg import AsyncConnection, AsyncCursor
-        from psycopg.rows import tuple_row
+        from psycopg import AsyncConnection, AsyncCursor  # noqa: PLC0415
+        from psycopg.rows import tuple_row  # noqa: PLC0415
 
         # El cursor se arma a mano y no con `conn.cursor()`, para no heredar el
         # `row_factory` ni el `cursor_factory` que la conexión tenga configurados.

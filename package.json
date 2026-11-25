@@ -5,6 +5,7 @@
   "scripts": {
     "build": "pnpm --filter campanita build",
     "typecheck": "pnpm --filter campanita typecheck",
+    "lint": "pnpm --filter campanita lint",
     "test": "pnpm --filter campanita test",
     "check:package": "pnpm --filter campanita check:package",
     "check:spec": "python3 tools/gen_vectors.py --check",

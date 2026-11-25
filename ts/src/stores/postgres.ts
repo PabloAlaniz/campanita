@@ -338,7 +338,11 @@ export class PostgresPreferenceStore implements PreferenceStore {
     // Sin prototipo, para que una categoría `__proto__` sea una clave más.
     const out: Record<string, Record<string, boolean>> = Object.create(null);
     for (const row of found.rows as { category: string; channel: string; enabled: boolean }[]) {
-      const cells = (out[row.category] ??= Object.create(null) as Record<string, boolean>);
+      let cells = out[row.category];
+      if (cells === undefined) {
+        cells = Object.create(null) as Record<string, boolean>;
+        out[row.category] = cells;
+      }
       cells[row.channel] = row.enabled;
     }
     return out;

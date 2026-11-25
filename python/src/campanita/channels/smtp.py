@@ -7,10 +7,12 @@ import smtplib
 import ssl
 from email.message import EmailMessage as MimeMessage
 from email.utils import formataddr, formatdate, make_msgid
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from ..ports import DeliveryResult
-from .email import EmailMessage
+
+if TYPE_CHECKING:
+    from .email import EmailMessage
 
 Security = Literal["starttls", "tls", "none"]
 _DEFAULT_PORTS: dict[Security, int] = {"starttls": 587, "tls": 465, "none": 25}
@@ -28,7 +30,7 @@ class SmtpTransport:
     Cada envío abre una conexión y corre en un hilo aparte, así que no bloquea.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 — dependencias inyectadas, solo por nombre
         self,
         host: str,
         *,

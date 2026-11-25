@@ -14,6 +14,7 @@ from .._inbox import Cursor, Notification, from_ms, to_ms
 _ISO = re.compile(r"([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\.([0-9]{3})Z", re.ASCII)
 _B64URL = re.compile(r"[A-Za-z0-9_-]*", re.ASCII)
 _MS = re.compile(r"0|[1-9][0-9]*", re.ASCII)
+_EPOCH_YEAR = 1970
 
 #: La fecha más lejana de JavaScript, en milisegundos: el tope de un cursor.
 MAX_CURSOR_MS = 8_640_000_000_000_000
@@ -40,7 +41,7 @@ def from_iso(text: object) -> datetime | None:
     if match is None:
         return None
     year, month, day, hour, minute, second, millis = (int(part) for part in match.groups())
-    if year < 1970:
+    if year < _EPOCH_YEAR:
         return None
     try:
         moment = datetime(year, month, day, hour, minute, second, millis * 1000, tzinfo=UTC)

@@ -5,16 +5,14 @@ from __future__ import annotations
 import asyncio
 import json
 import sqlite3
-from collections.abc import Callable
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from campanita import Change, Draft, FeedQuery, StoreError
 from campanita.conformance import run_preference_vector, run_quiet_hours_vector, run_store_vector
-from campanita.ports import NotificationStore, PreferenceStore, QuietHoursStore
 from campanita.stores import (
     MemoryPreferenceStore,
     MemoryQuietHoursStore,
@@ -23,6 +21,11 @@ from campanita.stores import (
     SqliteQuietHoursStore,
     SqliteStore,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from campanita.ports import NotificationStore, PreferenceStore, QuietHoursStore
 
 VECTORS = sorted((Path(__file__).resolve().parents[2] / "spec" / "vectors" / "bandeja").glob("*.json"))
 

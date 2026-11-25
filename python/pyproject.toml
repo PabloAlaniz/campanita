@@ -31,6 +31,7 @@ Specification = "https://github.com/PabloAlaniz/campanita/blob/main/spec/SPEC.md
 
 [dependency-groups]
 dev = [
+    "import-linter>=2.17",
     "jsonschema>=4.23",
     "mypy>=1.13",
     "psycopg-pool>=3.2",
@@ -54,6 +55,81 @@ line-length = 110
 target-version = "py311"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
-# El texto es español: las tildes y la ñ en docstrings y mensajes son a propósito.
-ignore = ["RUF001", "RUF002", "RUF003"]
+select = [
+    "E", "F", "W", "I", "B", "UP", "SIM", "RUF",
+    "C90",   # complejidad ciclomática
+    "PL",    # pylint: argumentos, ramas, returns, valores mágicos
+    "BLE",   # except Exception a ciegas
+    "TC",    # imports solo de tipos, fuera del runtime
+    "A",     # nombres que tapan builtins
+    "N",     # nombres
+    "PT",    # pytest
+    "ARG",   # argumentos sin usar
+    "PERF",
+    "S",     # bandit
+    "T20",   # print
+    "DTZ",   # datetimes sin zona
+    "ASYNC",
+    "FBT",   # booleanos posicionales
+]
+ignore = [
+    # El texto es español: las tildes y la ñ en docstrings y mensajes son a propósito.
+    "RUF001", "RUF002", "RUF003",
+    # Los nombres de las excepciones son API pública y siguen a la spec (InvalidPolicy, EventRejected…).
+    "N818",
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-args = 6
+
+[tool.ruff.lint.flake8-builtins]
+# `id` y `type` son nombres de la spec y de la API pública (store.mark_read(id=…), TypeSpec.type).
+builtins-ignorelist = ["id", "type"]
+
+[tool.ruff.lint.per-file-ignores]
+# Un canal convierte cualquier error de su transporte en un resultado `failed`: nunca deja escapar
+# una excepción hacia el Notifier. Por eso atrapa Exception a propósito.
+"src/campanita/channels/*.py" = ["BLE001"]
+# Los nombres de tabla se validan como identificadores al construir el store; los valores van como
+# parámetros. El SQL armado con f-strings solo interpola esos nombres.
+"src/campanita/stores/*.py" = ["S608"]
+"tests/**" = [
+    "S101", "S105", "S106", "S603", "S607",
+    "PLR2004", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "C901",
+    "PLC0415", "FBT003", "ARG", "PT012", "PT018", "N802", "N815",
+    "DTZ001",  # hay tests que pasan fechas sin zona a propósito, para ver que se rechazan
+]
+"../tools/**" = [
+    "S101", "T201", "PLR2004", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR0917", "C901",
+    "PT018", "FBT", "PERF401",
+]
+
+# Límites entre capas. El núcleo (los módulos `_*`, `ports` y `conformance`) no conoce a
+# ningún adaptador, y los adaptadores no se conocen entre sí. Ver CONTRIBUTING.md.
+[tool.importlinter]
+root_package = "campanita"
+
+[[tool.importlinter.contracts]]
+name = "El núcleo no depende de los adaptadores"
+type = "forbidden"
+source_modules = [
+    "campanita._catalog",
+    "campanita._channels",
+    "campanita._inbox",
+    "campanita._notify",
+    "campanita._policy",
+    "campanita._quiet",
+    "campanita._templates",
+    "campanita._types",
+    "campanita.ports",
+    "campanita.conformance",
+]
+forbidden_modules = ["campanita.channels", "campanita.stores", "campanita.http"]
+
+[[tool.importlinter.contracts]]
+name = "Los adaptadores no se importan entre sí"
+type = "independence"
+modules = ["campanita.channels", "campanita.stores", "campanita.http"]

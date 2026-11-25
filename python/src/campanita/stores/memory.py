@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import Sequence
 from dataclasses import replace
-from datetime import datetime
+from typing import TYPE_CHECKING
 
-from .._catalog import Draft
 from .._inbox import (
     AddResult,
     FeedPage,
@@ -19,8 +17,14 @@ from .._inbox import (
     from_ms,
     to_ms,
 )
-from .._quiet import QuietHours
-from .._types import Change, Overrides
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from datetime import datetime
+
+    from .._catalog import Draft
+    from .._quiet import QuietHours
+    from .._types import Change, Overrides
 
 
 class MemoryStore:

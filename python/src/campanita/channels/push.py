@@ -15,6 +15,7 @@ por ahora, sólo en el de TypeScript. Uno propio cumple `PushTransport`.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import inspect
 import re
 from collections.abc import Awaitable, Callable, Mapping, Sequence
@@ -25,8 +26,8 @@ from .._inbox import Notification
 from ..ports import DeliveryOutcome, DeliveryResult
 
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]+")
-_OUTCOMES = frozenset({"sent", "expired", "failed", "skipped"})
-assert frozenset(get_args(DeliveryOutcome)) >= _OUTCOMES
+#: Lo que puede informar un transporte: todo menos `silenced`, que lo decide el Notifier.
+_OUTCOMES = frozenset(get_args(DeliveryOutcome)) - {"silenced"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,11 +179,9 @@ class PushChannel:
                 # Sólo el tipo: el mensaje de un error de red puede traer el destino.
                 result = DeliveryResult("failed", error=f"el transporte lanzó: {type(error).__name__}")
         if self._on_result is not None:
-            try:
+            # Anotar el resultado es de quien integra: si falla, el aviso igual salió o no salió.
+            with contextlib.suppress(Exception):
                 noted = self._on_result(device, result, notification)
                 if inspect.isawaitable(noted):
                     await noted
-            except Exception:
-                # Anotar el resultado es de quien integra: si falla, el aviso igual salió o no salió.
-                pass
         return result.outcome

@@ -10,10 +10,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from collections.abc import Sequence
-from datetime import datetime
+from typing import TYPE_CHECKING
 
-from .._catalog import Draft
 from .._inbox import (
     AddResult,
     FeedPage,
@@ -26,7 +24,13 @@ from .._inbox import (
     to_ms,
 )
 from .._quiet import QuietHours
-from .._types import Change, Overrides
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from datetime import datetime
+
+    from .._catalog import Draft
+    from .._types import Change, Overrides
 
 # El texto se compara byte a byte (la colación BINARY de SQLite), que en UTF-8
 # coincide con el orden por punto de código que pide el spec.
