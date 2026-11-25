@@ -83,6 +83,67 @@ function changed(result: { rowCount: number | null }): number {
   return result.rowCount;
 }
 
+interface SchemaByTable {
+  notifications: string[];
+  preferences: string[];
+  quietHours: string[];
+}
+
+/** Las sentencias de cada tabla, por nombre: cada almacén crea sólo las suyas. */
+function postgresSchemaByTable(
+  tables: {
+    notifications?: string;
+    preferences?: string;
+    quietHours?: string;
+  } = {},
+): SchemaByTable {
+  const n = checkTable(tables.notifications ?? NOTIFICATIONS);
+  const p = checkTable(tables.preferences ?? PREFERENCES);
+  const q = checkTable(tables.quietHours ?? QUIET_HOURS);
+  return {
+    notifications: [
+      `CREATE TABLE IF NOT EXISTS ${n} (
+  id            TEXT COLLATE "C" PRIMARY KEY,
+  recipient_id  TEXT NOT NULL,
+  type          TEXT NOT NULL,
+  category      TEXT NOT NULL,
+  title         TEXT NOT NULL,
+  body          TEXT,
+  action_url    TEXT,
+  payload       TEXT NOT NULL,
+  scope         TEXT,
+  dedupe_key    TEXT,
+  created_at_ms BIGINT NOT NULL,
+  read_at_ms    BIGINT
+)`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS ${n}_dedupe ON ${n} (recipient_id, dedupe_key) WHERE dedupe_key IS NOT NULL`,
+      `CREATE INDEX IF NOT EXISTS ${n}_feed ON ${n} (recipient_id, created_at_ms DESC, id DESC)`,
+    ],
+    preferences: [
+      // "Sin ámbito" y "ámbito de texto vacío" son cosas distintas, y un NULL no
+      // entra en una clave primaria: `has_scope` los separa.
+      `CREATE TABLE IF NOT EXISTS ${p} (
+  recipient_id TEXT NOT NULL,
+  has_scope    BOOLEAN NOT NULL,
+  scope        TEXT NOT NULL,
+  category     TEXT NOT NULL,
+  channel      TEXT NOT NULL,
+  enabled      BOOLEAN NOT NULL,
+  PRIMARY KEY (recipient_id, has_scope, scope, category, channel)
+)`,
+    ],
+    quietHours: [
+      `CREATE TABLE IF NOT EXISTS ${q} (
+  recipient_id TEXT PRIMARY KEY,
+  enabled      BOOLEAN NOT NULL,
+  start_time   TEXT NOT NULL,
+  end_time     TEXT NOT NULL,
+  timezone     TEXT NOT NULL
+)`,
+    ],
+  };
+}
+
 /**
  * Las sentencias que crean las tablas y los índices, para copiar a una
  * migración.
@@ -102,45 +163,8 @@ export function postgresSchema(
     quietHours?: string;
   } = {},
 ): string[] {
-  const n = checkTable(tables.notifications ?? NOTIFICATIONS);
-  const p = checkTable(tables.preferences ?? PREFERENCES);
-  const q = checkTable(tables.quietHours ?? QUIET_HOURS);
-  return [
-    `CREATE TABLE IF NOT EXISTS ${n} (
-  id            TEXT COLLATE "C" PRIMARY KEY,
-  recipient_id  TEXT NOT NULL,
-  type          TEXT NOT NULL,
-  category      TEXT NOT NULL,
-  title         TEXT NOT NULL,
-  body          TEXT,
-  action_url    TEXT,
-  payload       TEXT NOT NULL,
-  scope         TEXT,
-  dedupe_key    TEXT,
-  created_at_ms BIGINT NOT NULL,
-  read_at_ms    BIGINT
-)`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS ${n}_dedupe ON ${n} (recipient_id, dedupe_key) WHERE dedupe_key IS NOT NULL`,
-    `CREATE INDEX IF NOT EXISTS ${n}_feed ON ${n} (recipient_id, created_at_ms DESC, id DESC)`,
-    // "Sin ámbito" y "ámbito de texto vacío" son cosas distintas, y un NULL no
-    // entra en una clave primaria: `has_scope` los separa.
-    `CREATE TABLE IF NOT EXISTS ${p} (
-  recipient_id TEXT NOT NULL,
-  has_scope    BOOLEAN NOT NULL,
-  scope        TEXT NOT NULL,
-  category     TEXT NOT NULL,
-  channel      TEXT NOT NULL,
-  enabled      BOOLEAN NOT NULL,
-  PRIMARY KEY (recipient_id, has_scope, scope, category, channel)
-)`,
-    `CREATE TABLE IF NOT EXISTS ${q} (
-  recipient_id TEXT PRIMARY KEY,
-  enabled      BOOLEAN NOT NULL,
-  start_time   TEXT NOT NULL,
-  end_time     TEXT NOT NULL,
-  timezone     TEXT NOT NULL
-)`,
-  ];
+  const byTable = postgresSchemaByTable(tables);
+  return [...byTable.notifications, ...byTable.preferences, ...byTable.quietHours];
 }
 
 async function runAll(db: PostgresLike, statements: string[]): Promise<void> {
@@ -208,7 +232,7 @@ export class PostgresStore implements NotificationStore {
 
   /** Crea la tabla y los índices si no existen. */
   async createSchema(): Promise<void> {
-    await runAll(this.#db, postgresSchema({ notifications: this.#table }).slice(0, 3));
+    await runAll(this.#db, postgresSchemaByTable({ notifications: this.#table }).notifications);
   }
 
   async add(draft: Draft, options: { id: string; createdAt: Date }): Promise<AddResult> {
@@ -326,7 +350,7 @@ export class PostgresPreferenceStore implements PreferenceStore {
 
   /** Crea la tabla si no existe. */
   async createSchema(): Promise<void> {
-    await runAll(this.#db, [postgresSchema({ preferences: this.#table })[3]!]);
+    await runAll(this.#db, postgresSchemaByTable({ preferences: this.#table }).preferences);
   }
 
   async getOverrides(recipientId: string, options: { scope?: string | null } = {}): Promise<Overrides> {
@@ -396,7 +420,7 @@ export class PostgresQuietHoursStore implements QuietHoursStore {
 
   /** Crea la tabla si no existe. */
   async createSchema(): Promise<void> {
-    await runAll(this.#db, [postgresSchema({ quietHours: this.#table })[4]!]);
+    await runAll(this.#db, postgresSchemaByTable({ quietHours: this.#table }).quietHours);
   }
 
   async getQuietHours(recipientId: string): Promise<QuietHours | null> {

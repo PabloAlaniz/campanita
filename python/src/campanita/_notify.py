@@ -5,18 +5,26 @@ from __future__ import annotations
 import inspect
 import re
 import uuid
-from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from ._catalog import Catalog, build_notification
+from ._catalog import Catalog, build_notification, check_members
 from ._channels import resolve_channels
-from ._quiet import is_quiet, local_minute
+from ._quiet import InvalidQuietHours, is_quiet, local_minute
 from ._types import INBOX, EventRejected
-from .ports import DeliveryChannel, DeliveryResult, NotificationStore, PreferenceStore, QuietHoursStore
+from .ports import (
+    ChannelAvailability,
+    DeliveryChannel,
+    DeliveryResult,
+    NotificationStore,
+    PreferenceStore,
+    QuietHoursStore,
+)
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Mapping, Sequence
+
     from ._inbox import AddResult, Notification
     from ._policy import Policy
 
@@ -55,7 +63,7 @@ class Notifier:
         store: NotificationStore,
         preferences: PreferenceStore,
         channels: Iterable[DeliveryChannel] = (),
-        available: Callable[[str, str | None], Iterable[str] | Awaitable[Iterable[str]]] | None = None,
+        available: ChannelAvailability | None = None,
         quiet_hours: QuietHoursStore | None = None,
         local_minute: Callable[[str, datetime], int | None] = local_minute,
         new_id: Callable[[], str] = lambda: str(uuid.uuid4()),
@@ -96,7 +104,7 @@ class Notifier:
         copia. Una entrega que falla nunca lanza: queda anotada en `deliveries`.
         """
         draft = build_notification(self._catalog, event)
-        copies_to = _check_members(members, group=self._catalog[draft.type].audience == "group")
+        copies_to = check_members(members, group=self._catalog[draft.type].audience == "group")
         at = self._clock() if created_at is None else created_at
         added = await self._store.add(draft, id=self._new_id() if id is None else id, created_at=at)
         if not added.created:
@@ -155,38 +163,16 @@ class Notifier:
         """Si el destinatario está en su horario de no molestar en ese instante."""
         if self._quiet_hours is None:
             return False
-        quiet_hours = await self._quiet_hours.get_quiet_hours(recipient_id)
+        try:
+            quiet_hours = await self._quiet_hours.get_quiet_hours(recipient_id)
+        except InvalidQuietHours:
+            # Un horario guardado roto no silencia: el aviso ya está guardado y se entrega.
+            return False
         if quiet_hours is None or not quiet_hours.enabled:
             return False
         minute = self._local_minute(quiet_hours.timezone, moment)
         # Zona desconocida: ante la duda, se entrega.
         return minute is not None and is_quiet(quiet_hours, minute)
-
-
-def _check_members(members: Sequence[Mapping[str, object]] | None, *, group: bool) -> list[tuple[str, str]]:
-    """Los miembros como `(recipient_id, id)`, o `EventRejected` con `members` de detalle."""
-    if members is None:
-        return []
-    if isinstance(members, (str, bytes)) or not isinstance(members, Sequence):
-        raise EventRejected("invalid_field", "members")
-    if members and not group:
-        raise EventRejected("invalid_field", "members")
-    out: list[tuple[str, str]] = []
-    for member in members:
-        if not isinstance(member, Mapping) or set(member.keys()) != {"recipient_id", "id"}:
-            raise EventRejected("invalid_field", "members")
-        recipient_id, copy_id = member["recipient_id"], member["id"]
-        if (
-            not isinstance(recipient_id, str)
-            or not recipient_id
-            or not isinstance(copy_id, str)
-            or not copy_id
-        ):
-            raise EventRejected("invalid_field", "members")
-        out.append((recipient_id, copy_id))
-    if len({r for r, _ in out}) != len(out) or len({i for _, i in out}) != len(out):
-        raise EventRejected("invalid_field", "members")
-    return out
 
 
 def check_channels(channels: Iterable[DeliveryChannel]) -> dict[str, DeliveryChannel]:

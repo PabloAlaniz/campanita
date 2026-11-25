@@ -47,23 +47,26 @@ function checkTable(table: string): string {
   return table;
 }
 
-/**
- * Las sentencias que crean las tablas y los índices, para copiar a una
- * migración. El texto se compara byte a byte (la colación por omisión de
- * SQLite), que en UTF-8 es el orden por punto de código que pide el spec.
- */
-export function d1Schema(
+interface SchemaByTable {
+  notifications: string[];
+  preferences: string[];
+  quietHours: string[];
+}
+
+/** Las sentencias de cada tabla, por nombre: cada almacén crea sólo las suyas. */
+function d1SchemaByTable(
   tables: {
     notifications?: string;
     preferences?: string;
     quietHours?: string;
   } = {},
-): string[] {
+): SchemaByTable {
   const n = checkTable(tables.notifications ?? NOTIFICATIONS);
   const p = checkTable(tables.preferences ?? PREFERENCES);
   const q = checkTable(tables.quietHours ?? QUIET_HOURS);
-  return [
-    `CREATE TABLE IF NOT EXISTS ${n} (
+  return {
+    notifications: [
+      `CREATE TABLE IF NOT EXISTS ${n} (
   id            TEXT PRIMARY KEY,
   recipient_id  TEXT NOT NULL,
   type          TEXT NOT NULL,
@@ -77,11 +80,13 @@ export function d1Schema(
   created_at_ms INTEGER NOT NULL,
   read_at_ms    INTEGER
 )`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS ${n}_dedupe ON ${n} (recipient_id, dedupe_key) WHERE dedupe_key IS NOT NULL`,
-    `CREATE INDEX IF NOT EXISTS ${n}_feed ON ${n} (recipient_id, created_at_ms DESC, id DESC)`,
-    // "Sin ámbito" y "ámbito de texto vacío" son cosas distintas, y un NULL no
-    // entra en una clave primaria: `has_scope` los separa.
-    `CREATE TABLE IF NOT EXISTS ${p} (
+      `CREATE UNIQUE INDEX IF NOT EXISTS ${n}_dedupe ON ${n} (recipient_id, dedupe_key) WHERE dedupe_key IS NOT NULL`,
+      `CREATE INDEX IF NOT EXISTS ${n}_feed ON ${n} (recipient_id, created_at_ms DESC, id DESC)`,
+    ],
+    preferences: [
+      // "Sin ámbito" y "ámbito de texto vacío" son cosas distintas, y un NULL no
+      // entra en una clave primaria: `has_scope` los separa.
+      `CREATE TABLE IF NOT EXISTS ${p} (
   recipient_id TEXT NOT NULL,
   has_scope    INTEGER NOT NULL,
   scope        TEXT NOT NULL,
@@ -90,14 +95,33 @@ export function d1Schema(
   enabled      INTEGER NOT NULL,
   PRIMARY KEY (recipient_id, has_scope, scope, category, channel)
 ) WITHOUT ROWID`,
-    `CREATE TABLE IF NOT EXISTS ${q} (
+    ],
+    quietHours: [
+      `CREATE TABLE IF NOT EXISTS ${q} (
   recipient_id TEXT PRIMARY KEY,
   enabled      INTEGER NOT NULL,
   start_time   TEXT NOT NULL,
   end_time     TEXT NOT NULL,
   timezone     TEXT NOT NULL
 ) WITHOUT ROWID`,
-  ];
+    ],
+  };
+}
+
+/**
+ * Las sentencias que crean las tablas y los índices, para copiar a una
+ * migración. El texto se compara byte a byte (la colación por omisión de
+ * SQLite), que en UTF-8 es el orden por punto de código que pide el spec.
+ */
+export function d1Schema(
+  tables: {
+    notifications?: string;
+    preferences?: string;
+    quietHours?: string;
+  } = {},
+): string[] {
+  const byTable = d1SchemaByTable(tables);
+  return [...byTable.notifications, ...byTable.preferences, ...byTable.quietHours];
 }
 
 interface Row {
@@ -151,7 +175,7 @@ export class D1Store implements NotificationStore {
 
   /** Crea la tabla y los índices si no existen. */
   async createSchema(): Promise<void> {
-    const statements = d1Schema({ notifications: this.#table }).slice(0, 3);
+    const statements = d1SchemaByTable({ notifications: this.#table }).notifications;
     await this.#db.batch(statements.map((sql) => this.#db.prepare(sql)));
   }
 
@@ -285,8 +309,8 @@ export class D1PreferenceStore implements PreferenceStore {
 
   /** Crea la tabla si no existe. */
   async createSchema(): Promise<void> {
-    const sql = d1Schema({ preferences: this.#table })[3]!;
-    await this.#db.batch([this.#db.prepare(sql)]);
+    const statements = d1SchemaByTable({ preferences: this.#table }).preferences;
+    await this.#db.batch(statements.map((sql) => this.#db.prepare(sql)));
   }
 
   async getOverrides(recipientId: string, options: { scope?: string | null } = {}): Promise<Overrides> {
@@ -343,8 +367,8 @@ export class D1QuietHoursStore implements QuietHoursStore {
 
   /** Crea la tabla si no existe. */
   async createSchema(): Promise<void> {
-    const sql = d1Schema({ quietHours: this.#table })[4]!;
-    await this.#db.batch([this.#db.prepare(sql)]);
+    const statements = d1SchemaByTable({ quietHours: this.#table }).quietHours;
+    await this.#db.batch(statements.map((sql) => this.#db.prepare(sql)));
   }
 
   async getQuietHours(recipientId: string): Promise<QuietHours | null> {

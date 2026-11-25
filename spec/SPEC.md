@@ -473,7 +473,9 @@ Reglas de las copias:
   `dedupe_key`, su copia no se crea y se informa como no creada.
 - **Si el aviso del grupo ya existía, no se hacen copias**: el repetido no hace nada.
 - **Si el almacén rechaza una copia, el recorrido termina con ese error**: lo guardado hasta ahí
-  queda y no se entrega nada. Un `id` repetido es un error de quien llama.
+  queda y no se entrega nada. Un `id` repetido es un error de quien llama. Para terminar el
+  trabajo, quien llama repite el `notify` con la misma `dedupe_key` (devuelve el aviso del grupo,
+  como repetido) y lo entrega con `deliver`; las copias que faltaron las agrega con `add`.
 
 - **Primero se guarda, después se entrega.** La bandeja es la fuente de verdad: una entrega que
   falla nunca deshace el aviso ni sus copias.
@@ -564,6 +566,9 @@ Reglas del recorrido:
 - **Pasar del instante al minuto local es asunto de cada port**, con la base de zonas horarias
   de su plataforma: es lo único de esta sección que los vectores no cubren. Si la plataforma no
   conoce la zona, la persona no está en silencio: ante la duda, se entrega.
+- **Un horario guardado que no es válido no silencia.** El almacén no valida lo que guarda, así que
+  lo que lee puede venir roto (una fila editada a mano, otra versión): el recorrido lo trata como
+  si no hubiera horario, en vez de fallar con el aviso ya guardado.
 
 El horario se guarda en un **almacén de horarios**, que cumple cuando reproduce las secuencias de
 `vectors/silencio-guardado/`:
@@ -693,8 +698,9 @@ y cambia en cualquier momento.
 
 - Las dos aceptan `scope` en la consulta, con la misma forma que en `/feed`, y trabajan con lo
   guardado en ese ámbito.
-- Los canales disponibles los da quien integra con `available(recipient_id)`. Si no los da, son
-  todos los canales de la política.
+- Los canales disponibles los da quien integra con la misma función de disponibilidad del
+  recorrido, `available(recipient_id, ámbito)`, con el ámbito de la consulta (o null). Así la
+  pantalla y la entrega ven los mismos canales. Si no la da, son todos los canales de la política.
 - `PATCH` recibe el pedido de cambio con la forma de los overrides (`{"categoría": {"canal":
   valor}}`). Si no es un objeto de objetos, da `400` con `invalid_body`. Si `validate_patch` lo
   rechaza, da `422` con el motivo como código y además `category` y `channel`; no se guarda nada.

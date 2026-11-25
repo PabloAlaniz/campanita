@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from campanita import Change, Draft, FeedQuery, StoreError
+from campanita import Change, Draft, FeedQuery, StoreError, parse_quiet_hours
 from campanita.conformance import run_preference_vector, run_quiet_hours_vector, run_store_vector
 from campanita.stores import (
     MemoryPreferenceStore,
@@ -278,3 +278,36 @@ def test_sqlite_el_horario_lo_ve_otra_conexion(tmp_path: Path) -> None:
 def test_sqlite_el_nombre_de_la_tabla_de_horarios_se_valida() -> None:
     with pytest.raises(ValueError, match="identificador"):
         SqliteQuietHoursStore(sqlite3.connect(":memory:"), table="x; DROP TABLE y")
+
+
+def test_sqlite_dentro_de_una_transaccion_del_llamador_usa_un_savepoint() -> None:
+    """El almacén no confirma ni deshace la transacción de quien llama: la acompaña."""
+
+    async def run() -> None:
+        db = sqlite3.connect(":memory:", isolation_level=None)
+        db.execute("CREATE TABLE propia (x INTEGER)")
+        store, quiet = SqliteStore(db), SqliteQuietHoursStore(db)
+        store.create_schema()
+        quiet.create_schema()
+        await store.add(draft(), id="n0", created_at=T0)
+
+        db.execute("BEGIN")
+        db.execute("INSERT INTO propia VALUES (1)")
+        await store.add(draft(), id="n1", created_at=T0)
+        assert await store.mark_read("n0", "ana", T0)
+        await quiet.set_quiet_hours(
+            "ana", parse_quiet_hours({"enabled": True, "start": "22:00", "end": "08:00", "timezone": "UTC"})
+        )
+        # Un error del almacén deshace sólo lo suyo: la transacción sigue viva.
+        with pytest.raises(StoreError):
+            await store.add(draft(), id="n1", created_at=T0)
+        assert db.in_transaction
+        db.execute("ROLLBACK")
+
+        # Todo se deshizo con la transacción de quien llama, también lo del almacén.
+        assert db.execute("SELECT COUNT(*) FROM propia").fetchone() == (0,)
+        page = await store.list_feed(FeedQuery(recipient_id="ana", limit=10))
+        assert [(item.id, item.read_at) for item in page.items] == [("n0", None)]
+        assert await quiet.get_quiet_hours("ana") is None
+
+    asyncio.run(run())

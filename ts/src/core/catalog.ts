@@ -204,3 +204,33 @@ function byCodePoint(a: string, b: string): number {
     if (diff !== 0) return diff;
   }
 }
+
+/** Un miembro de un grupo: a quién le queda la copia y con qué `id`. */
+export interface Member {
+  readonly recipient_id: string;
+  readonly id: string;
+}
+
+/**
+ * Los miembros de un aviso de grupo, o `EventRejectedError` con `members` de
+ * detalle. Es parte de validar el evento: nada se guarda si fallan.
+ */
+export function checkMembers(members: unknown, group: boolean): Member[] {
+  if (members === undefined || members === null) return [];
+  const reject = () => new EventRejectedError('invalid_field', 'members');
+  if (!Array.isArray(members)) throw reject();
+  if (members.length > 0 && !group) throw reject();
+  const recipients = new Set<string>();
+  const ids = new Set<string>();
+  for (const member of members as unknown[]) {
+    if (typeof member !== 'object' || member === null || Array.isArray(member)) throw reject();
+    const keys = Object.keys(member);
+    const { recipient_id: recipientId, id } = member as Record<string, unknown>;
+    if (keys.length !== 2 || !Object.hasOwn(member, 'recipient_id') || !Object.hasOwn(member, 'id')) throw reject();
+    if (typeof recipientId !== 'string' || recipientId === '' || typeof id !== 'string' || id === '') throw reject();
+    recipients.add(recipientId);
+    ids.add(id);
+  }
+  if (recipients.size !== members.length || ids.size !== members.length) throw reject();
+  return members as Member[];
+}

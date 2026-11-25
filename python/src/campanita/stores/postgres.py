@@ -86,13 +86,13 @@ def _turn(conn: AsyncConnection[Any]) -> asyncio.Lock:
     return lock
 
 
-def postgres_schema(
+def _schema_by_table(
     *,
     notifications: str = _NOTIFICATIONS,
     preferences: str = _PREFERENCES,
     quiet_hours: str = _QUIET_HOURS,
-) -> list[str]:
-    """Las sentencias que crean las tablas y los índices, para copiar a una migración.
+) -> dict[str, list[str]]:
+    """Las sentencias de cada tabla, por nombre: cada almacén crea sólo las suyas.
 
     El `id` usa la colación "C", que compara bytes: en UTF-8 es el orden por
     punto de código que pide el spec. Con la colación de la base (en_US y
@@ -101,8 +101,9 @@ def postgres_schema(
     n = _check_table(notifications)
     p = _check_table(preferences)
     q = _check_table(quiet_hours)
-    return [
-        f"""CREATE TABLE IF NOT EXISTS {n} (
+    return {
+        "notifications": [
+            f"""CREATE TABLE IF NOT EXISTS {n} (
     id            TEXT COLLATE "C" PRIMARY KEY,
     recipient_id  TEXT NOT NULL,
     type          TEXT NOT NULL,
@@ -116,12 +117,14 @@ def postgres_schema(
     created_at_ms BIGINT NOT NULL,
     read_at_ms    BIGINT
 )""",
-        f"CREATE UNIQUE INDEX IF NOT EXISTS {n}_dedupe ON {n} (recipient_id, dedupe_key)"
-        " WHERE dedupe_key IS NOT NULL",
-        f"CREATE INDEX IF NOT EXISTS {n}_feed ON {n} (recipient_id, created_at_ms DESC, id DESC)",
-        # "Sin ámbito" y "ámbito de texto vacío" son cosas distintas, y un NULL
-        # no entra en una clave primaria: `has_scope` los separa.
-        f"""CREATE TABLE IF NOT EXISTS {p} (
+            f"CREATE UNIQUE INDEX IF NOT EXISTS {n}_dedupe ON {n} (recipient_id, dedupe_key)"
+            " WHERE dedupe_key IS NOT NULL",
+            f"CREATE INDEX IF NOT EXISTS {n}_feed ON {n} (recipient_id, created_at_ms DESC, id DESC)",
+        ],
+        "preferences": [
+            # "Sin ámbito" y "ámbito de texto vacío" son cosas distintas, y un NULL
+            # no entra en una clave primaria: `has_scope` los separa.
+            f"""CREATE TABLE IF NOT EXISTS {p} (
     recipient_id TEXT NOT NULL,
     has_scope    BOOLEAN NOT NULL,
     scope        TEXT NOT NULL,
@@ -130,14 +133,33 @@ def postgres_schema(
     enabled      BOOLEAN NOT NULL,
     PRIMARY KEY (recipient_id, has_scope, scope, category, channel)
 )""",
-        f"""CREATE TABLE IF NOT EXISTS {q} (
+        ],
+        "quiet_hours": [
+            f"""CREATE TABLE IF NOT EXISTS {q} (
     recipient_id TEXT PRIMARY KEY,
     enabled      BOOLEAN NOT NULL,
     start_time   TEXT NOT NULL,
     end_time     TEXT NOT NULL,
     timezone     TEXT NOT NULL
 )""",
-    ]
+        ],
+    }
+
+
+def postgres_schema(
+    *,
+    notifications: str = _NOTIFICATIONS,
+    preferences: str = _PREFERENCES,
+    quiet_hours: str = _QUIET_HOURS,
+) -> list[str]:
+    """Las sentencias que crean las tablas y los índices, para copiar a una migración.
+
+    El `id` usa la colación "C", que compara bytes: en UTF-8 es el orden por
+    punto de código que pide el spec. Con la colación de la base (en_US y
+    parecidas) el orden de la bandeja sale distinto.
+    """
+    by_table = _schema_by_table(notifications=notifications, preferences=preferences, quiet_hours=quiet_hours)
+    return [statement for statements in by_table.values() for statement in statements]
 
 
 class _Base:
@@ -184,7 +206,7 @@ class PostgresStore(_Base):
 
     async def create_schema(self) -> None:
         """Crea la tabla y los índices si no existen."""
-        await self._create(postgres_schema(notifications=self._table)[:3])
+        await self._create(_schema_by_table(notifications=self._table)["notifications"])
 
     async def add(self, draft: Draft, *, id: str, created_at: datetime) -> AddResult:
         item = Notification.from_draft(draft, id=id, created_at=created_at)
@@ -336,7 +358,7 @@ class PostgresPreferenceStore(_Base):
 
     async def create_schema(self) -> None:
         """Crea la tabla si no existe."""
-        await self._create(postgres_schema(preferences=self._table)[3:4])
+        await self._create(_schema_by_table(preferences=self._table)["preferences"])
 
     async def get_overrides(self, recipient_id: str, *, scope: str | None = None) -> Overrides:
         async with self._cursor() as cursor:
@@ -391,7 +413,7 @@ class PostgresQuietHoursStore(_Base):
 
     async def create_schema(self) -> None:
         """Crea la tabla si no existe."""
-        await self._create(postgres_schema(quiet_hours=self._table)[4:5])
+        await self._create(_schema_by_table(quiet_hours=self._table)["quiet_hours"])
 
     async def get_quiet_hours(self, recipient_id: str) -> QuietHours | None:
         async with self._cursor() as cursor:

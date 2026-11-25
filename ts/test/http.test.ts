@@ -7,6 +7,7 @@ import {
   MemoryPreferenceStore,
   MemoryQuietHoursStore,
   MemoryStore,
+  parsePolicy,
   recipientFromVectorRequest,
   runHttpVector,
 } from '../src/index.js';
@@ -80,5 +81,37 @@ describe('el cursor y las fechas', () => {
     expect(fromIso('2024-02-29T00:00:00.000Z')).not.toBeNull();
     expect(fromIso('2026-02-29T00:00:00.000Z')).toBeNull();
     expect(fromIso('0099-01-01T00:00:00.000Z')).toBeNull();
+  });
+});
+
+describe('la disponibilidad', () => {
+  it('recibe la persona y el ámbito de la consulta, como en el Notifier', async () => {
+    const asked: [string, string | null][] = [];
+    const handle = createInboxHandler({
+      store: new MemoryStore(),
+      resolveRecipient: () => 'ana',
+      policy: parsePolicy({ activity: { inapp: { default: true, locked: true }, email: { default: true } } }),
+      preferences: new MemoryPreferenceStore(),
+      available: (who, scope) => {
+        asked.push([who, scope]);
+        return scope === 'acme' ? ['email'] : [];
+      },
+    });
+    const matrix = async (url: string) => {
+      const response = await handle(new Request(url));
+      return ((await response?.json()) as { categories: Record<string, Record<string, unknown>> }).categories;
+    };
+    expect((await matrix('https://x.test/preferences?scope=acme'))['activity']?.['email']).toEqual({
+      enabled: true,
+      locked: false,
+    });
+    expect((await matrix('https://x.test/preferences'))['activity']?.['email']).toEqual({
+      enabled: true,
+      locked: true,
+    });
+    expect(asked).toEqual([
+      ['ana', 'acme'],
+      ['ana', null],
+    ]);
   });
 });

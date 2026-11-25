@@ -36,6 +36,17 @@ class QuietHours:
     #: El nombre de la zona horaria de la persona. El núcleo no lo interpreta.
     timezone: str
 
+    def __post_init__(self) -> None:
+        # Un horario a mano o leído de una base también tiene que cumplir el spec: así `is_quiet`
+        # no se encuentra con uno roto en medio de una entrega.
+        if not isinstance(self.enabled, bool):
+            raise InvalidQuietHours("`enabled` tiene que ser un booleano")
+        for key, value in (("start", self.start), ("end", self.end)):
+            if _minute_of(value) is None:
+                raise InvalidQuietHours(f"`{key}` tiene que ser una hora `HH:MM`, de 00:00 a 23:59")
+        if not isinstance(self.timezone, str) or not _ZONE.fullmatch(self.timezone):
+            raise InvalidQuietHours("`timezone` tiene que ser el nombre de una zona horaria")
+
 
 def parse_quiet_hours(raw: object) -> QuietHours:
     """Valida un horario con forma de JSON. Lanza `InvalidQuietHours` con el primer problema."""
@@ -50,11 +61,7 @@ def parse_quiet_hours(raw: object) -> QuietHours:
     enabled, start, end, timezone = raw["enabled"], raw["start"], raw["end"], raw["timezone"]
     if not isinstance(enabled, bool):
         raise InvalidQuietHours("`enabled` tiene que ser un booleano")
-    for key, value in (("start", start), ("end", end)):
-        if _minute_of(value) is None:
-            raise InvalidQuietHours(f"`{key}` tiene que ser una hora `HH:MM`, de 00:00 a 23:59")
-    if not isinstance(timezone, str) or not _ZONE.fullmatch(timezone):
-        raise InvalidQuietHours("`timezone` tiene que ser el nombre de una zona horaria")
+    # El orden de los errores es el del spec; el constructor repite las mismas reglas.
     return QuietHours(enabled=enabled, start=start, end=end, timezone=timezone)
 
 
@@ -67,8 +74,8 @@ def is_quiet(quiet_hours: QuietHours, minute: int) -> bool:
     if isinstance(minute, bool) or not isinstance(minute, int) or not 0 <= minute < _DAY:
         raise ValueError("el minuto tiene que ser un entero de 0 a 1439")
     start, end = _minute_of(quiet_hours.start), _minute_of(quiet_hours.end)
-    if start is None or end is None:
-        raise ValueError("el horario no salió de parse_quiet_hours()")
+    if start is None or end is None:  # pragma: no cover - QuietHours ya lo validó
+        raise ValueError("el horario no es válido")
     if not quiet_hours.enabled or start == end:
         return False
     if start < end:

@@ -59,6 +59,21 @@ export function parseQuietHours(raw: unknown): QuietHours {
 }
 
 /**
+ * Si un horario cumple el spec. Sirve para lo que se lee de un almacén, que no
+ * valida lo que guarda.
+ */
+export function isValidQuietHours(quietHours: QuietHours): boolean {
+  try {
+    const { enabled, start, end, timezone } = quietHours;
+    parseQuietHours({ enabled, start, end, timezone });
+    return true;
+  } catch (error) {
+    if (error instanceof InvalidQuietHoursError) return false;
+    throw error;
+  }
+}
+
+/**
  * Si el minuto local `minute` (de 0 a 1439) cae dentro del horario.
  *
  * `start` entra y `end` no. Un horario con `start` mayor que `end` cruza la

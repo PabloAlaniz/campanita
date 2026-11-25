@@ -1,9 +1,16 @@
 /** El recorrido completo: armar el aviso, guardarlo y entregarlo. */
-import type { DeliveryChannel, DeliveryResult, NotificationStore, PreferenceStore, QuietHoursStore } from '../ports.js';
-import { buildNotification } from './catalog.js';
+import type {
+  ChannelAvailability,
+  DeliveryChannel,
+  DeliveryResult,
+  NotificationStore,
+  PreferenceStore,
+  QuietHoursStore,
+} from '../ports.js';
+import { buildNotification, checkMembers, type Member } from './catalog.js';
 import { resolveChannels } from './channels.js';
 import type { AddResult, Notification } from './inbox.js';
-import { isQuiet, localMinute } from './quiet.js';
+import { isQuiet, isValidQuietHours, localMinute } from './quiet.js';
 import { EventRejectedError, INBOX, type Catalog, type Policy } from './types.js';
 
 const ID = /^[a-z][a-z0-9_-]{0,63}$/;
@@ -30,12 +37,6 @@ export interface NotifyResult {
   readonly deliveries: ReadonlyMap<string, DeliveryResult>;
 }
 
-/** Un miembro de un grupo: a quién le queda la copia y con qué `id`. */
-export interface Member {
-  readonly recipient_id: string;
-  readonly id: string;
-}
-
 export interface NotifierOptions {
   readonly policy: Policy;
   readonly catalog: Catalog;
@@ -47,10 +48,7 @@ export interface NotifierOptions {
    * dónde mandar. Sin función, todos los configurados. Un canal que devuelve
    * pero no está configurado no cuenta.
    */
-  readonly available?: (
-    recipientId: string,
-    scope: string | null,
-  ) => Iterable<string> | Promise<Iterable<string>>;
+  readonly available?: ChannelAvailability;
   /** Los horarios de no molestar. Sin almacén, nadie está en silencio. */
   readonly quietHours?: QuietHoursStore;
   /**
@@ -163,31 +161,12 @@ export class Notifier {
     if (store === undefined) return false;
     const quietHours = await store.getQuietHours(recipientId);
     if (quietHours === null || !quietHours.enabled) return false;
+    // Un horario guardado roto no silencia: el aviso ya está guardado y se entrega.
+    if (!isValidQuietHours(quietHours)) return false;
     const minute = (this.#options.localMinute ?? localMinute)(quietHours.timezone, moment);
     // Zona desconocida: ante la duda, se entrega.
     return minute !== null && isQuiet(quietHours, minute);
   }
-}
-
-/** Los miembros de un `notify`, o `EventRejectedError` con `members` de detalle. */
-function checkMembers(members: unknown, group: boolean): Member[] {
-  if (members === undefined || members === null) return [];
-  const reject = () => new EventRejectedError('invalid_field', 'members');
-  if (!Array.isArray(members)) throw reject();
-  if (members.length > 0 && !group) throw reject();
-  const recipients = new Set<string>();
-  const ids = new Set<string>();
-  for (const member of members as unknown[]) {
-    if (typeof member !== 'object' || member === null || Array.isArray(member)) throw reject();
-    const keys = Object.keys(member);
-    const { recipient_id: recipientId, id } = member as Record<string, unknown>;
-    if (keys.length !== 2 || !Object.hasOwn(member, 'recipient_id') || !Object.hasOwn(member, 'id')) throw reject();
-    if (typeof recipientId !== 'string' || recipientId === '' || typeof id !== 'string' || id === '') throw reject();
-    recipients.add(recipientId);
-    ids.add(id);
-  }
-  if (recipients.size !== members.length || ids.size !== members.length) throw reject();
-  return members as Member[];
 }
 
 function checkChannels(channels: Iterable<DeliveryChannel>): Map<string, DeliveryChannel> {

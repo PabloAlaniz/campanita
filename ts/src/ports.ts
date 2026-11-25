@@ -79,6 +79,16 @@ export interface QuietHoursStore {
  * - `silenced`: no lo contesta un canal, lo anota `Notifier`: el canal no se
  *   intentó porque la persona está en su horario de no molestar.
  */
+/**
+ * Qué canales tiene una persona en un ámbito (o `null`): los que activó y para
+ * los que hay a dónde mandar. Es la misma función para `Notifier` y para el
+ * handler HTTP, así la pantalla de preferencias y la entrega ven los mismos canales.
+ */
+export type ChannelAvailability = (
+  recipientId: string,
+  scope: string | null,
+) => Iterable<string> | Promise<Iterable<string>>;
+
 export type DeliveryOutcome = 'sent' | 'expired' | 'failed' | 'skipped' | 'silenced';
 
 export interface DeliveryResult {
