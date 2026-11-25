@@ -15,8 +15,10 @@ from campanita import (
     Change,
     EventRejected,
     InvalidChannels,
+    InvalidQuietHours,
     Notification,
     Notifier,
+    QuietHours,
     StoreError,
     parse_catalog,
     parse_policy,
@@ -436,5 +438,43 @@ def test_disponibilidad_asincrona_con_destinatario_y_ambito() -> None:
         assert list(ana.deliveries) == []
         assert list(beto.deliveries) == ["email"]
         assert calls == [("ana", "acme"), ("beto", None)]
+
+    asyncio.run(run())
+
+
+class _HorarioRoto:
+    """Un almacén que devuelve lo que tiene guardado, aunque esté roto (una fila editada a mano)."""
+
+    async def get_quiet_hours(self, recipient_id: str) -> QuietHours | None:
+        return QuietHours(enabled=True, start="25:00", end="08:00", timezone="UTC")
+
+    async def set_quiet_hours(self, recipient_id: str, quiet_hours: QuietHours) -> None:
+        raise NotImplementedError
+
+
+def test_un_horario_que_no_cumple_el_spec_no_se_puede_construir() -> None:
+    with pytest.raises(InvalidQuietHours, match="`start`"):
+        QuietHours(enabled=True, start="25:00", end="08:00", timezone="UTC")
+    with pytest.raises(InvalidQuietHours, match="`timezone`"):
+        QuietHours(enabled=True, start="22:00", end="08:00", timezone="")
+
+
+def test_un_horario_guardado_roto_no_silencia_ni_rompe_el_aviso() -> None:
+    async def run() -> None:
+        policy = parse_policy(
+            {"activity": {"inapp": {"default": True, "locked": True}, "email": {"default": True}}}
+        )
+        channel = Scripted("email")
+        notifier = Notifier(
+            policy=policy,
+            catalog=parse_catalog({"nota": {"category": "activity", "title": "Hola"}}, policy),
+            store=MemoryStore(),
+            preferences=MemoryPreferenceStore(),
+            channels=[channel],
+            quiet_hours=_HorarioRoto(),
+        )
+        result = await notifier.notify({"type": "nota", "recipient_id": "ana"})
+        assert result.created
+        assert result.deliveries["email"].outcome == "sent"
 
     asyncio.run(run())

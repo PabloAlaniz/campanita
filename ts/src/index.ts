@@ -66,7 +66,8 @@ export type { ApnsTarget, ApnsTransportOptions } from './channels/apns.js';
 export { WebPushTransport } from './channels/webpush.js';
 export type { WebPushTarget, WebPushTransportOptions } from './channels/webpush.js';
 export { InvalidChannelsError, Notifier } from './core/notify.js';
-export type { Member, NotifierOptions, NotifyResult } from './core/notify.js';
+export type { Member } from './core/catalog.js';
+export type { NotifierOptions, NotifyResult } from './core/notify.js';
 export { StoreError } from './core/inbox.js';
 export type {
   AddResult,
@@ -99,6 +100,7 @@ export {
 export type { PostgresJsLike, PostgresLike } from './stores/postgres.js';
 export type {
   DeliveryChannel,
+  ChannelAvailability,
   DeliveryOutcome,
   DeliveryResult,
   NotificationStore,

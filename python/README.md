@@ -311,7 +311,8 @@ app.mount(
         policy=policy,
         preferences=SqlitePreferenceStore(conexion),
         quiet_hours=SqliteQuietHoursStore(conexion),
-        available=canales_conectados,  # por omisión, todos los de la política
+        # La misma función que recibe el Notifier: (recipient_id, scope). Por omisión, todos los de la política.
+        available=canales_de,
     ),
 )
 ```

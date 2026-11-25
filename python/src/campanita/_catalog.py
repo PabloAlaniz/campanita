@@ -7,7 +7,7 @@ eso lo decide el catálogo, en un solo lugar.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Literal, final
@@ -202,3 +202,30 @@ def build_notification(catalog: Catalog, event: Mapping[str, object]) -> Draft:
         scope=optional["scope"],
         dedupe_key=optional["dedupe_key"],
     )
+
+
+def check_members(members: Sequence[Mapping[str, object]] | None, *, group: bool) -> list[tuple[str, str]]:
+    """Los miembros de un aviso de grupo como `(recipient_id, id)`, o `EventRejected` con
+    `members` de detalle. Es parte de validar el evento: nada se guarda si fallan."""
+    if members is None:
+        return []
+    if isinstance(members, (str, bytes)) or not isinstance(members, Sequence):
+        raise EventRejected("invalid_field", "members")
+    if members and not group:
+        raise EventRejected("invalid_field", "members")
+    out: list[tuple[str, str]] = []
+    for member in members:
+        if not isinstance(member, Mapping) or set(member.keys()) != {"recipient_id", "id"}:
+            raise EventRejected("invalid_field", "members")
+        recipient_id, copy_id = member["recipient_id"], member["id"]
+        if (
+            not isinstance(recipient_id, str)
+            or not recipient_id
+            or not isinstance(copy_id, str)
+            or not copy_id
+        ):
+            raise EventRejected("invalid_field", "members")
+        out.append((recipient_id, copy_id))
+    if len({r for r, _ in out}) != len(out) or len({i for _, i in out}) != len(out):
+        raise EventRejected("invalid_field", "members")
+    return out

@@ -430,3 +430,27 @@ describe('deliver', () => {
     ]);
   });
 });
+
+describe('un horario guardado roto', () => {
+  it('no silencia ni rompe el aviso', async () => {
+    const policy = parsePolicy({
+      activity: { inapp: { default: true, locked: true }, email: { default: true } },
+    });
+    const channel = new Scripted('email');
+    const notifier = new Notifier({
+      policy,
+      catalog: parseCatalog({ nota: { category: 'activity', title: 'Hola' } }, policy),
+      store: new MemoryStore(),
+      preferences: new MemoryPreferenceStore(),
+      channels: [channel],
+      // Lo que devolvería un almacén con una fila editada a mano: el almacén no valida.
+      quietHours: {
+        getQuietHours: async () => ({ enabled: true, start: '25:00', end: '08:00', timezone: 'UTC' }),
+        setQuietHours: async () => {},
+      },
+    });
+    const result = await notifier.notify({ type: 'nota', recipient_id: 'ana' });
+    expect(result.created).toBe(true);
+    expect(result.deliveries.get('email')?.outcome).toBe('sent');
+  });
+});

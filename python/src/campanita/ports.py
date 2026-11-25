@@ -14,8 +14,9 @@ El núcleo no conoce la base, el canal ni la superficie que muestra la bandeja.
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, Protocol
+from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -100,6 +101,12 @@ class QuietHoursStore(Protocol):
     async def set_quiet_hours(self, recipient_id: str, quiet_hours: QuietHours) -> None:
         """Lo guarda, reemplazando el que hubiera."""
         ...
+
+
+#: Qué canales tiene una persona en un ámbito (o `None`): los que activó y para los que hay a
+#: dónde mandar. Es la misma función para `Notifier` y para `InboxApp`, así la pantalla de
+#: preferencias y la entrega ven los mismos canales. Puede ser `async`.
+ChannelAvailability: TypeAlias = Callable[[str, str | None], Iterable[str] | Awaitable[Iterable[str]]]
 
 
 #: - `sent`: el proveedor aceptó el aviso.

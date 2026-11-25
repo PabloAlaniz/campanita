@@ -5,7 +5,7 @@ from __future__ import annotations
 import inspect
 import json
 import re
-from collections.abc import Awaitable, Callable, Iterable, Mapping, MutableMapping
+from collections.abc import Awaitable, Callable, Mapping, MutableMapping
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, cast
 from urllib.parse import parse_qsl, unquote, unquote_to_bytes
@@ -18,7 +18,7 @@ from ._wire import _MAX_DATETIME_MS, decode_cursor_parts, encode_cursor, from_is
 
 if TYPE_CHECKING:
     from .._policy import Policy
-    from ..ports import NotificationStore, PreferenceStore, QuietHoursStore
+    from ..ports import ChannelAvailability, NotificationStore, PreferenceStore, QuietHoursStore
 
 #: Los tipos de ASGI 3, sin depender de un paquete que los defina.
 Scope = MutableMapping[str, Any]
@@ -154,7 +154,7 @@ class InboxApp:
         resolve_recipient: Callable[[Scope], MaybeAwaitable[str | None]],
         policy: Policy | None = None,
         preferences: PreferenceStore | None = None,
-        available: Callable[[str], MaybeAwaitable[Iterable[str]]] | None = None,
+        available: ChannelAvailability | None = None,
         quiet_hours: QuietHoursStore | None = None,
         now: Callable[[], datetime] | None = None,
     ) -> None:
@@ -162,8 +162,9 @@ class InboxApp:
         - `resolve_recipient`: quién hace el pedido, a partir del `scope` de ASGI;
           `None` si no se sabe (responde 401). Es la única fuente del destinatario.
         - `policy` y `preferences`: con los dos, se sirve `/preferences`.
-        - `available`: los canales disponibles para esa persona. Por omisión,
-          todos los de la política.
+        - `available`: los canales disponibles para esa persona en el ámbito de la
+          consulta. Es la misma función que recibe `Notifier`. Por omisión, todos
+          los de la política.
         - `quiet_hours`: con almacén de horarios, se sirve `/quiet-hours`.
         - `now`: la hora del servidor, con zona horaria. Para pruebas.
         """
@@ -309,9 +310,9 @@ class InboxApp:
         )
         return _ok({"changed": changed})
 
-    async def _channels_for(self, who: str) -> list[str]:
+    async def _channels_for(self, who: str, scope: str | None) -> list[str]:
         if self._available is not None:
-            return list(await _resolve(self._available(who)))
+            return list(await _resolve(self._available(who, scope)))
         channels: dict[str, None] = {}
         for cells in (self._policy or {}).values():
             channels.update(dict.fromkeys(cells))
@@ -321,7 +322,7 @@ class InboxApp:
         policy, preferences = self._policy, self._preferences
         if policy is None or preferences is None:
             raise RuntimeError("_prefs sin política o sin almacén de preferencias")
-        available = await self._channels_for(who)
+        available = await self._channels_for(who, scope)
         if method == "PATCH":
             if not isinstance(body, dict) or not all(isinstance(v, dict) for v in body.values()):
                 return _fail(400, "invalid_body")

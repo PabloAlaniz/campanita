@@ -488,7 +488,8 @@ const inbox = createInboxHandler({
   policy,
   preferences: new D1PreferenceStore(env.DB),
   quietHours: new D1QuietHoursStore(env.DB),
-  available: (userId) => canalesConectados(userId),
+  // La misma función que recibe el Notifier: (recipientId, scope). Por omisión, todos los de la política.
+  available: (userId, scope) => canalesDe(userId),
 });
 
 // En Hono, por ejemplo:

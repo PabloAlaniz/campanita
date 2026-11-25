@@ -114,7 +114,7 @@ async def run_http_vector(vector: dict[str, Any], make: Callable[[], Stores]) ->
         resolve_recipient=lambda scope: scope["campanita.test.as"],
         policy=parse_policy(vector["policy"]),
         preferences=stores.preferences,
-        available=lambda _who: available,
+        available=lambda _who, _scope: available,
         quiet_hours=stores.quiet_hours,
         now=lambda: from_ms(clock[0]),
     )
@@ -242,7 +242,7 @@ def test_resolve_recipient_y_available_pueden_ser_async() -> None:
     async def who(_scope: Any) -> str:
         return "ana"
 
-    async def channels(_who: str) -> list[str]:
+    async def channels(_who: str, _scope: str | None) -> list[str]:
         return ["email"]
 
     async def run() -> None:
@@ -307,5 +307,33 @@ def test_un_cuerpo_con_nan_no_es_json() -> None:
     async def run() -> None:
         reply = await call(app_with(), "POST", "/feed/read-all", body=b'{"before": NaN}')
         assert (reply.status, reply.body["error"]["code"]) == (400, "invalid_body")
+
+    asyncio.run(run())
+
+
+def test_available_recibe_el_ambito_de_la_consulta() -> None:
+    """La misma función de disponibilidad que usa el Notifier: persona y ámbito."""
+    asked: list[tuple[str, str | None]] = []
+
+    def channels(who: str, scope: str | None) -> list[str]:
+        asked.append((who, scope))
+        return ["email"] if scope == "acme" else []
+
+    async def run() -> None:
+        policy = parse_policy(
+            {"activity": {"inapp": {"default": True, "locked": True}, "email": {"default": True}}}
+        )
+        app = InboxApp(
+            store=MemoryStore(),
+            resolve_recipient=lambda _scope: "ana",
+            policy=policy,
+            preferences=MemoryPreferenceStore(),
+            available=channels,
+        )
+        with_scope = await call(app, "GET", "/preferences", query=[("scope", "acme")])
+        without = await call(app, "GET", "/preferences")
+        assert with_scope.body["categories"]["activity"]["email"] == {"enabled": True, "locked": False}
+        assert without.body["categories"]["activity"]["email"] == {"enabled": True, "locked": True}
+        assert asked == [("ana", "acme"), ("ana", None)]
 
     asyncio.run(run())

@@ -16,7 +16,7 @@ import { effectiveMatrix, validatePatch } from '../core/channels.js';
 import { checkCap } from '../core/inbox.js';
 import { InvalidQuietHoursError, localMinute, parseQuietHours, type QuietHours } from '../core/quiet.js';
 import { type Change, PatchRejectedError, type Policy } from '../core/types.js';
-import type { NotificationStore, PreferenceStore, QuietHoursStore } from '../ports.js';
+import type { ChannelAvailability, NotificationStore, PreferenceStore, QuietHoursStore } from '../ports.js';
 import {
   decodeCursor,
   encodeCursor,
@@ -40,8 +40,11 @@ export interface InboxHandlerOptions {
   /** Con política y almacén de preferencias, se sirven `/preferences`. */
   readonly policy?: Policy;
   readonly preferences?: PreferenceStore;
-  /** Los canales disponibles para esa persona. Por omisión, todos los de la política. */
-  readonly available?: (recipientId: string) => MaybePromise<Iterable<string>>;
+  /**
+   * Los canales disponibles para esa persona en el ámbito de la consulta. Es la
+   * misma función que recibe `Notifier`. Por omisión, todos los de la política.
+   */
+  readonly available?: ChannelAvailability;
   /** Con almacén de horarios, se sirve `/quiet-hours`. */
   readonly quietHours?: QuietHoursStore;
   /** La hora del servidor. Para pruebas. */
@@ -109,18 +112,19 @@ export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
   const base = (options.basePath ?? '').replace(/\/+$/, '');
   const now = options.now ?? (() => new Date());
   const { store, policy, preferences, quietHours } = options;
-  const withPreferences = policy !== undefined && preferences !== undefined;
+  // Lo que necesita cada ruta opcional, ya comprobado: si falta, la ruta no existe.
+  const prefsDeps = policy !== undefined && preferences !== undefined ? { policy, preferences } : null;
 
   function route(path: string): Route | null {
     if (path === '/feed') return { name: 'feed', methods: ['GET'] };
     if (path === '/unread-count') return { name: 'count', methods: ['GET'] };
     if (path === '/feed/read-all') return { name: 'readAll', methods: ['POST'] };
-    if (path === '/preferences' && withPreferences) return { name: 'preferences', methods: ['GET', 'PATCH'] };
+    if (path === '/preferences' && prefsDeps) return { name: 'preferences', methods: ['GET', 'PATCH'] };
     if (path === '/quiet-hours' && quietHours) return { name: 'quietHours', methods: ['GET', 'PUT'] };
-    const read = /^\/feed\/([^/]+)\/read$/.exec(path);
-    if (read) {
+    const encoded = /^\/feed\/([^/]+)\/read$/.exec(path)?.[1];
+    if (encoded !== undefined) {
       try {
-        return { name: 'read', methods: ['POST'], id: decodeURIComponent(read[1]!) };
+        return { name: 'read', methods: ['POST'], id: decodeURIComponent(encoded) };
       } catch {
         return null;
       }
@@ -128,8 +132,8 @@ export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
     return null;
   }
 
-  async function availableFor(recipientId: string): Promise<string[]> {
-    if (options.available) return [...(await options.available(recipientId))];
+  async function availableFor(recipientId: string, scope: string | null): Promise<string[]> {
+    if (options.available) return [...(await options.available(recipientId, scope))];
     const channels = new Set<string>();
     for (const cells of Object.values(policy ?? {})) for (const channel of Object.keys(cells)) channels.add(channel);
     return [...channels];
@@ -186,25 +190,31 @@ export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
     return json(200, { changed });
   }
 
-  async function prefs(who: string, method: string, request: Request, scope: string | null): Promise<Response> {
-    const available = await availableFor(who);
+  async function prefs(
+    deps: { policy: Policy; preferences: PreferenceStore },
+    who: string,
+    method: string,
+    request: Request,
+    scope: string | null,
+  ): Promise<Response> {
+    const available = await availableFor(who, scope);
     if (method === 'PATCH') {
       const body = await readJson(request);
       if (!isObject(body) || !Object.values(body).every(isObject)) return fail(400, 'invalid_body');
       let changes: Change[];
       try {
-        changes = validatePatch(policy!, body as Record<string, Record<string, boolean>>, available);
+        changes = validatePatch(deps.policy, body as Record<string, Record<string, boolean>>, available);
       } catch (error) {
         if (!(error instanceof PatchRejectedError)) throw error;
         return fail(422, error.reason, { category: error.category, channel: error.channel, message: error.message });
       }
-      await preferences!.saveChanges(who, changes, { scope });
+      await deps.preferences.saveChanges(who, changes, { scope });
     }
-    const overrides = await preferences!.getOverrides(who, { scope });
-    return json(200, { categories: effectiveMatrix(policy!, overrides, available) });
+    const overrides = await deps.preferences.getOverrides(who, { scope });
+    return json(200, { categories: effectiveMatrix(deps.policy, overrides, available) });
   }
 
-  async function quiet(who: string, method: string, request: Request): Promise<Response> {
+  async function quiet(hours: QuietHoursStore, who: string, method: string, request: Request): Promise<Response> {
     if (method === 'PUT') {
       const body = await readJson(request);
       if (body === NO_BODY) return fail(400, 'invalid_body');
@@ -216,9 +226,9 @@ export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
         return fail(422, 'invalid_quiet_hours', { message: error.message });
       }
       if (localMinute(parsed.timezone, now()) === null) return fail(422, 'unknown_timezone');
-      await quietHours!.setQuietHours(who, parsed);
+      await hours.setQuietHours(who, parsed);
     }
-    return json(200, { quiet_hours: await quietHours!.getQuietHours(who) });
+    return json(200, { quiet_hours: await hours.getQuietHours(who) });
   }
 
   return async (request) => {
@@ -245,9 +255,10 @@ export function createInboxHandler(options: InboxHandlerOptions): InboxHandler {
       case 'readAll':
         return readAll(who, request);
       case 'preferences':
-        return prefs(who, request.method, request, params.get('scope') ?? null);
+        // `route` sólo la ofrece con política y preferencias.
+        return prefsDeps ? prefs(prefsDeps, who, request.method, request, params.get('scope') ?? null) : null;
       case 'quietHours':
-        return quiet(who, request.method, request);
+        return quietHours ? quiet(quietHours, who, request.method, request) : null;
     }
   };
 }

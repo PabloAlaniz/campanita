@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import contextmanager
 from typing import TYPE_CHECKING
 
 from .._inbox import (
@@ -26,7 +27,7 @@ from .._inbox import (
 from .._quiet import QuietHours
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
     from datetime import datetime
 
     from .._catalog import Draft
@@ -60,6 +61,34 @@ _COLUMNS = (
 )
 
 
+@contextmanager
+def _atomic(db: sqlite3.Connection) -> Iterator[None]:
+    """Todo o nada, sin tocar la transacción de quien llama.
+
+    Si la conexión ya está en una transacción, se usa un `SAVEPOINT`: lo hecho acá
+    se confirma o se deshace con la de quien llama, y un error sólo deshace lo
+    nuestro. Si no, `BEGIN IMMEDIATE` toma el bloqueo de escritura antes de leer.
+    """
+    if db.in_transaction:
+        db.execute("SAVEPOINT campanita")
+        try:
+            yield
+        except BaseException:
+            db.execute("ROLLBACK TO campanita")
+            db.execute("RELEASE campanita")
+            raise
+        db.execute("RELEASE campanita")
+        return
+    db.execute("BEGIN IMMEDIATE")
+    try:
+        yield
+    except BaseException:
+        if db.in_transaction:
+            db.execute("ROLLBACK")
+        raise
+    db.execute("COMMIT")
+
+
 class SqliteStore:
     """Usa la conexión que le pasan y no la cierra."""
 
@@ -74,17 +103,14 @@ class SqliteStore:
         self._db.executescript(_SCHEMA.format(table=self._table))
 
     async def add(self, draft: Draft, *, id: str, created_at: datetime) -> AddResult:
-        # BEGIN IMMEDIATE toma el bloqueo de escritura antes de mirar la clave:
-        # revisar y guardar es una sola operación.
-        self._db.execute("BEGIN IMMEDIATE")
-        try:
+        # Revisar la clave y guardar es una sola operación.
+        with _atomic(self._db):
             if draft.dedupe_key is not None:
                 existing = self._db.execute(
                     f"SELECT {_COLUMNS} FROM {self._table} WHERE recipient_id = ? AND dedupe_key = ?",
                     (draft.recipient_id, draft.dedupe_key),
                 ).fetchone()
                 if existing is not None:
-                    self._db.execute("ROLLBACK")
                     return AddResult(_row(existing), created=False)
             item = Notification.from_draft(draft, id=id, created_at=created_at)
             try:
@@ -105,13 +131,7 @@ class SqliteStore:
                     ),
                 )
             except sqlite3.IntegrityError as error:
-                self._db.execute("ROLLBACK")
                 raise StoreError("duplicate_id") from error
-            self._db.execute("COMMIT")
-        except sqlite3.Error:
-            if self._db.in_transaction:
-                self._db.execute("ROLLBACK")
-            raise
         return AddResult(item, created=True)
 
     async def list_feed(self, query: FeedQuery) -> FeedPage:
@@ -148,7 +168,7 @@ class SqliteStore:
         return int(total)
 
     async def mark_read(self, id: str, recipient_id: str, read_at: datetime) -> bool:
-        with self._db:
+        with _atomic(self._db):
             cursor = self._db.execute(
                 f"UPDATE {self._table} SET read_at_ms = ?"
                 " WHERE id = ? AND recipient_id = ? AND read_at_ms IS NULL",
@@ -171,7 +191,7 @@ class SqliteStore:
         if category is not None:
             where += " AND category = ?"
             params.append(category)
-        with self._db:
+        with _atomic(self._db):
             cursor = self._db.execute(
                 f"UPDATE {self._table} SET read_at_ms = ? WHERE {where}", (to_ms(read_at), *params)
             )
@@ -261,9 +281,8 @@ class SqlitePreferenceStore:
         if not changes:
             return
         key = _scope_key(scope)
-        # Una transacción: se guardan todos los cambios o ninguno.
-        self._db.execute("BEGIN IMMEDIATE")
-        try:
+        # Se guardan todos los cambios o ninguno.
+        with _atomic(self._db):
             self._db.executemany(
                 f"INSERT INTO {self._table} (recipient_id, has_scope, scope, category, channel, enabled)"
                 " VALUES (?, ?, ?, ?, ?, ?)"
@@ -274,10 +293,6 @@ class SqlitePreferenceStore:
                     for change in changes
                 ],
             )
-        except BaseException:
-            self._db.execute("ROLLBACK")
-            raise
-        self._db.execute("COMMIT")
 
 
 def _scope_key(scope: str | None) -> tuple[int, str]:
@@ -319,17 +334,18 @@ class SqliteQuietHoursStore:
         return QuietHours(enabled=bool(enabled), start=str(start), end=str(end), timezone=str(timezone))
 
     async def set_quiet_hours(self, recipient_id: str, quiet_hours: QuietHours) -> None:
-        self._db.execute(
-            f"INSERT INTO {self._table} (recipient_id, enabled, start_time, end_time, timezone)"
-            " VALUES (?, ?, ?, ?, ?)"
-            " ON CONFLICT (recipient_id) DO UPDATE SET enabled = excluded.enabled,"
-            " start_time = excluded.start_time, end_time = excluded.end_time, timezone = excluded.timezone",
-            (
-                recipient_id,
-                int(quiet_hours.enabled),
-                quiet_hours.start,
-                quiet_hours.end,
-                quiet_hours.timezone,
-            ),
-        )
-        self._db.commit()
+        with _atomic(self._db):
+            self._db.execute(
+                f"INSERT INTO {self._table} (recipient_id, enabled, start_time, end_time, timezone)"
+                " VALUES (?, ?, ?, ?, ?)"
+                " ON CONFLICT (recipient_id) DO UPDATE SET enabled = excluded.enabled,"
+                " start_time = excluded.start_time, end_time = excluded.end_time,"
+                " timezone = excluded.timezone",
+                (
+                    recipient_id,
+                    int(quiet_hours.enabled),
+                    quiet_hours.start,
+                    quiet_hours.end,
+                    quiet_hours.timezone,
+                ),
+            )
